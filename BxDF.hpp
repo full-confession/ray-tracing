@@ -342,6 +342,7 @@ namespace Fc
     class BSDF
     {
     public:
+        BSDF() = default;
         BSDF(Vector3 const& geometryNormal, Vector3 const& shadingNormal, Vector3 const& shadingTangent, Vector3 const& shadingBitangent)
             : geometryNormal_{geometryNormal}, shadingNormal_{shadingNormal}, shadingTangent_{shadingTangent}, shadingBitangent_{shadingBitangent}
         { }
@@ -475,10 +476,10 @@ namespace Fc
             };
         }
 
-        Vector3 geometryNormal_{};
-        Vector3 shadingNormal_{};
-        Vector3 shadingTangent_{};
-        Vector3 shadingBitangent_{};
+        Vector3 geometryNormal_{0.0, 1.0, 0.0};
+        Vector3 shadingNormal_{0.0, 1.0, 0.0};
+        Vector3 shadingTangent_{1.0, 0.0, 0.0};
+        Vector3 shadingBitangent_{0.0, 0.0, 1.0};
 
 
         BxDF const* bxdfs_[4]{};

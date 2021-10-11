@@ -14,6 +14,9 @@ namespace Fc
     public:
         virtual ~ICamera() = default;
         virtual Ray3 GenerateRay(Image const& image, Vector2i const& pixelPosition, Vector2 const& u1, Vector2 const& u2) const = 0;
+    
+        virtual Vector3 SampleImportance(Image const& image, Vector2i const& pixelPosition, Vector2 const& u1, Vector2 const& u2,
+            SurfacePoint1* p, double* pdf_p, Vector3* w, double* pdf_w) const = 0;
     };
 
     class PerspectiveCamera : public ICamera
@@ -54,6 +57,51 @@ namespace Fc
 
 
             return {transform_.TransformPoint(origin), transform_.TransformDirection(direction)};
+        }
+
+        virtual Vector3 SampleImportance(Image const& image, Vector2i const& pixelPosition, Vector2 const& u1, Vector2 const& u2,
+            SurfacePoint1* p, double* pdf_p, Vector3* w, double* pdf_w) const
+        {
+            // position
+            double lensArea{1.0};
+            Vector3 lensPosition{0.0, 0.0, 0.0};
+            if(lensRadius_ != 0.0)
+            {
+                lensArea = Math::Pi * lensRadius_ * lensRadius_;
+                Vector2 diskSample{SampleDiskConcentric(u1)};
+                lensPosition.x = diskSample.x * lensRadius_;
+                lensPosition.y = diskSample.y * lensRadius_;
+            }
+
+            p->SetPosition(transform_.TransformPoint(lensPosition));
+            p->SetNormal(transform_.TransformNormal({0.0, 0.0, 1.0}));
+            *pdf_p = 1.0 / lensArea;
+
+
+            // direction
+            Vector2i resolution{image.GetResolution()};
+            double filmPlaneDistance{lensRadius_ == 0.0 ? 1.0 : focusDistance_};
+            double filmPlaneHeight{2.0 * filmPlaneDistance * std::tan(fov_ / 2.0)};
+            double filmPlaneWidth{filmPlaneHeight * static_cast<double>(resolution.x) / static_cast<double>(resolution.y)};
+            double pixelSize{filmPlaneHeight / resolution.y};
+            double pixelArea{pixelSize * pixelSize};
+            double filmPlaneTop{filmPlaneHeight / 2.0};
+            double filmPlaneLeft{filmPlaneWidth / -2.0};
+
+            Vector3 filmPosition{
+                filmPlaneLeft + (pixelPosition.x + u2.x) * pixelSize,
+                filmPlaneTop - (pixelPosition.y + u2.y) * pixelSize,
+                filmPlaneDistance
+            };
+            Vector3 direction{Normalize(filmPosition - lensPosition)};
+
+            double cos_w_n{direction.z};
+            *w = transform_.TransformDirection(direction);
+            *pdf_w = 1.0 / (pixelArea * cos_w_n * cos_w_n * cos_w_n);
+
+            // importance
+            double importance{(*pdf_w) * (*pdf_p) / cos_w_n};
+            return {importance, importance, importance};
         }
 
     private:

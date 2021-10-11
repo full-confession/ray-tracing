@@ -1,6 +1,6 @@
 {
     "image": {
-        "resolution": [1600, 900],
+        "resolution": [800, 450],
         "name": "more_balls",
         "format": "ppm"
     },
@@ -13,10 +13,10 @@
         "fov": 45.0
     },
     "integrator": {
-        "type": "path",
-        "samplesX": 16,
-        "samplesY": 16,
-        "maxBounces": 20,
+        "type": "BDPT",
+        "samplesX": 1,
+        "samplesY": 1,
+        "maxBounces": 10,
         "tileSize": [16, 16]
     },
     "sampler": {

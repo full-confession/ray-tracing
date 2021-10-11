@@ -3,6 +3,7 @@
 #include "Plane.hpp"
 #include "Mesh.hpp"
 #include "json.hpp"
+#include "BDPT.hpp"
 #include <fstream>
 #include <exception>
 #include <filesystem>
@@ -87,11 +88,13 @@ namespace Fc
 
     enum class IntegratorType
     {
-        Path
+        Path,
+        BDPT
     };
 
     NLOHMANN_JSON_SERIALIZE_ENUM(IntegratorType, {
-        {IntegratorType::Path, "path"}
+        {IntegratorType::Path, "path"},
+        {IntegratorType::BDPT, "BDPT"}
     });
 
     enum class SamplerType
@@ -269,6 +272,33 @@ static void ReadPathIntegrator(nlohmann::json const& json, SceneFile& sceneFile)
 
     sceneFile.integrator = std::make_unique<PathIntegrator>(samplesX, samplesY, maxBounces, tileSize);
 }
+static void ReadBDPTIntegrator(nlohmann::json const& json, SceneFile& sceneFile)
+{
+    int samplesX{1};
+    int samplesY{1};
+    int maxBounces{10};
+
+    auto it{json.find("samplesX")};
+    if(it != json.end())
+    {
+        it->get_to(samplesX);
+    }
+
+    it = json.find("samplesY");
+    if(it != json.end())
+    {
+        it->get_to(samplesY);
+    }
+
+    it = json.find("maxBounces");
+    if(it != json.end())
+    {
+        it->get_to(maxBounces);
+    }
+
+    sceneFile.integrator = std::make_unique<BDPT>(samplesX, samplesY, maxBounces);
+}
+
 static void ReadIntegrator(nlohmann::json const& json, SceneFile& sceneFile)
 {
     IntegratorType integratorType{IntegratorType::Path};
@@ -292,6 +322,9 @@ static void ReadIntegrator(nlohmann::json const& json, SceneFile& sceneFile)
 
     switch(integratorType)
     {
+    case IntegratorType::BDPT:
+        ReadBDPTIntegrator(*itIntegrator, sceneFile);
+        break;
     case IntegratorType::Path:
     default:
         ReadPathIntegrator(*itIntegrator, sceneFile);
