@@ -17,6 +17,9 @@ namespace Fc
     
         virtual Vector3 SampleImportance(Image const& image, Vector2i const& pixelPosition, Vector2 const& u1, Vector2 const& u2,
             SurfacePoint1* p, double* pdf_p, Vector3* w, double* pdf_w) const = 0;
+
+        virtual Vector3 SampleIncomingImportance(Image const& image, Vector3 const& prev, Vector2 const& u,
+            Vector2i* pixelPosition, SurfacePoint1* p, double* pdf_p) const = 0;
     };
 
     class PerspectiveCamera : public ICamera
@@ -101,6 +104,54 @@ namespace Fc
 
             // importance
             double importance{(*pdf_w) * (*pdf_p) / cos_w_n};
+            return {importance, importance, importance};
+        }
+
+        virtual Vector3 SampleIncomingImportance(Image const& image, Vector3 const& prev, Vector2 const& u, Vector2i* pixelPosition, SurfacePoint1* p, double* pdf_p) const
+        {
+            // position
+            double lensArea{1.0};
+            Vector3 p0{0.0, 0.0, 0.0};
+            if(lensRadius_ != 0.0)
+            {
+                lensArea = Math::Pi * lensRadius_ * lensRadius_;
+                Vector2 diskSample{SampleDiskConcentric(u)};
+                p0.x = diskSample.x * lensRadius_;
+                p0.y = diskSample.y * lensRadius_;
+            }
+
+            p->SetPosition(transform_.TransformPoint(p0));
+            p->SetNormal(transform_.TransformNormal({0.0, 0.0, 1.0}));
+            *pdf_p = 1.0 / lensArea;
+
+
+            // importance
+            Vector3 p1{transform_.InverseTransformPoint(prev)};
+            Vector3 d01{p1 - p0};
+
+            if(d01.z <= 0.0) return {};
+            double filmPlaneDistance{lensRadius_ == 0.0 ? 1.0 : focusDistance_};
+            double t{filmPlaneDistance / d01.z};
+            Vector3 filmPosition{p0 + d01 * t};
+
+            Vector2i resolution{image.GetResolution()};
+            double filmPlaneHeight{2.0 * filmPlaneDistance * std::tan(fov_ / 2.0)};
+            double filmPlaneWidth{filmPlaneHeight * static_cast<double>(resolution.x) / static_cast<double>(resolution.y)};
+            double pixelSize{filmPlaneHeight / resolution.y};
+            double pixelArea{pixelSize * pixelSize};
+            double filmPlaneTop{filmPlaneHeight / 2.0};
+            double filmPlaneLeft{filmPlaneWidth / -2.0};
+
+            if(filmPosition.x < filmPlaneLeft || filmPosition.x > -filmPlaneLeft
+                || filmPosition.y > filmPlaneTop || filmPosition.y < -filmPlaneTop) return {};
+
+            pixelPosition->x = std::clamp(static_cast<int>((filmPosition.x - filmPlaneLeft) / filmPlaneWidth * resolution.x), 0, resolution.x - 1);
+            pixelPosition->y = std::clamp(static_cast<int>((1.0 - (filmPosition.y + filmPlaneTop) / filmPlaneHeight) * resolution.y), 0, resolution.y - 1);
+
+
+            double cos_w_n{Normalize(d01).z};
+            double pdf_w = 1.0 / (pixelArea * cos_w_n * cos_w_n * cos_w_n);
+            double importance{pdf_w * (*pdf_p) / cos_w_n};
             return {importance, importance, importance};
         }
 

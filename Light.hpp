@@ -13,6 +13,8 @@ namespace Fc
         
         virtual Vector3 EmittedRadiance(SurfacePoint2 const& point, Vector3 const& direction) const = 0;
         virtual Vector3 PDF(Vector3 const& point, Vector3 const& wi, double* pdf, SurfacePoint2* lightPoint) const = 0;
+        
+        virtual Vector3 SampleRadiance(Vector2 const& u1, Vector2 const& u2, SurfacePoint2* p, double* pdf_p, Vector3* w, double* pdf_w) const = 0;
         //virtual Vector3f SampleRadiance(Vector2f const& u1, Vector2f const& u2, SurfacePoint1f* point, float* pdfA, Vector3f* direction, float* pdfW) const = 0;
     
         //virtual Vector3f Power() const = 0;

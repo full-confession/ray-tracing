@@ -322,6 +322,18 @@ namespace Fc
                     return {};
                 }
             }
+
+            virtual Vector3 SampleRadiance(Vector2 const& u1, Vector2 const& u2, SurfacePoint2* p, double* pdf_p, Vector3* w, double* pdf_w) const override
+            {
+                *p = surface->Sample(u1, pdf_p);
+                
+                Vector3 tangent{};
+                Vector3 bitangent{};
+                CoordinateSystem(p->GetNormal(), &tangent, &bitangent);
+                Vector3 hemisphereSample{SampleHemisphereCosineWeighted(u2, pdf_w)};
+                *w = hemisphereSample.x * tangent + hemisphereSample.y * p->GetNormal() + hemisphereSample.z * bitangent;
+                return entity->emission->EmittedRadiance(*p, *w);
+            }
         };
 
         struct SurfaceInfo

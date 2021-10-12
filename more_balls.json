@@ -14,8 +14,8 @@
     },
     "integrator": {
         "type": "BDPT",
-        "samplesX": 1,
-        "samplesY": 1,
+        "samplesX": 8,
+        "samplesY": 8,
         "maxBounces": 10,
         "tileSize": [16, 16]
     },
@@ -34,7 +34,7 @@
                     "radius": 1.0
                 },
                 "material": {
-                    "type": "mirror",
+                    "type": "diffuse",
                     "reflectance": [1.0, 1.0, 1.0]
                 }
             },
@@ -47,7 +47,7 @@
                     "radius": 1.0
                 },
                 "material": {
-                    "type": "mirror",
+                    "type": "diffuse",
                     "reflectance": [1.0, 1.0, 1.0]
                 }
             },
@@ -60,7 +60,7 @@
                     "radius": 1.0
                 },
                 "material": {
-                    "type": "mirror",
+                    "type": "diffuse",
                     "reflectance": [1.0, 1.0, 1.0]
                 }
             },
@@ -73,7 +73,7 @@
                     "radius": 1.0
                 },
                 "material": {
-                    "type": "mirror",
+                    "type": "diffuse",
                     "reflectance": [1.0, 1.0, 1.0]
                 }
             },
@@ -86,7 +86,7 @@
                     "radius": 1.0
                 },
                 "material": {
-                    "type": "mirror",
+                    "type": "diffuse",
                     "reflectance": [1.0, 1.0, 1.0]
                 }
             },
@@ -99,7 +99,7 @@
                     "radius": 1.0
                 },
                 "material": {
-                    "type": "mirror",
+                    "type": "diffuse",
                     "reflectance": [1.0, 1.0, 1.0]
                 }
             },
@@ -112,7 +112,7 @@
                     "radius": 1.0
                 },
                 "material": {
-                    "type": "mirror",
+                    "type": "diffuse",
                     "reflectance": [1.0, 1.0, 1.0]
                 }
             },
@@ -194,7 +194,8 @@
                     "size": [50.0, 50.0]
                 },
                 "material": {
-                    "type": "metal",
+                    "type": "diffuse",
+                    "reflectance": [0.8, 0.8, 0.8],
                     "ior": [2.9114, 2.9497, 2.5845],
                     "k": [3.0893, 2.9318, 2.7670],
                     "roughness" : 0.5

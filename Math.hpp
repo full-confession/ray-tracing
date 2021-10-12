@@ -42,6 +42,9 @@ namespace Fc
         };
 
         TVector3() = default;
+        TVector3(T v)
+            : x{v}, y{v}, z{v}
+        { }
         TVector3(T x, T y, T z)
             : x{x}, y{y}, z{z}
         { }

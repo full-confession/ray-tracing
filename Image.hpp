@@ -20,6 +20,7 @@ namespace Fc
         {
             int pixelCount{resolution.x * resolution.y};
             pixels_.resize(pixelCount);
+            lightPixels_.resize(pixelCount);
         }
 
         Vector2i GetResolution() const { return resolution_; }
@@ -29,6 +30,18 @@ namespace Fc
             auto& pixel{GetPixel(pixelPosition)};
             pixel.sampleValueSum += sampleValue;
             pixel.sampleCount += 1;
+        }
+
+        void AddLightSample(Vector2i const& pixelPosition, Vector3 const& sampleValue)
+        {
+            auto& lightPixel{GetLightPixel(pixelPosition)};
+            lightPixel.sampleValueSum += sampleValue;
+            lightSamples_ += 1;
+        }
+
+        void AddLightSample()
+        {
+            lightSamples_ += 1;
         }
 
         void Export(std::string const& filename, ImageFormat format)
@@ -51,9 +64,19 @@ namespace Fc
             int sampleCount{};
         };
 
+        struct LightPixel
+        {
+            Vector3 sampleValueSum{};
+        };
+
         Pixel& GetPixel(Vector2i const& pixelPosition)
         {
             return pixels_[static_cast<std::size_t>(pixelPosition.y) * resolution_.x + pixelPosition.x];
+        }
+
+        LightPixel& GetLightPixel(Vector2i const& pixelPosition)
+        {
+            return lightPixels_[static_cast<std::size_t>(pixelPosition.y) * resolution_.x + pixelPosition.x];
         }
 
         void ExportPPM(std::string const& filename)
@@ -65,10 +88,20 @@ namespace Fc
             {
                 for(int j{}; j < resolution_.x; ++j)
                 {
+                    Vector3 c{};
                     Pixel const& pixel{GetPixel({j, i})};
-                    Vector3 color = pixel.sampleValueSum / static_cast<double>(pixel.sampleCount);
+                    LightPixel const& lightPixel{GetLightPixel({j, i})};
+                    if(pixel.sampleCount > 0)
+                    {
+                        c += pixel.sampleValueSum / static_cast<double>(pixel.sampleCount);
+                    }
 
-                    TVector3<std::uint8_t> srgbColor{RGBToSRGB(color)};
+                    if(lightSamples_ > 0)
+                    {
+                        c += lightPixel.sampleValueSum / static_cast<double>(lightSamples_);
+                    }
+
+                    TVector3<std::uint8_t> srgbColor{RGBToSRGB(c)};
                     static_assert(sizeof(srgbColor) == 3);
 
                     fout.write(reinterpret_cast<char const*>(&srgbColor), sizeof(srgbColor));
@@ -114,6 +147,8 @@ namespace Fc
 
         Vector2i resolution_{};
         std::vector<Pixel> pixels_{};
+        std::vector<LightPixel> lightPixels_{};
+        int lightSamples_{};
     };
 
 
