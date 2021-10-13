@@ -102,6 +102,12 @@
     <ClInclude Include="BDPT.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Integrators\IIntegrator.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Integrators\ForwardPathIntegrator.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp">

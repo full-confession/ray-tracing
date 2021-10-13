@@ -184,7 +184,6 @@ namespace Fc
 
                         // connection f)
                         I += ConnectionF(i, cameraVertices, j, lightVertices, scene) / static_cast<double>(pathCount_[i + j]);
-                        //pathCount_[i + j] += 1;
                     }
                 }
             }
@@ -275,6 +274,17 @@ namespace Fc
 
             return cameraVertices[i - 1].beta * cameraVertices[i - 1].bsdf.Evaluate(w0, -w1) * G(cameraVertices[i - 1].p, lightVertices[j - 1].p, w1)
                 * lightVertices[j - 1].bsdf.Evaluate(w1, w2) * lightVertices[j - 1].beta;
+        }
+
+        double MSIWeight(int i, std::vector<Vertex>& cameraVertices, int j, std::vector<Vertex>& lightVertices, Vertex const& sampled) const
+        {
+            if(i == 1 && j == 1) return 1.0;
+
+            if(i == 1)
+            {
+                cameraVertices[0] = sampled;
+            }
+
         }
 
         std::vector<Vertex> GenerateCameraSubpath(Image& image, Vector2i const& pixelPosition, ICamera const& camera, ISampler& sampler, Scene const& scene, MemoryAllocator& memoryAllocator) const

@@ -4,6 +4,7 @@
 #include "Mesh.hpp"
 #include "json.hpp"
 #include "BDPT.hpp"
+#include "Integrators/ForwardPathIntegrator.hpp"
 #include <fstream>
 #include <exception>
 #include <filesystem>
@@ -89,12 +90,20 @@ namespace Fc
     enum class IntegratorType
     {
         Path,
+        Forward,
         BDPT
     };
 
     NLOHMANN_JSON_SERIALIZE_ENUM(IntegratorType, {
         {IntegratorType::Path, "path"},
-        {IntegratorType::BDPT, "BDPT"}
+        {IntegratorType::BDPT, "BDPT"},
+        {IntegratorType::Forward, "forward"}
+    });
+
+    NLOHMANN_JSON_SERIALIZE_ENUM(Strategy, {
+        {Strategy::Light, "light"},
+        {Strategy::BSDF, "bsdf"},
+        {Strategy::MIS, "mis"}
     });
 
     enum class SamplerType
@@ -298,6 +307,53 @@ static void ReadBDPTIntegrator(nlohmann::json const& json, SceneFile& sceneFile)
 
     sceneFile.integrator = std::make_unique<BDPT>(samplesX, samplesY, maxBounces);
 }
+static void ReadForwardPathIntegrator(nlohmann::json const& json, SceneFile& sceneFile)
+{
+    Vector2i tileSize{16, 16};
+    int workerCount{static_cast<int>(std::thread::hardware_concurrency())};
+    int samplesX{1};
+    int samplesY{1};
+    int maxVertices{10};
+    Strategy strategy{Strategy::MIS};
+
+    auto it{json.find("samplesX")};
+    if(it != json.end())
+    {
+        it->get_to(samplesX);
+    }
+
+    it = json.find("samplesY");
+    if(it != json.end())
+    {
+        it->get_to(samplesY);
+    }
+
+    it = json.find("maxVertices");
+    if(it != json.end())
+    {
+        it->get_to(maxVertices);
+    }
+
+    it = json.find("tileSize");
+    if(it != json.end())
+    {
+        it->get_to(tileSize);
+    }
+
+    it = json.find("workerCount");
+    if(it != json.end())
+    {
+        it->get_to(workerCount);
+    }
+
+    it = json.find("strategy");
+    if(it != json.end())
+    {
+        it->get_to(strategy);
+    }
+
+    sceneFile.integrator = std::make_unique<ForwardPathIntegrator>(tileSize, workerCount, samplesX, samplesY, maxVertices, strategy);
+}
 
 static void ReadIntegrator(nlohmann::json const& json, SceneFile& sceneFile)
 {
@@ -324,6 +380,9 @@ static void ReadIntegrator(nlohmann::json const& json, SceneFile& sceneFile)
     {
     case IntegratorType::BDPT:
         ReadBDPTIntegrator(*itIntegrator, sceneFile);
+        break;
+    case IntegratorType::Forward:
+        ReadForwardPathIntegrator(*itIntegrator, sceneFile);
         break;
     case IntegratorType::Path:
     default:

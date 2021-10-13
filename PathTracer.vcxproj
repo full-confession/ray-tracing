@@ -150,6 +150,8 @@
     <ClInclude Include="Halton.hpp" />
     <ClInclude Include="Image.hpp" />
     <ClInclude Include="Importance.hpp" />
+    <ClInclude Include="Integrators\ForwardPathIntegrator.hpp" />
+    <ClInclude Include="Integrators\IIntegrator.hpp" />
     <ClInclude Include="json.hpp" />
     <ClInclude Include="Light.hpp" />
     <ClInclude Include="Math.hpp" />

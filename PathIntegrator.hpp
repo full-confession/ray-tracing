@@ -3,31 +3,16 @@
 #include "Scene.hpp"
 #include "Sampler.hpp"
 #include "MemoryAllocator.hpp"
+#include "Integrators/IIntegrator.hpp"
 
 #include <thread>
 #include <atomic>
 #include <mutex>
 #include <iostream>
 
+
 namespace Fc
 {
-    inline double pdf_w_to_pdf_p(SurfacePoint1 const& p1, SurfacePoint1 const& p2, Vector3 const& w_1_2, double pdf_w_1_2)
-    {
-        return pdf_w_1_2 * std::abs(Dot(p2.GetNormal(), w_1_2)) / LengthSqr(p2.GetPosition() - p1.GetPosition());
-    }
-
-    inline double G(SurfacePoint1 const& p1, SurfacePoint1 const& p2, Vector3 const& w_1_2)
-    {
-        return std::abs(Dot(p1.GetNormal(), w_1_2) * Dot(p2.GetNormal(), w_1_2)) / LengthSqr(p2.GetPosition() - p1.GetPosition());
-    }
-
-
-    class IIntegrator
-    {
-    public:
-        virtual void Render(Image& image, ICamera const& camera, Scene const& scene, ISampler& sampler, Bounds2i const& scissor) const = 0;
-    };
-
     class PathIntegrator : public IIntegrator
     {
     public:

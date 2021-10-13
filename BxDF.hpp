@@ -447,7 +447,7 @@ namespace Fc
             Vector3 wo{WorldToLocal(worldWo)};
             Vector3 wi{WorldToLocal(worldWi)};
 
-            return bxdfs_[index]->PDF(worldWo, worldWi);
+            return bxdfs_[index]->PDF(wo, wi);
         }
 
         BxDFFlags FlagsBxDF(int index) const
