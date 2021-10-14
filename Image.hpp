@@ -20,7 +20,7 @@ namespace Fc
         {
             int pixelCount{resolution.x * resolution.y};
             pixels_.resize(pixelCount);
-            lightPixels_.resize(pixelCount);
+            lightPixels_ = std::make_unique<LightPixel[]>(pixelCount);
         }
 
         Vector2i GetResolution() const { return resolution_; }
@@ -35,13 +35,30 @@ namespace Fc
         void AddLightSample(Vector2i const& pixelPosition, Vector3 const& sampleValue)
         {
             auto& lightPixel{GetLightPixel(pixelPosition)};
-            lightPixel.sampleValueSum += sampleValue;
-            lightSamples_ += 1;
+            
+            double expectedValue{lightPixel.sumRed.load(std::memory_order::memory_order_relaxed)};
+            double desiredValue{};
+            do
+            {
+                desiredValue = expectedValue + sampleValue.x;
+            } while(!lightPixel.sumRed.compare_exchange_weak(expectedValue, desiredValue, std::memory_order_relaxed));
+
+            expectedValue = lightPixel.sumGreen.load(std::memory_order_relaxed);
+            do
+            {
+                desiredValue = expectedValue + sampleValue.y;
+            } while(!lightPixel.sumGreen.compare_exchange_weak(expectedValue, desiredValue, std::memory_order_relaxed));
+
+            expectedValue = lightPixel.sumBlue.load(std::memory_order_relaxed);
+            do
+            {
+                desiredValue = expectedValue + sampleValue.z;
+            } while(!lightPixel.sumBlue.compare_exchange_weak(expectedValue, desiredValue, std::memory_order_relaxed));
         }
 
-        void AddLightSample()
+        void AddLightSampleCount(std::uint64_t count)
         {
-            lightSamples_ += 1;
+            lightSamples_.fetch_add(count, std::memory_order::memory_order_relaxed);
         }
 
         void Export(std::string const& filename, ImageFormat format)
@@ -66,7 +83,9 @@ namespace Fc
 
         struct LightPixel
         {
-            Vector3 sampleValueSum{};
+            std::atomic<double> sumRed{};
+            std::atomic<double> sumGreen{};
+            std::atomic<double> sumBlue{};
         };
 
         Pixel& GetPixel(Vector2i const& pixelPosition)
@@ -98,7 +117,10 @@ namespace Fc
 
                     if(lightSamples_ > 0)
                     {
-                        c += lightPixel.sampleValueSum / static_cast<double>(lightSamples_);
+                        double samples{static_cast<double>(lightSamples_.load(std::memory_order::memory_order_relaxed))};
+                        c.x += lightPixel.sumRed.load(std::memory_order_relaxed) / samples;
+                        c.y += lightPixel.sumGreen.load(std::memory_order_relaxed) / samples;
+                        c.z += lightPixel.sumBlue.load(std::memory_order_relaxed) / samples;
                     }
 
                     TVector3<std::uint8_t> srgbColor{RGBToSRGB(c)};
@@ -147,8 +169,8 @@ namespace Fc
 
         Vector2i resolution_{};
         std::vector<Pixel> pixels_{};
-        std::vector<LightPixel> lightPixels_{};
-        int lightSamples_{};
+        std::unique_ptr<LightPixel[]> lightPixels_{};
+        std::atomic<std::uint64_t> lightSamples_{};
     };
 
 

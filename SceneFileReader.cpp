@@ -5,6 +5,7 @@
 #include "json.hpp"
 #include "BDPT.hpp"
 #include "Integrators/ForwardPathIntegrator.hpp"
+#include "Integrators/BackwardPathIntegrator.hpp"
 #include <fstream>
 #include <exception>
 #include <filesystem>
@@ -91,19 +92,22 @@ namespace Fc
     {
         Path,
         Forward,
-        BDPT
+        BDPT,
+        Backward
     };
 
     NLOHMANN_JSON_SERIALIZE_ENUM(IntegratorType, {
         {IntegratorType::Path, "path"},
         {IntegratorType::BDPT, "BDPT"},
-        {IntegratorType::Forward, "forward"}
+        {IntegratorType::Forward, "forward"},
+        {IntegratorType::Backward, "backward"}
     });
 
     NLOHMANN_JSON_SERIALIZE_ENUM(Strategy, {
         {Strategy::Light, "light"},
         {Strategy::BSDF, "bsdf"},
-        {Strategy::MIS, "mis"}
+        {Strategy::MIS, "mis"},
+        {Strategy::Measure, "measure"}
     });
 
     enum class SamplerType
@@ -354,7 +358,32 @@ static void ReadForwardPathIntegrator(nlohmann::json const& json, SceneFile& sce
 
     sceneFile.integrator = std::make_unique<ForwardPathIntegrator>(tileSize, workerCount, samplesX, samplesY, maxVertices, strategy);
 }
+static void ReadBackwardPathIntegrator(nlohmann::json const& json, SceneFile& sceneFile)
+{
+    std::uint64_t sampleCount{1'000'000};
+    int workerCount{static_cast<int>(std::thread::hardware_concurrency())};
+    int maxVertices{10};
 
+    auto it{json.find("sampleCount")};
+    if(it != json.end())
+    {
+        it->get_to(sampleCount);
+    }
+
+    it = json.find("workerCount");
+    if(it != json.end())
+    {
+        it->get_to(workerCount);
+    }
+
+    it = json.find("maxVertices");
+    if(it != json.end())
+    {
+        it->get_to(maxVertices);
+    }
+
+    sceneFile.integrator = std::make_unique<BackwardPathIntegrator>(sampleCount, workerCount, maxVertices);
+}
 static void ReadIntegrator(nlohmann::json const& json, SceneFile& sceneFile)
 {
     IntegratorType integratorType{IntegratorType::Path};
@@ -383,6 +412,9 @@ static void ReadIntegrator(nlohmann::json const& json, SceneFile& sceneFile)
         break;
     case IntegratorType::Forward:
         ReadForwardPathIntegrator(*itIntegrator, sceneFile);
+        break;
+    case IntegratorType::Backward:
+        ReadBackwardPathIntegrator(*itIntegrator, sceneFile);
         break;
     case IntegratorType::Path:
     default:

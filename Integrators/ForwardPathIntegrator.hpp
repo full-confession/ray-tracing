@@ -10,7 +10,8 @@ namespace Fc
         BSDF,
         Light,
         Both,
-        MIS
+        MIS,
+        Measure
     };
 
     class ForwardPathIntegrator : public PixelIntegrator
@@ -35,24 +36,28 @@ namespace Fc
             {
                 sampler.BeginSample();
 
-                Ray3 ray{camera.GenerateRay(image, pixel, sampler.Get2D(), sampler.Get2D())};
-                Vector3 value{};
-                switch(strategy_)
+                if(strategy_ != Strategy::Measure)
                 {
-                case Strategy::BSDF:
-                    value = BSDFStrategy(ray, scene, sampler, memoryAllocator);
-                    break;
-                case Strategy::Light:
-                    value = LightStrategy(ray, scene, sampler, memoryAllocator);
-                    break;
-                case Strategy::MIS:
-                    value = MISStrategy(ray, scene, sampler, memoryAllocator);
-                    break;
-                default:
-                    break;
+                    Ray3 ray{camera.GenerateRay(image, pixel, sampler.Get2D(), sampler.Get2D())};
+                    Vector3 value{};
+                    switch(strategy_)
+                    {
+                    case Strategy::BSDF:
+                        value = BSDFStrategy(ray, scene, sampler, memoryAllocator);
+                        break;
+                    case Strategy::Light:
+                        value = LightStrategy(ray, scene, sampler, memoryAllocator);
+                        break;
+                    case Strategy::MIS:
+                        value = MISStrategy(ray, scene, sampler, memoryAllocator);
+                        break;
+                    }
+                    image.AddSample(pixel, value);
                 }
-
-                image.AddSample(pixel, value);
+                else
+                {
+                    Measure(image, pixel, camera, scene, sampler, memoryAllocator);
+                }
                 sampler.EndSample();
                 memoryAllocator.Clear();
             }
@@ -244,87 +249,40 @@ namespace Fc
             return L10;
         }
 
-        Vector3 MISLight(Ray3 const& ray, Scene const& scene, ISampler& sampler, MemoryAllocator& memoryAllocator) const
+        void Measure(Image& image, Vector2i const& pixel, ICamera const& camera, Scene const& scene, ISampler& sampler, MemoryAllocator& memoryAllocator) const
         {
-            Vector3 L10{};
-            SurfacePoint1 p0{ray.origin, {}};
-            Vector3 w01{ray.direction};
-            Vector3 beta{1.0, 1.0, 1.0};
+            Vector3 I{};
 
-            if(maxVertices_ == 1) return L10;
+            SurfacePoint1 p0{};
+            double pdf_p0{};
+            Vector3 w01{};
+            double pdf_w01{};
+            Vector3 importance{camera.SampleImportance(image, pixel, sampler.Get2D(), sampler.Get2D(), &p0, &pdf_p0, &w01, &pdf_w01)};
+
 
             SurfacePoint3 p1{};
-            if(!scene.Raycast(p0, w01, &p1)) return L10;
-            L10 += p1.EmittedRadiance(-w01);
-
-            if(maxVertices_ == 2) return L10;
-
-            for(int i{2}; i < maxVertices_; ++i)
+            if(scene.Raycast(p0, w01, &p1))
             {
                 BSDF bsdf{p1.EvaluateMaterial(memoryAllocator)};
-                int bxdfCount{bsdf.GetBxDFCount()};
-                int bxdfIndex{std::min(static_cast<int>(sampler.Get1D() * bxdfCount), bxdfCount - 1)};
-
                 Vector3 w12{};
                 double pdf_w12{};
-                Vector3 f012{bsdf.SampleBxDF(bxdfIndex, -w01, sampler.Get2D(), &w12, &pdf_w12)};
-                pdf_w12 /= bxdfCount;
+                bool delta{};
+                Vector3 f{bsdf.SampleWi(-w01, sampler.Get2D(), &w12, &pdf_w12, &delta)};
 
-                double cos12{std::abs(Dot(p1.GetShadingNormal(), w12))};
-
-                SurfacePoint3 p2{};
-                bool result{scene.Raycast(p1, w12, &p2)};
-
-                int lightCount{scene.GetLightCount()};
-                int lightIndex{std::min(static_cast<int>(sampler.Get1D() * lightCount), lightCount - 1)};
-                Light const* light{scene.GetLights()[lightIndex]};
-
-                // bsdf part
-                if(result && p2.GetLight() == light)
+                if(f.x != 0.0 || f.y != 0.0 || f.z != 0.0)
                 {
-                    Vector3 v2{beta * f012 * cos12 * p2.EmittedRadiance(-w12) / pdf_w12};
-                    double pdf_p2_p1{pdf_w_to_pdf_p(p1, p2, w12, pdf_w12)};
-                    double pdf_p2_L{p2.GetPDF()};
-                    double x{pdf_p2_L / pdf_p2_p1};
-                    double weight = 1.0 / (1.0 + x * x);
-                    L10 += v2 * weight * static_cast<double>(lightCount);
-                }
-
-
-                // light part
-                SurfacePoint2 pL{};
-                double pdf_pL{};
-                Vector3 w1L{};
-                Vector3 rL{light->SampleIncomingRadiance(p1.GetPosition(), sampler.Get2D(), &w1L, &pdf_pL, &pL)};
-
-                if(rL.x != 0.0 || rL.y != 0.0 || rL.z != 0.0)
-                {
-                    if(scene.Visibility(p1, pL))
+                    SurfacePoint3 p2{};
+                    if(scene.Raycast(p1, w12, &p2))
                     {
-                        Vector3 f01L{bsdf.Evaluate(-w01, w1L)};
-                        if(f01L.x != 0.0 || f01L.y != 0.0 || f01L.z != 0.0)
-                        {
-                            Vector3 vL{beta * f01L * G(p1, pL, w1L) * rL / pdf_pL};
-                            double pdf_wL{bsdf.PDFBxDF(bxdfIndex, -w01, w1L)};
-                            pdf_wL /= bxdfCount;
-                            double pdf_pL_p1{pdf_w_to_pdf_p(p1, pL, w1L, pdf_wL)};
-                            double x{pdf_pL_p1 / pdf_pL};
-                            double weight{1.0 / (1.0 + x * x)};
-
-                            L10 += vL * weight * static_cast<double>(lightCount);;
-                        }
+                        I += importance * std::abs(Dot(p0.GetNormal(), w01)) * f * std::abs(Dot(p1.GetNormal(), w12)) * p2.EmittedRadiance(-w12)
+                            / (pdf_p0 * pdf_w01 * pdf_w12);
                     }
                 }
-
-                if(!result) break;
-
-                beta *= f012 * cos12 / pdf_w12;
-                p1 = p2;
-                w01 = w12;
             }
 
-            return L10;
+            image.AddSample(pixel, I);
         }
+
 
         int xSamples_{};
         int ySamples_{};

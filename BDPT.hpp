@@ -175,7 +175,7 @@ namespace Fc
                         }
                         else
                         {
-                            image.AddLightSample();
+                            image.AddLightSampleCount(1);
                         }
 
                     }
