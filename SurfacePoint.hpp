@@ -5,117 +5,124 @@
 namespace Fc
 {
 
-    template <typename T>
-    class TSurfacePoint1
+    class ILight;
+    class ISurface;
+    class IMaterial;
+    class ICamera;
+
+    class SurfacePoint
     {
     public:
-        TSurfacePoint1() = default;
+        SurfacePoint() = default;
+        explicit SurfacePoint(Vector3 const position)
+            : position_{position}
+        { }
 
-        TSurfacePoint1(TVector3<T> const& position, TVector3<T> const& normal)
+        SurfacePoint(Vector3 const& position, Vector3 const& normal)
             : position_{position}, normal_{normal}
         { }
 
-        void SetPosition(TVector3<T> const& position)
+        void SetPosition(Vector3 const& position)
         {
             position_ = position;
         }
 
-        void SetNormal(TVector3<T> const& normal)
-        {
-            normal_ = normal;
-        }
-
-        TVector3<T> GetPosition() const
+        Vector3 const& Position() const
         {
             return position_;
         }
 
-        TVector3<T> GetNormal() const
+        void SetNormal(Vector3 const& normal)
+        {
+            normal_ = normal;
+        }
+
+        Vector3 const& Normal() const
         {
             return normal_;
         }
-    private:
-        TVector3<T> position_{};
-        TVector3<T> normal_{};
-    };
 
-    template <typename T>
-    class TSurfacePoint2 : public TSurfacePoint1<T>
-    {
-    public:
-        TSurfacePoint2() = default;
-
-        TSurfacePoint2(TVector3<T> const& position, TVector3<T> const& normal)
-            : TSurfacePoint1<T>{position, normal}
-        { }
-
-        TSurfacePoint2(TVector3<T> const& position, TVector3<T> const& normal, TVector3<T> const& tangent, TVector2<T> const& uv)
-            : TSurfacePoint1<T>{position, normal}, tangent_{tangent}, uv_{uv}
-        { }
-
-        void SetTangent(TVector3<T> const& tangent)
+        void SetTangent(Vector3 const& tangent)
         {
             tangent_ = tangent;
         }
 
-        void SetShadingNormal(TVector3<T> const& shadingNormal)
-        {
-            shadingNormal_ = shadingNormal;
-        }
-
-        void SetShadingTangent(TVector3<T> const& shadingTangent)
-        {
-            shadingTangent_ = shadingTangent;
-        }
-
-        void SetUV(TVector2<T> const& uv)
-        {
-            uv_ = uv;
-        }
-
-        void SetPDF(T pdf)
-        {
-            pdf_ = pdf;
-        }
-
-        TVector3<T> GetTangent() const
+        Vector3 const& Tangent() const
         {
             return tangent_;
         }
 
-        TVector3<T> GetShadingNormal() const
+        void SetShadingNormal(Vector3 const& shadingNormal)
+        {
+            shadingNormal_ = shadingNormal;
+        }
+
+        Vector3 const& ShadingNormal() const
         {
             return shadingNormal_;
         }
 
-        TVector3<T> GetShadingTangent() const
+        void SetShadingTangent(Vector3 const& shadingTangent)
+        {
+            shadingTangent_ = shadingTangent;
+        }
+
+        Vector3 const& ShadingTangent() const
         {
             return shadingTangent_;
         }
 
-        TVector2<T> GetUV() const
+        void SetLight(ILight const* light)
         {
-            return uv_;
+            light_ = light;
         }
 
-        T GetPDF() const
+        ILight const* Light() const
         {
-            return pdf_;
+            return light_;
+        }
+
+        void SetSurface(ISurface const* surface)
+        {
+            surface_ = surface;
+        }
+
+        ISurface const* Surface() const
+        {
+            return surface_;
+        }
+
+        void SetMaterial(IMaterial const* material)
+        {
+            material_ = material;
+        }
+
+        IMaterial const* Material() const
+        {
+            return material_;
+        }
+
+        void SetCamera(ICamera const* camera)
+        {
+            camera_ = camera;
+        }
+
+        ICamera const* Camera() const
+        {
+            return camera_;
         }
 
     private:
-        TVector3<T> tangent_{};
-        TVector3<T> shadingNormal_{};
-        TVector3<T> shadingTangent_{};
-        TVector2<T> uv_{};
-        T pdf_{};
+        Vector3 position_{};
+        Vector3 normal_{};
+        Vector3 tangent_{};
+
+        Vector3 shadingNormal_{};
+        Vector3 shadingTangent_{};
+
+        ILight const* light_{};
+        ISurface const* surface_{};
+        IMaterial const* material_{};
+        ICamera const* camera_{};
     };
-
-
-    using SurfacePoint1 = TSurfacePoint1<double>;
-    using SurfacePoint1f = TSurfacePoint1<float>;
-
-    using SurfacePoint2 = TSurfacePoint2<double>;
-    using SurfacePoint2f = TSurfacePoint2<float>;
-
 }

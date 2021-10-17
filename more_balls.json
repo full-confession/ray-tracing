@@ -13,14 +13,14 @@
         "fov": 45.0
     },
     "integrator": {
-        "type": "backward",
-        "samplesX": 32,
-        "samplesY": 32,
+        "type": "forward",
+        "samplesX": 100,
+        "samplesY": 100,
         "maxVertices": 10,
         "tileSize": [16, 16],
         "workerCount": 16,
-        "strategy": "bsdf",
-        "sampleCount": 368640000
+        "strategy": "mis",
+        "sampleCount": 360000000
     },
     "sampler": {
         "type": "stratified",

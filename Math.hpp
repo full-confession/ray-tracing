@@ -123,6 +123,11 @@ namespace Fc
             this->z = tz;
             return *this;
         }
+
+        operator bool() const
+        {
+            return x != 0.0 || y != 0.0 || z != 0.0;
+        }
     };
 
     template <typename T>

@@ -1,7 +1,7 @@
 #pragma once
 #include "Math.hpp"
 #include "SurfacePoint.hpp"
-#include "AffineTransform.hpp"
+#include "Transform.hpp"
 #include <vector>
 #include <fstream>
 namespace Fc
@@ -118,9 +118,11 @@ namespace Fc
                     if(lightSamples_ > 0)
                     {
                         double samples{static_cast<double>(lightSamples_.load(std::memory_order::memory_order_relaxed))};
+                        samples /= static_cast<double>(resolution_.x) * static_cast<double>(resolution_.y);
                         c.x += lightPixel.sumRed.load(std::memory_order_relaxed) / samples;
                         c.y += lightPixel.sumGreen.load(std::memory_order_relaxed) / samples;
                         c.z += lightPixel.sumBlue.load(std::memory_order_relaxed) / samples;
+                       
                     }
 
                     TVector3<std::uint8_t> srgbColor{RGBToSRGB(c)};

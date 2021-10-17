@@ -5,23 +5,23 @@
 namespace Fc
 {
 
-    class AffineTransform
+    class Transform
     {
     public:
-        AffineTransform() = default;
+        Transform() = default;
 
     private:
-        AffineTransform(Matrix4x4 const& t, Matrix4x4 const& invT)
+        Transform(Matrix4x4 const& t, Matrix4x4 const& invT)
             :t_{t}, invT_{invT}
         { }
 
     public:
-        static AffineTransform Translation(Vector3 const& position)
+        static Transform Translation(Vector3 const& position)
         {
             return {Matrix4x4::Translate(position), Matrix4x4::Translate(-position)};
         }
 
-        static AffineTransform RotationDeg(Vector3 const& rotation)
+        static Transform RotationDeg(Vector3 const& rotation)
         {
             return {
                 Matrix4x4::RotateY(Math::DegToRad(rotation.y)) * Matrix4x4::RotateX(Math::DegToRad(rotation.x)) * Matrix4x4::RotateZ(Math::DegToRad(rotation.z)),
@@ -29,12 +29,12 @@ namespace Fc
             };
         }
 
-        static AffineTransform Scale(Vector3 const& scaling)
+        static Transform Scale(Vector3 const& scaling)
         {
             return {Fc::Matrix4x4::Scale(scaling), Fc::Matrix4x4::Scale(1.0 / scaling)};
         }
 
-        static AffineTransform TranslationRotationDeg(Vector3 const& position, Vector3 const& rotation)
+        static Transform TranslationRotationDeg(Vector3 const& position, Vector3 const& rotation)
         {
             return {
                 Matrix4x4::Translate(position) * Matrix4x4::RotateY(Math::DegToRad(rotation.y)) * Matrix4x4::RotateX(Math::DegToRad(rotation.x)) * Matrix4x4::RotateZ(Math::DegToRad(rotation.z)),
@@ -42,7 +42,7 @@ namespace Fc
             };
         }
 
-        static AffineTransform TranslationRotationDegScale(Vector3 const& position, Vector3 const& rotation, Vector3 const& scale)
+        static Transform TranslationRotationDegScale(Vector3 const& position, Vector3 const& rotation, Vector3 const& scale)
         {
             return {
                 Matrix4x4::Translate(position) * Matrix4x4::RotateY(Math::DegToRad(rotation.y)) * Matrix4x4::RotateX(Math::DegToRad(rotation.x)) * Matrix4x4::RotateZ(Math::DegToRad(rotation.z)) * Matrix4x4::Scale(scale),

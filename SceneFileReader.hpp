@@ -1,8 +1,9 @@
 #pragma once
 #include "Sampler.hpp"
-#include "Camera.hpp"
-#include "PathIntegrator.hpp"
+#include "ICamera.hpp"
+#include "Integrators/IIntegrator.hpp"
 #include "AssetManager.hpp"
+#include "Scene/IScene.hpp"
 #include <string>
 namespace Fc
 {
@@ -14,7 +15,9 @@ namespace Fc
         std::unique_ptr<ICamera> camera{};
         std::unique_ptr<IIntegrator> integrator{};
         std::unique_ptr<ISampler> sampler{};
-        std::unique_ptr<Scene> scene{};
+        std::unique_ptr<IScene> scene{};
+
+        std::vector<std::unique_ptr<IMaterial>> materials{};
 
         std::string outputName{};
         ImageFormat outputFormat{};

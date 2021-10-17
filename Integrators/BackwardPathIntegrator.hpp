@@ -13,10 +13,14 @@ namespace Fc
     public:
         BackwardPathIntegrator(std::uint64_t sampleCount, int workerCount, int maxVertices)
             : sampleCount_{sampleCount}, workerCount_{workerCount}, maxVertices_{maxVertices}
-        { }
-
-        virtual void Render(Image& image, ICamera const& camera, Scene const& scene, ISampler& sampler, Bounds2i const& scissor) const override
         {
+        }
+
+        virtual void Render(Image& image, ICamera const& camera, IScene const& scene, ISampler& sampler, Bounds2i const& scissor) const override
+        {
+            //filmSolidAngle_ = camera.FilmAreaSolidAngle(image, 16);
+
+
             std::vector<std::thread> workers{};
 
             std::atomic<std::uint64_t> nextSample{};
@@ -79,53 +83,59 @@ namespace Fc
             }
         };
     private:
-        void Sample(Image& image, ICamera const& camera, Scene const& scene, ISampler& sampler, MemoryAllocator& memoryAllocator) const
+        void Sample(Image& image, ICamera const& camera, IScene const& scene, ISampler& sampler, MemoryAllocator& memoryAllocator) const
         {
-            int lightCount{scene.GetLightCount()};
-            int lightIndex{std::min(static_cast<int>(sampler.Get1D() * lightCount), lightCount - 1)};
-            Light const* light{scene.GetLights()[lightIndex]};
+            //double x{360000.0f};
 
-            SurfacePoint2 p0{};
-            double pdf_p0{};
+            int lightCount{scene.LightCount()};
+            int lightIndex{std::min(static_cast<int>(sampler.Get1D() * lightCount), lightCount - 1)};
+            ILight const* light{scene.Light(lightIndex)};
+
+            SurfacePoint p0{};
+            double pdf_p0{light->SamplePoint(sampler.Get2D(), &p0)};
             Vector3 w01{};
-            double pdf_w01{};
-            Vector3 radiance{light->SampleRadiance(sampler.Get2D(), sampler.Get2D(), &p0, &pdf_p0, &w01, &pdf_w01)};
+            double pdf_w01{light->SampleDirection(p0, sampler.Get2D(), &w01)};
+            Vector3 radiance{light->EmittedRadiance(p0, w01)};
             pdf_p0 /= lightCount;
 
             Vector3 beta{1.0, 1.0, 1.0};
 
             // 2 vertices
             {
-                SurfacePoint1 pC{};
+                SurfacePoint pC{};
                 double pdf_pC{};
                 Vector2i pixel{};
-                Vector3 importance{camera.SampleIncomingImportance(image, p0.GetPosition(), sampler.Get2D(), &pixel, &pC, &pdf_pC)};
+                Vector3 importance{camera.SamplePoint(image, p0.Position(), sampler.Get2D(), &pixel, &pC, &pdf_pC)};
 
                 if((importance.x != 0.0 || importance.y != 0.0 || importance.z != 0.0) && scene.Visibility(p0, pC))
                 {
-                    Vector3 w0C{Normalize(pC.GetPosition() - p0.GetPosition())};
+                    Vector3 w0C{Normalize(pC.Position() - p0.Position())};
                     Vector3 I{beta * light->EmittedRadiance(p0, w0C) * G(p0, pC, w0C) * importance / (pdf_p0 * pdf_pC)};
+
                     image.AddLightSample(pixel, I);
                 }
             }
 
-            SurfacePoint3 p1{};
+            if(maxVertices_ == 2) return;
+
+            SurfacePoint p1{};
             if(!scene.Raycast(p0, w01, &p1)) return;
-            beta *= std::abs(Dot(p0.GetNormal(), w01)) * radiance / (pdf_w01 * pdf_p0);
-            BSDF bsdf{p1.EvaluateMaterial(memoryAllocator)};
+            beta *= std::abs(Dot(p0.Normal(), w01)) * radiance / (pdf_w01 * pdf_p0);
+            BSDF bsdf{p1.Material()->EvaluateAtPoint(p1, memoryAllocator)};
 
             // 3 vertices
             {
-                SurfacePoint1 pC{};
+                SurfacePoint pC{};
                 double pdf_pC{};
                 Vector2i pixel{};
-                Vector3 importance{camera.SampleIncomingImportance(image, p1.GetPosition(), sampler.Get2D(), &pixel, &pC, &pdf_pC)};
+                Vector3 importance{camera.SamplePoint(image, p1.Position(), sampler.Get2D(), &pixel, &pC, &pdf_pC)};
 
                 if((importance.x != 0.0 || importance.y != 0.0 || importance.z != 0.0) && scene.Visibility(p1, pC))
                 {
-                    Vector3 w1C{Normalize(pC.GetPosition() - p1.GetPosition())};
+                    Vector3 w1C{Normalize(pC.Position() - p1.Position())};
                     Vector3 f{bsdf.Evaluate(w1C, -w01)};
                     Vector3 I{beta * f * G(p1, pC, w1C) * importance / pdf_pC};
+
                     image.AddLightSample(pixel, I);
                 }
             }
@@ -138,22 +148,23 @@ namespace Fc
                 bool delta{};
                 Vector3 f012{bsdf.SampleWi(-w01, sampler.Get2D(), &w12, &pdf_w12, &delta)};
 
-                SurfacePoint3 p2{};
+                SurfacePoint p2{};
                 if(!scene.Raycast(p1, w12, &p2)) return;
 
-                beta *= f012 * std::abs(Dot(p1.GetNormal(), w12)) / pdf_w12;
-                bsdf = p2.EvaluateMaterial(memoryAllocator);
+                beta *= f012 * std::abs(Dot(p1.Normal(), w12)) / pdf_w12;
+                bsdf = p2.Material()->EvaluateAtPoint(p2, memoryAllocator);
 
-                SurfacePoint1 pC{};
+                SurfacePoint pC{};
                 double pdf_pC{};
                 Vector2i pixel{};
-                Vector3 importance{camera.SampleIncomingImportance(image, p2.GetPosition(), sampler.Get2D(), &pixel, &pC, &pdf_pC)};
+                Vector3 importance{camera.SamplePoint(image, p2.Position(), sampler.Get2D(), &pixel, &pC, &pdf_pC)};
 
                 if((importance.x != 0.0 || importance.y != 0.0 || importance.z != 0.0) && scene.Visibility(p2, pC))
                 {
-                    Vector3 w2C{Normalize(pC.GetPosition() - p2.GetPosition())};
+                    Vector3 w2C{Normalize(pC.Position() - p2.Position())};
                     Vector3 f{bsdf.Evaluate(w2C, -w12)};
                     Vector3 I{beta * f * G(p2, pC, w2C) * importance / pdf_pC};
+
                     image.AddLightSample(pixel, I);
                 }
 
@@ -165,5 +176,6 @@ namespace Fc
         std::uint64_t sampleCount_{};
         int workerCount_{};
         int maxVertices_{};
+        mutable double filmSolidAngle_{};
     };
 }

@@ -1,6 +1,6 @@
 #pragma once
 #include "IIntegrator.hpp"
-
+#include "../Materials/IMaterial.hpp"
 
 
 namespace Fc
@@ -24,13 +24,8 @@ namespace Fc
 
     protected:
         virtual void RenderPixel(Image& image, Vector2i const& pixel, ICamera const& camera,
-            Scene const& scene, ISampler& sampler, MemoryAllocator& memoryAllocator) const override
+            IScene const& scene, ISampler& sampler, MemoryAllocator& memoryAllocator) const override
         {
-            if(pixel.x == 240 && pixel.y == 335)
-            {
-                int x = 0;
-            }
-
             sampler.BeginPixel(xSamples_, ySamples_, maxVertices_ - 1, 2 + (maxVertices_ - 1));
             for(int k{}; k < xSamples_ * ySamples_; ++k)
             {
@@ -56,7 +51,8 @@ namespace Fc
                 }
                 else
                 {
-                    Measure(image, pixel, camera, scene, sampler, memoryAllocator);
+                    image.AddSample(pixel, Measure(image, pixel, camera, scene, sampler, memoryAllocator));
+                    //image.AddLightSampleCount(1);
                 }
                 sampler.EndSample();
                 memoryAllocator.Clear();
@@ -65,22 +61,25 @@ namespace Fc
         }
 
     private:
-        Vector3 BSDFStrategy(Ray3 const& ray, Scene const& scene, ISampler& sampler, MemoryAllocator& memoryAllocator) const
+        Vector3 BSDFStrategy(Ray3 const& ray, IScene const& scene, ISampler& sampler, MemoryAllocator& memoryAllocator) const
         {
             Vector3 L10{};
             if(maxVertices_ == 1) return L10;
 
-            SurfacePoint1 p0{ray.origin, {}};
+            SurfacePoint p0{ray.origin};
             Vector3 w01{ray.direction};
             Vector3 beta{1.0, 1.0, 1.0};
 
-            SurfacePoint3 p1{};
+            SurfacePoint p1{};
             if(!scene.Raycast(p0, w01, &p1)) return L10;
-            L10 += p1.EmittedRadiance(-w01);
+            if(p1.Light() != nullptr)
+            {
+                L10 += p1.Light()->EmittedRadiance(p1, -w01);
+            }
 
             for(int i{2}; i < maxVertices_; ++i)
             {
-                BSDF bsdf{p1.EvaluateMaterial(memoryAllocator)};
+                BSDF bsdf{p1.Material()->EvaluateAtPoint(p1, memoryAllocator)};
                 int bxdfCount{bsdf.GetBxDFCount()};
                 int bxdfIndex{std::min(static_cast<int>(sampler.Get1D() * bxdfCount), bxdfCount - 1)};
 
@@ -89,11 +88,14 @@ namespace Fc
                 Vector3 f012{bsdf.SampleBxDF(bxdfIndex, -w01, sampler.Get2D(), &w12, &pdf_w12)};
                 pdf_w12 /= bxdfCount;
 
-                beta *= f012 * std::abs(Dot(p1.GetShadingNormal(), w12)) / pdf_w12;
+                beta *= f012 * std::abs(Dot(p1.ShadingNormal(), w12)) / pdf_w12;
 
-                SurfacePoint3 p2{};
+                SurfacePoint p2{};
                 if(!scene.Raycast(p1, w12, &p2)) break;
-                L10 += beta * p2.EmittedRadiance(-w12);
+                if(p2.Light() != nullptr)
+                {
+                    L10 += beta * p2.Light()->EmittedRadiance(p2, -w12);
+                }
 
                 p1 = p2;
                 w01 = w12;
@@ -102,22 +104,25 @@ namespace Fc
             return L10;
         }
 
-        Vector3 LightStrategy(Ray3 const& ray, Scene const& scene, ISampler& sampler, MemoryAllocator& memoryAllocator) const
+        Vector3 LightStrategy(Ray3 const& ray, IScene const& scene, ISampler& sampler, MemoryAllocator& memoryAllocator) const
         {
             Vector3 L10{};
-            SurfacePoint1 p0{ray.origin, {}};
+            SurfacePoint p0{ray.origin};
             Vector3 w01{ray.direction};
             Vector3 beta{1.0, 1.0, 1.0};
 
             if(maxVertices_ == 1) return L10;
 
-            SurfacePoint3 p1{};
+            SurfacePoint p1{};
             if(!scene.Raycast(p0, w01, &p1)) return L10;
-            L10 += p1.EmittedRadiance(-w01);
+            if(p1.Light() != nullptr)
+            {
+                L10 += p1.Light()->EmittedRadiance(p1, -w01);
+            }
 
             if(maxVertices_ == 2) return L10;
 
-            BSDF bsdf{p1.EvaluateMaterial(memoryAllocator)};
+            BSDF bsdf{p1.Material()->EvaluateAtPoint(p1, memoryAllocator)};
             L10 += DirectLighting(p1, bsdf, -w01, beta, scene, sampler);
 
             for(int i{3}; i < maxVertices_; ++i)
@@ -130,12 +135,12 @@ namespace Fc
                 Vector3 f012{bsdf.SampleBxDF(bxdfIndex, -w01, sampler.Get2D(), &w12, &pdf_w12)};
                 pdf_w12 /= bxdfCount;
 
-                beta *= f012 * std::abs(Dot(p1.GetShadingNormal(), w12)) / pdf_w12;
+                beta *= f012 * std::abs(Dot(p1.ShadingNormal(), w12)) / pdf_w12;
 
-                SurfacePoint3 p2{};
+                SurfacePoint p2{};
                 if(!scene.Raycast(p1, w12, &p2)) break;
 
-                bsdf = p2.EvaluateMaterial(memoryAllocator);
+                bsdf = p2.Material()->EvaluateAtPoint(p2, memoryAllocator);
                 L10 += DirectLighting(p2, bsdf, -w12, beta, scene, sampler);
 
                 p1 = p2;
@@ -145,17 +150,17 @@ namespace Fc
             return L10;
         }
 
-        Vector3 DirectLighting(SurfacePoint1 const& p1, BSDF const& bsdf, Vector3 const& w10, Vector3 const& beta, Scene const& scene, ISampler& sampler) const
+        Vector3 DirectLighting(SurfacePoint const& p1, BSDF const& bsdf, Vector3 const& w10, Vector3 const& beta, IScene const& scene, ISampler& sampler) const
         {
-            int lightCount{scene.GetLightCount()};
+            int lightCount{scene.LightCount()};
             int lightIndex{std::min(static_cast<int>(sampler.Get1D() * lightCount), lightCount - 1)};
-            Light const* light{scene.GetLights()[lightIndex]};
+            ILight const* light{scene.Light(lightIndex)};
 
 
-            SurfacePoint2 p2{};
-            double pdf_p2{};
-            Vector3 w12{};
-            Vector3 radiance{light->SampleIncomingRadiance(p1.GetPosition(), sampler.Get2D(), &w12, &pdf_p2, &p2)};
+            SurfacePoint p2{};
+            double pdf_p2{light->SamplePoint(p1.Position(), sampler.Get2D(), &p2)};
+            Vector3 w12{Normalize(p2.Position() - p1.Position())};
+            Vector3 radiance{light->EmittedRadiance(p2, -w12)};
             pdf_p2 /= lightCount;
             if(radiance.x == 0.0 && radiance.y == 0.0 && radiance.z == 0.0) return {};
             if(!scene.Visibility(p1, p2)) return {};
@@ -166,24 +171,27 @@ namespace Fc
             return beta * f012 * G(p1, p2, w12) * radiance / pdf_p2;
         }
 
-        Vector3 MISStrategy(Ray3 const& ray, Scene const& scene, ISampler& sampler, MemoryAllocator& memoryAllocator) const
+        Vector3 MISStrategy(Ray3 const& ray, IScene const& scene, ISampler& sampler, MemoryAllocator& memoryAllocator) const
         {
             Vector3 L10{};
-            SurfacePoint1 p0{ray.origin, {}};
+            SurfacePoint p0{ray.origin, {}};
             Vector3 w01{ray.direction};
             Vector3 beta{1.0, 1.0, 1.0};
 
             if(maxVertices_ == 1) return L10;
 
-            SurfacePoint3 p1{};
+            SurfacePoint p1{};
             if(!scene.Raycast(p0, w01, &p1)) return L10;
-            L10 += p1.EmittedRadiance(-w01);
+            if(p1.Light() != nullptr)
+            {
+                L10 += p1.Light()->EmittedRadiance(p1, -w01);
+            }
 
             if(maxVertices_ == 2) return L10;
 
             for(int i{2}; i < maxVertices_; ++i)
             {
-                BSDF bsdf{p1.EvaluateMaterial(memoryAllocator)};
+                BSDF bsdf{p1.Material()->EvaluateAtPoint(p1, memoryAllocator)};
                 int bxdfCount{bsdf.GetBxDFCount()};
                 int bxdfIndex{std::min(static_cast<int>(sampler.Get1D() * bxdfCount), bxdfCount - 1)};
 
@@ -192,19 +200,19 @@ namespace Fc
                 Vector3 f012{bsdf.SampleBxDF(bxdfIndex, -w01, sampler.Get2D(), &w12, &pdf_w12)};
                 pdf_w12 /= bxdfCount;
 
-                double cos12{std::abs(Dot(p1.GetShadingNormal(), w12))};
+                double cos12{std::abs(Dot(p1.ShadingNormal(), w12))};
 
-                SurfacePoint3 p2{};
+                SurfacePoint p2{};
                 bool result{scene.Raycast(p1, w12, &p2)};
 
-                int lightCount{scene.GetLightCount()};
+                int lightCount{scene.LightCount()};
 
                 // bsdf part
-                if(result && p2.GetLight() != nullptr)
+                if(result && p2.Light() != nullptr)
                 {
-                    Vector3 v2{beta * f012 * cos12 * p2.EmittedRadiance(-w12) / pdf_w12};
-                    double pdf_p2_L{p2.GetPDF() / lightCount};
-                    double x{pdf_p2_L * LengthSqr(p2.GetPosition() - p1.GetPosition()) / (pdf_w12 * std::abs(Dot(p2.GetNormal(), w12)))};
+                    Vector3 v2{beta * f012 * cos12 * p2.Light()->EmittedRadiance(p2, -w12) / pdf_w12};
+                    double pdf_p2_L{p2.Light()->ProbabilityPoint(p2) / lightCount};
+                    double x{pdf_p2_L * LengthSqr(p2.Position() - p1.Position()) / (pdf_w12 * std::abs(Dot(p2.Normal(), w12)))};
 
                     double weight = 1.0 / (1.0 + x);
                     L10 += v2 * weight;
@@ -213,12 +221,12 @@ namespace Fc
 
                 // light part
                 int lightIndex{std::min(static_cast<int>(sampler.Get1D() * lightCount), lightCount - 1)};
-                Light const* light{scene.GetLights()[lightIndex]};
+                ILight const* light{scene.Light(lightIndex)};
 
-                SurfacePoint2 pL{};
-                double pdf_pL{};
-                Vector3 w1L{};
-                Vector3 rL{light->SampleIncomingRadiance(p1.GetPosition(), sampler.Get2D(), &w1L, &pdf_pL, &pL)};
+                SurfacePoint pL{};
+                double pdf_pL{light->SamplePoint(p1.Position(), sampler.Get2D(), &pL)};
+                Vector3 w1L{Normalize(pL.Position() - p1.Position())};
+                Vector3 rL{light->EmittedRadiance(pL, -w1L)};
                 pdf_pL /= lightCount;
 
                 if(rL.x != 0.0 || rL.y != 0.0 || rL.z != 0.0)
@@ -231,7 +239,7 @@ namespace Fc
                             Vector3 vL{beta * f01L * G(p1, pL, w1L) * rL / pdf_pL};
                             double pdf_w1L{bsdf.PDFBxDF(bxdfIndex, -w01, w1L)};
                             pdf_w1L /= bxdfCount;
-                            double x{pdf_w1L * std::abs(Dot(pL.GetNormal(), w1L)) / (pdf_pL * LengthSqr(pL.GetPosition() - p1.GetPosition()))};
+                            double x{pdf_w1L * std::abs(Dot(pL.Normal(), w1L)) / (pdf_pL * LengthSqr(pL.Position() - p1.Position()))};
                             double weight{1.0 / (1.0 + x)};
 
                             L10 += vL * weight;
@@ -249,38 +257,53 @@ namespace Fc
             return L10;
         }
 
-        void Measure(Image& image, Vector2i const& pixel, ICamera const& camera, Scene const& scene, ISampler& sampler, MemoryAllocator& memoryAllocator) const
+        Vector3 Measure(Image& image, Vector2i const& pixel, ICamera const& camera, IScene const& scene, ISampler& sampler, MemoryAllocator& memoryAllocator) const
         {
+            if(maxVertices_ == 1) return {};
             Vector3 I{};
 
-            SurfacePoint1 p0{};
+            SurfacePoint p0{};
             double pdf_p0{};
             Vector3 w01{};
             double pdf_w01{};
-            Vector3 importance{camera.SampleImportance(image, pixel, sampler.Get2D(), sampler.Get2D(), &p0, &pdf_p0, &w01, &pdf_w01)};
 
+            Vector3 importance{camera.SamplePointAndDirection(image, pixel, sampler.Get2D(), sampler.Get2D(), &p0, &pdf_p0, &w01, &pdf_w01)};
+            Vector3 beta{1.0 / Vector3{pdf_p0}};
 
-            SurfacePoint3 p1{};
-            if(scene.Raycast(p0, w01, &p1))
+            SurfacePoint p1{};
+            if(!scene.Raycast(p0, w01, &p1)) return {};
+
+            beta *= importance * std::abs(Dot(p0.Normal(), w01)) / pdf_w01;
+            if(p1.Light() != nullptr)
             {
-                BSDF bsdf{p1.EvaluateMaterial(memoryAllocator)};
-                Vector3 w12{};
-                double pdf_w12{};
-                bool delta{};
-                Vector3 f{bsdf.SampleWi(-w01, sampler.Get2D(), &w12, &pdf_w12, &delta)};
-
-                if(f.x != 0.0 || f.y != 0.0 || f.z != 0.0)
-                {
-                    SurfacePoint3 p2{};
-                    if(scene.Raycast(p1, w12, &p2))
-                    {
-                        I += importance * std::abs(Dot(p0.GetNormal(), w01)) * f * std::abs(Dot(p1.GetNormal(), w12)) * p2.EmittedRadiance(-w12)
-                            / (pdf_p0 * pdf_w01 * pdf_w12);
-                    }
-                }
+                I += beta * p1.Light()->EmittedRadiance(p1, -w01);
             }
 
-            image.AddSample(pixel, I);
+            for(int i{2}; i < maxVertices_; ++i)
+            {
+                BSDF bsdf{p1.Material()->EvaluateAtPoint(p1, memoryAllocator)};
+                int bxdfCount{bsdf.GetBxDFCount()};
+                int bxdfIndex{std::min(static_cast<int>(sampler.Get1D() * bxdfCount), bxdfCount - 1)};
+
+                Vector3 w12{};
+                double pdf_w12{};
+                Vector3 f012{bsdf.SampleBxDF(bxdfIndex, -w01, sampler.Get2D(), &w12, &pdf_w12)};
+                pdf_w12 /= bxdfCount;
+
+                beta *= f012 * std::abs(Dot(p1.ShadingNormal(), w12)) / pdf_w12;
+
+                SurfacePoint p2{};
+                if(!scene.Raycast(p1, w12, &p2)) break;
+                if(p2.Light() != nullptr)
+                {
+                    I += beta * p2.Light()->EmittedRadiance(p2, -w12);
+                }
+
+                p1 = p2;
+                w01 = w12;
+            }
+
+            return I;
         }
 
 

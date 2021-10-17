@@ -5,80 +5,127 @@
 
 namespace Fc
 {
+
     class MemoryAllocator
     {
     public:
-        MemoryAllocator(std::size_t pageSize)
-            : pageSize_{pageSize}
+        MemoryAllocator(std::size_t defaultPageSize)
+            : defaultPageSize_{defaultPageSize}
+        { }
+
+
+        std::byte* Allocate(std::size_t count)
         {
-            activePage_ = std::unique_ptr<std::byte[]>(new std::byte[pageSize_]);
-            activePageOffset_ = activePage_.get();
-            activePageFreeSize_ = pageSize_;
+            count = (count + 15) & (~15);
+
+            if(activePageOffset_ + count > activePage_.Size())
+            {
+                activePageOffset_ = 0;
+                if(activePage_.Size() != 0)
+                {
+                    usedPages_.push_back(std::move(activePage_));
+                }
+
+
+                std::size_t freePageIndex{};
+                for(; freePageIndex < freePages_.size(); ++freePageIndex)
+                {
+                    if(freePages_[freePageIndex].Size() >= count)
+                    {
+                        break;
+                    }
+                }
+
+                if(freePageIndex != freePages_.size())
+                {
+                    activePage_ = std::move(freePages_[freePageIndex]);
+                    std::swap(freePages_.back(), freePages_[freePageIndex]);
+                    freePages_.pop_back();
+                }
+                else
+                {
+                    activePage_ = Page{std::max(count, defaultPageSize_)};
+                }
+            }
+
+            std::byte* p{activePage_.Bytes() + activePageOffset_};
+            activePageOffset_ += count;
+            return p;
+        }
+
+        template <typename T>
+        T* Allocate()
+        {
+            std::byte* bytes{Allocate(sizeof(T))};
+            return reinterpret_cast<T*>(bytes);
+        }
+
+        template <typename T, std::enable_if_t<std::is_array_v<T> && std::extent_v<T> == 0, bool> = true>
+        std::remove_extent_t<T>* Allocate(std::size_t size)
+        {
+            std::byte* bytes{Allocate(sizeof(std::remove_extent_t<T>) * size)};
+            return reinterpret_cast<std::remove_extent_t<T>*>(bytes);
         }
 
         template <typename T, typename... Args>
         T* Emplace(Args&& ...args)
         {
-            assert(sizeof(T) <= pageSize_);
-
-            if(std::align(alignof(T), sizeof(T), activePageOffset_, activePageFreeSize_))
-            {
-                T* allocation{new(activePageOffset_) T{std::forward<Args>(args)...}};
-                activePageOffset_ = static_cast<std::byte*>(activePageOffset_) + sizeof(T);
-                activePageFreeSize_ -= sizeof(T);
-
-                return allocation;
-            }
-            else
-            {
-                usedPages_.emplace_back(activePage_.release());
-
-                if(!freePages_.empty())
-                {
-                    activePage_.reset(freePages_.back().release());
-                    freePages_.pop_back();
-                }
-                else
-                {
-                    activePage_ = std::unique_ptr<std::byte[]>(new std::byte[pageSize_]);
-                }
-                activePageOffset_ = activePage_.get();
-                activePageFreeSize_ = pageSize_;
-
-                // -------
-
-                T* allocation{new(activePageOffset_) T{std::forward<Args>(args)...}};
-                activePageOffset_ = static_cast<std::byte*>(activePageOffset_) + sizeof(T);
-                activePageFreeSize_ -= sizeof(T);
-
-                return allocation;
-            }
+            std::byte* bytes{Allocate(sizeof(T))};
+            T* object{new(bytes) T{std::forward<Args>(args)...}};
+            return object;
         }
 
 
         void Clear()
         {
-            activePageOffset_ = activePage_.get();
-            activePageFreeSize_ = pageSize_;
+            activePageOffset_ = 0;
+            if(activePage_.Size() != 0)
+            {
+                freePages_.push_back(std::move(activePage_));
+            }
 
             for(auto& usedPage : usedPages_)
             {
-                freePages_.emplace_back(usedPage.release());
+                freePages_.emplace_back(std::move(usedPage));
             }
             usedPages_.clear();
         }
 
 
     private:
-        std::vector<std::unique_ptr<std::byte[]>> freePages_{};
-        std::vector<std::unique_ptr<std::byte[]>> usedPages_{};
+        std::size_t defaultPageSize_{};
+        class Page
+        {
+        public:
+            Page() = default;
+            explicit Page(std::size_t size) : size_{size}, memory_{std::make_unique<std::byte[]>(size)}
+            { }
 
+            Page(Page&& other) : size_{other.size_}, memory_{std::move(other.memory_)}
+            {
+                other.size_ = 0;
+            }
 
-        std::unique_ptr<std::byte[]> activePage_{};
+            Page& operator=(Page&& other)
+            {
+                size_ = other.size_;
+                other.size_ = 0;
+                memory_ = std::move(other.memory_);
+                return *this;
+            }
 
-        void* activePageOffset_{};
-        std::size_t activePageFreeSize_{};
+            std::size_t Size() const { return size_; }
+            std::byte* Bytes() { return memory_.get(); }
 
-        std::size_t pageSize_{};
+        private:
+            std::size_t size_{};
+            std::unique_ptr<std::byte[]> memory_{};
+        };
+
+        std::vector<Page> usedPages_{};
+        std::vector<Page> freePages_{};
+
+        Page activePage_{};
+        std::size_t activePageOffset_{};
     };
 }

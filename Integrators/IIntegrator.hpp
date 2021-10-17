@@ -1,30 +1,31 @@
 #pragma once
 #include "../Image.hpp"
-#include "../Camera.hpp"
-#include "../Scene.hpp"
+#include "../ICamera.hpp"
+#include "../Scene/IScene.hpp"
 #include "../Sampler.hpp"
 
 #include <thread>
 #include <atomic>
 #include <iomanip>
+#include <iostream>
 
 namespace Fc
 {
-    inline double pdf_w_to_pdf_p(SurfacePoint1 const& p1, SurfacePoint1 const& p2, Vector3 const& w_1_2, double pdf_w_1_2)
+    inline double pdf_w_to_pdf_p(SurfacePoint const& p1, SurfacePoint const& p2, Vector3 const& w_1_2, double pdf_w_1_2)
     {
-        return pdf_w_1_2 * std::abs(Dot(p2.GetNormal(), w_1_2)) / LengthSqr(p2.GetPosition() - p1.GetPosition());
+        return pdf_w_1_2 * std::abs(Dot(p2.Normal(), w_1_2)) / LengthSqr(p2.Position() - p1.Position());
     }
 
-    inline double G(SurfacePoint1 const& p1, SurfacePoint1 const& p2, Vector3 const& w_1_2)
+    inline double G(SurfacePoint const& p1, SurfacePoint const& p2, Vector3 const& w12)
     {
-        return std::abs(Dot(p1.GetNormal(), w_1_2) * Dot(p2.GetNormal(), w_1_2)) / LengthSqr(p2.GetPosition() - p1.GetPosition());
+        return std::abs(Dot(p1.Normal(), w12) * Dot(p2.Normal(), w12)) / LengthSqr(p2.Position() - p1.Position());
     }
 
 
     class IIntegrator
     {
     public:
-        virtual void Render(Image& image, ICamera const& camera, Scene const& scene, ISampler& sampler, Bounds2i const& scissor) const = 0;
+        virtual void Render(Image& image, ICamera const& camera, IScene const& scene, ISampler& sampler, Bounds2i const& scissor) const = 0;
     };
 
 
@@ -35,7 +36,7 @@ namespace Fc
             : tileSize_{tileSize}, workerCount_{workerCount}
         { }
 
-        virtual void Render(Image& image, ICamera const& camera, Scene const& scene, ISampler& sampler, Bounds2i const& scissor) const override
+        virtual void Render(Image& image, ICamera const& camera, IScene const& scene, ISampler& sampler, Bounds2i const& scissor) const override
         {
             Vector2i imageSize{image.GetResolution()};
             Vector2i min{std::max(scissor.Min().x, 0), std::max(scissor.Min().y, 0)};
@@ -116,7 +117,7 @@ namespace Fc
         }
 
     protected:
-        virtual void RenderPixel(Image& image, Vector2i const& pixel, ICamera const& camera, Scene const& scene, ISampler& sampler, MemoryAllocator& memoryAllocator) const
+        virtual void RenderPixel(Image& image, Vector2i const& pixel, ICamera const& camera, IScene const& scene, ISampler& sampler, MemoryAllocator& memoryAllocator) const
         { }
 
     private:

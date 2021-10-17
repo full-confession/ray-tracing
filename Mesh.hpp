@@ -98,7 +98,7 @@ namespace Fc
     class Mesh : public Shape
     {
     public:
-        Mesh(AffineTransform const& transform, HMesh const& mesh)
+        Mesh(Transform const& transform, HMesh const& mesh)
             : transform_{transform}, mesh_{mesh}, meshDescription_{mesh.GetDescription()}
         {
             positions_.resize(meshDescription_.vertexCount);
@@ -211,7 +211,7 @@ namespace Fc
         }
 
     private:
-        AffineTransform transform_{};
+        Transform transform_{};
         HMesh mesh_{};
         MeshDescription meshDescription_{};
         std::vector<Vector3f> positions_{};

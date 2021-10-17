@@ -1,13 +1,8 @@
 #pragma once
-#include "Camera.hpp"
 #include "Sampler.hpp"
 #include "Image.hpp"
-#include "Scene.hpp"
-#include "PathIntegrator.hpp"
 namespace Fc
 {
-
-
 
     class BDPT : public IIntegrator
     {
@@ -16,7 +11,7 @@ namespace Fc
             : samplesX_{samplesX}, samplesY_{samplesY}, maxVertices_{maxDepth}
         { }
 
-        virtual void Render(Image& image, ICamera const& camera, Scene const& scene, ISampler& sampler, Bounds2i const& scissor) const override
+        virtual void Render(Image& image, ICamera const& camera, IScene const& scene, ISampler& sampler, Bounds2i const& scissor) const override
         {
             MemoryAllocator memoryAllocator{1024 * 1024};
             for(int i{}; i < image.GetResolution().y; ++i)
@@ -43,7 +38,7 @@ namespace Fc
 
         struct Vertex
         {
-            SurfacePoint3 p{};
+            SurfacePoint p{};
             double pdf_p{};
 
             Vector3 w{};
@@ -51,10 +46,10 @@ namespace Fc
 
             Vector3 beta{};
             BSDF bsdf{};
-            Light const* light{};
+            ILight const* light{};
         };
 
-        void Run(Image& image, Vector2i const& pixelPosition, ICamera const& camera, ISampler& sampler, Scene const& scene, MemoryAllocator& memoryAllocator) const
+        void Run(Image& image, Vector2i const& pixelPosition, ICamera const& camera, ISampler& sampler, IScene const& scene, MemoryAllocator& memoryAllocator) const
         {
 
 
@@ -114,81 +109,81 @@ namespace Fc
 
 
             // camera subpath
-            std::vector<Vertex> cameraVertices{GenerateCameraSubpath(image, pixelPosition, camera, sampler, scene, memoryAllocator)};
-            
-            // light subpath
-            std::vector<Vertex> lightVertices{GenerateLightSubpath(sampler, scene, memoryAllocator)};
+            //std::vector<Vertex> cameraVertices{GenerateCameraSubpath(image, pixelPosition, camera, sampler, scene, memoryAllocator)};
+            //
+            //// light subpath
+            //std::vector<Vertex> lightVertices{GenerateLightSubpath(sampler, scene, memoryAllocator)};
 
-            std::unordered_map<int, int> pathCount_{};
+            //std::unordered_map<int, int> pathCount_{};
 
-            for(int i{1}; i <= cameraVertices.size(); ++i)
-            {
-                for(int j{}; j <= lightVertices.size(); ++j)
-                {
-                    if(i > 1 && j == 0)
-                    {
-                        // connection a)
-                        pathCount_[i] += 1;
-                    }
-                    else if(i > 1 && j == 1)
-                    {
-                        // connection c)
-                        pathCount_[i + j] += 1;
-                    }
-                    else if(i == 1 && j > 1)
-                    {
-                        // connection d)
-                        pathCount_[i + j] += 1;
-                    }
-                    else if(i > 1 && j > 1)
-                    {
+            //for(int i{1}; i <= cameraVertices.size(); ++i)
+            //{
+            //    for(int j{}; j <= lightVertices.size(); ++j)
+            //    {
+            //        if(i > 1 && j == 0)
+            //        {
+            //            // connection a)
+            //            pathCount_[i] += 1;
+            //        }
+            //        else if(i > 1 && j == 1)
+            //        {
+            //            // connection c)
+            //            pathCount_[i + j] += 1;
+            //        }
+            //        else if(i == 1 && j > 1)
+            //        {
+            //            // connection d)
+            //            pathCount_[i + j] += 1;
+            //        }
+            //        else if(i > 1 && j > 1)
+            //        {
 
-                        // connection f)
-                        pathCount_[i + j] += 1;
-                    }
-                }
-            }
+            //            // connection f)
+            //            pathCount_[i + j] += 1;
+            //        }
+            //    }
+            //}
 
-            Vector3 I{};
-            for(int i{1}; i <= cameraVertices.size(); ++i)
-            {
-                for(int j{}; j <= lightVertices.size(); ++j)
-                {
-                    if(i > 1 && j == 0)
-                    {
-                        // connection a)
-                        I += ConnectionA(i, cameraVertices) / static_cast<double>(pathCount_[i + j]);
-                    }
-                    else if(i > 1 && j == 1)
-                    {
-                        // connection c)
-                        I += ConnectionC(i, cameraVertices, sampler, scene) / static_cast<double>(pathCount_[i + j]);
-                    }
-                    else if(i == 1 && j > 1)
-                    {
-                        // connection d)
-                        Vector2i pixel{-1, 0};
-                        Vector3 value{ConnectionD(j, lightVertices, sampler, scene, camera, image, &pixel) / static_cast<double>(pathCount_[i + j])};
-                        if(pixel.x != -1)
-                        {
-                            image.AddLightSample(pixel, value);
-                        }
-                        else
-                        {
-                            image.AddLightSampleCount(1);
-                        }
+            ////Vector3 I{};
+            ////for(int i{1}; i <= cameraVertices.size(); ++i)
+            ////{
+            ////    for(int j{}; j <= lightVertices.size(); ++j)
+            ////    {
+            ////        if(i > 1 && j == 0)
+            ////        {
+            ////            // connection a)
+            ////            I += ConnectionA(i, cameraVertices) / static_cast<double>(pathCount_[i + j]);
+            ////        }
+            ////        else if(i > 1 && j == 1)
+            ////        {
+            ////            // connection c)
+            ////            I += ConnectionC(i, cameraVertices, sampler, scene) / static_cast<double>(pathCount_[i + j]);
+            ////        }
+            ////        else if(i == 1 && j > 1)
+            ////        {
+            ////            // connection d)
+            ////            Vector2i pixel{-1, 0};
+            ////            Vector3 value{ConnectionD(j, lightVertices, sampler, scene, camera, image, &pixel) / static_cast<double>(pathCount_[i + j])};
+            ////            if(pixel.x != -1)
+            ////            {
+            ////                image.AddLightSample(pixel, value);
+            ////            }
+            ////            else
+            ////            {
+            ////                image.AddLightSampleCount(1);
+            ////            }
 
-                    }
-                    else if(i > 1 && j > 1)
-                    {
+            ////        }
+            ////        else if(i > 1 && j > 1)
+            ////        {
 
-                        // connection f)
-                        I += ConnectionF(i, cameraVertices, j, lightVertices, scene) / static_cast<double>(pathCount_[i + j]);
-                    }
-                }
-            }
+            ////            // connection f)
+            ////            //I += ConnectionF(i, cameraVertices, j, lightVertices, scene) / static_cast<double>(pathCount_[i + j]);
+            ////        }
+            ////    }
+            ////}
 
-            image.AddSample(pixelPosition, I);
+            //image.AddSample(pixelPosition, I);
 
            /* for(int i{}; i < lightVertices.size(); ++i)
             {
@@ -225,7 +220,7 @@ namespace Fc
             memoryAllocator.Clear();
         }
 
-        Vector3 ConnectionA(int i, std::vector<Vertex> const& cameraVertices) const
+        /*Vector3 ConnectionA(int i, std::vector<Vertex> const& cameraVertices) const
         {
             Vector3 w{-cameraVertices[i - 2].w};
             return cameraVertices[i - 1].beta * cameraVertices[i - 1].p.EmittedRadiance(w);
@@ -274,7 +269,7 @@ namespace Fc
 
             return cameraVertices[i - 1].beta * cameraVertices[i - 1].bsdf.Evaluate(w0, -w1) * G(cameraVertices[i - 1].p, lightVertices[j - 1].p, w1)
                 * lightVertices[j - 1].bsdf.Evaluate(w1, w2) * lightVertices[j - 1].beta;
-        }
+        }*/
 
         double MSIWeight(int i, std::vector<Vertex>& cameraVertices, int j, std::vector<Vertex>& lightVertices, Vertex const& sampled) const
         {
@@ -287,7 +282,7 @@ namespace Fc
 
         }
 
-        std::vector<Vertex> GenerateCameraSubpath(Image& image, Vector2i const& pixelPosition, ICamera const& camera, ISampler& sampler, Scene const& scene, MemoryAllocator& memoryAllocator) const
+        /*std::vector<Vertex> GenerateCameraSubpath(Image& image, Vector2i const& pixelPosition, ICamera const& camera, ISampler& sampler, Scene const& scene, MemoryAllocator& memoryAllocator) const
         {
             std::vector<Vertex> cameraVertices{};
             cameraVertices.reserve(2);
@@ -391,6 +386,6 @@ namespace Fc
             vertex.beta = prevVertex.beta * f * std::abs(Dot(vertex.p.GetNormal(), vertex.w)) / prevVertex.pdf_w;
 
             RandomWalk(scene, sampler, memoryAllocator, vertices);
-        }
+        }*/
     };
 }

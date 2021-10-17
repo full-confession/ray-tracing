@@ -1,36 +1,26 @@
 #pragma once
-#include "Surface.hpp"
-#include "Sampling.hpp"
-#include <utility>
+#include "ISurface.hpp"
+#include "../Transform.hpp"
+#include "../Shapes/IShape.hpp"
 
 namespace Fc
 {
-    class Sphere : public Shape, public Surface
+    class Sphere : public ISurface, public IShape
     {
     public:
-        Sphere(AffineTransform const& transform, double radius)
+        Sphere(Transform const& transform, double radius)
             : transform_{transform}, radius_{radius}
         { }
 
-        virtual std::uint32_t GetSurfaceCount() const override
-        {
-            return 1;
-        }
-
-        virtual Surface const* GetSurface(std::uint32_t index) const override
-        {
-            return this;
-        }
-
-        virtual void GetSurfaces(Surface const** outputLocation) const override
-        {
-            outputLocation[0] = this;
-        }
-
-        virtual Bounds3f GetBounds() const override
+        virtual Bounds3 Bounds() const override
         {
             Bounds3 bounds{Vector3{-radius_, -radius_, -radius_}, Vector3{radius_, radius_, radius_}};
-            return Bounds3f{transform_.TransformBounds(bounds)};
+            return transform_.TransformBounds(bounds);
+        }
+
+        virtual double Area() const override
+        {
+            return 4.0 * Math::Pi * radius_ * radius_;
         }
 
         virtual bool Raycast(Ray3 const& ray, double tMax, double* tHit) const override
@@ -38,10 +28,9 @@ namespace Fc
             Vector3 o{transform_.InverseTransformPoint(ray.origin)};
             Vector3 d{transform_.InverseTransformDirection(ray.direction)};
 
-            double r{radius_};
             double a{Dot(d, d)};
             double b{2.0 * Dot(o, d)};
-            double c{Dot(o, o) - r * r};
+            double c{Dot(o, o) - radius_ * radius_};
             double discriminant{b * b - 4.0 * a * c};
 
             if(discriminant < 0.0)
@@ -73,15 +62,14 @@ namespace Fc
             return true;
         }
 
-        virtual bool Raycast(Ray3 const& ray, double tMax, double* tHit, SurfacePoint2* surfacePoint) const override
+        virtual bool Raycast(Ray3 const& ray, double tMax, double* tHit, SurfacePoint* p) const override
         {
             Vector3 o{transform_.InverseTransformPoint(ray.origin)};
             Vector3 d{transform_.InverseTransformDirection(ray.direction)};
 
-            double r{radius_};
             double a{Dot(d, d)};
             double b{2.0 * Dot(o, d)};
-            double c{Dot(o, o) - r * r};
+            double c{Dot(o, o) - radius_ * radius_};
             double discriminant{b * b - 4.0 * a * c};
 
             if(discriminant < 0.0)
@@ -112,8 +100,8 @@ namespace Fc
 
             Vector3 position{o + d * t};
 
-            surfacePoint->SetPosition(transform_.TransformPoint(position));
-            surfacePoint->SetNormal(transform_.TransformNormal(Normalize(position)));
+            p->SetPosition(transform_.TransformPoint(position));
+            p->SetNormal(transform_.TransformNormal(Normalize(position)));
 
             Vector2 v{position.x, position.z};
             if(v.x == 0.0 && v.y == 0.0)
@@ -122,41 +110,50 @@ namespace Fc
             }
             v = Normalize(v);
 
-            surfacePoint->SetTangent(transform_.TransformDirection({-v.y, 0.0, v.x}));
-            surfacePoint->SetShadingNormal(surfacePoint->GetNormal());
-            surfacePoint->SetShadingTangent(surfacePoint->GetTangent());
-            surfacePoint->SetPDF(1.0 / Area());
+            p->SetTangent(transform_.TransformDirection({-v.y, 0.0, v.x}));
+            p->SetShadingNormal(p->Normal());
+            p->SetShadingTangent(p->Tangent());
+            p->SetSurface(this);
 
             *tHit = t;
             return true;
         }
 
-        virtual double Area() const override
-        {
-            return 4.0 * Math::Pi * radius_ * radius_;
-        }
-
-        virtual SurfacePoint2 Sample(Vector2 const& u, double* pdf) const override
+        virtual double SamplePoint(Vector2 const& u, SurfacePoint* p) const override
         {
             double r{static_cast<double>(radius_)};
             Vector3 normal{SampleSphereUniform(u)};
-            SurfacePoint2 sp2{transform_.TransformPoint(normal * r), transform_.TransformNormal(normal)};
-            *pdf = 1.0 / Area();
-            return sp2;
+
+            p->SetPosition(transform_.TransformPoint(normal * r));
+            p->SetNormal(transform_.TransformNormal(normal));
+            p->SetSurface(this);
+
+            return 1.0 / Area();
         }
 
-        AffineTransform const& GetTransform() const
+        virtual double SamplePoint(Vector3 const& viewPosition, Vector2 const& u, SurfacePoint* p) const override
         {
-            return transform_;
+            return SamplePoint(u, p);
         }
 
-        double GetRadius() const
+        virtual double ProbabilityPoint(SurfacePoint const& p) const override
         {
-            return radius_;
+            if(p.Surface() != this) return 0.0;
+            return 1.0 / Area();
+        }
+
+        virtual std::uint32_t SurfaceCount() const override
+        {
+            return 1;
+        }
+
+        virtual ISurface const* Surface(std::uint32_t index) const override
+        {
+            return this;
         }
 
     private:
-        AffineTransform transform_{};
+        Transform transform_{};
         double radius_{};
     };
 }
