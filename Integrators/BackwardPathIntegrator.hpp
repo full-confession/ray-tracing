@@ -18,9 +18,6 @@ namespace Fc
 
         virtual void Render(Image& image, ICamera const& camera, IScene const& scene, ISampler& sampler, Bounds2i const& scissor) const override
         {
-            //filmSolidAngle_ = camera.FilmAreaSolidAngle(image, 16);
-
-
             std::vector<std::thread> workers{};
 
             std::atomic<std::uint64_t> nextSample{};

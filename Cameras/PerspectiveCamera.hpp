@@ -84,7 +84,7 @@ namespace Fc
 
             double cos_w_n{direction.z};
             *w = transform_.TransformDirection(direction);
-            *pdf_w = 1.0 / (filmPlaneArea * cos_w_n * cos_w_n * cos_w_n);
+            *pdf_w = 1.0 / (pixelArea * cos_w_n * cos_w_n * cos_w_n);
 
             // importance
             double importance{(*pdf_w) * (*pdf_p) / cos_w_n};
@@ -138,7 +138,7 @@ namespace Fc
 
             Vector3 w01{Normalize(d01)};
             double cos_w_n{w01.z};
-            double pdf_w = 1.0 / (filmPlaneArea * cos_w_n * cos_w_n * cos_w_n);
+            double pdf_w = 1.0 / (pixelArea * cos_w_n * cos_w_n * cos_w_n);
 
             double importance{(*pdf_p) * pdf_w / cos_w_n};
             return {importance, importance, importance};
@@ -166,9 +166,11 @@ namespace Fc
                 || filmPosition.y > filmPlaneTop || filmPosition.y < -filmPlaneTop) return 0.0;
 
             double filmPlaneArea{filmPlaneWidth * filmPlaneHeight};
+            double pixelSize{filmPlaneHeight / resolution.y};
+            double pixelArea{pixelSize * pixelSize};
             double cos_w_n{w01.z};
 
-            return 1.0 / (filmPlaneArea * cos_w_n * cos_w_n * cos_w_n);
+            return 1.0 / (pixelArea * cos_w_n * cos_w_n * cos_w_n);
         }
 
     private:

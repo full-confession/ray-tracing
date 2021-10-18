@@ -27,14 +27,16 @@ namespace Fc
     public:
         BidirectionalPathIntegrator(Vector2i const& tileSize, int workerCount, int xSamples, int ySamples, int maxVertices)
             : PixelIntegrator{tileSize, workerCount}, xSamples_{xSamples}, ySamples_{ySamples}, maxVertices_{maxVertices}
-        { }
+        {
+            std::cout << "BDPT" << std::endl;
+        }
 
 
     protected:
         virtual void RenderPixel(Image& image, Vector2i const& pixel, ICamera const& camera,
             IScene const& scene, ISampler& sampler, MemoryAllocator& memoryAllocator) const override
         {
-            sampler.BeginPixel(xSamples_, ySamples_, maxVertices_ - 1, 2 + (maxVertices_ - 1));
+            sampler.BeginPixel(xSamples_, ySamples_, maxVertices_ * 2, maxVertices_ * 3);
             for(int k{}; k < xSamples_ * ySamples_; ++k)
             {
                 sampler.BeginSample();
@@ -97,33 +99,7 @@ namespace Fc
                 }
             }
             image.AddSample(pixel, value);
-
-            /*for(int i{2}; i <= t; ++i)
-            {
-                for(int j{0}; j <= s; ++j)
-                {
-                    value += Connect(tVertices, i, sVertices, j, image, camera, scene, sampler, nullptr);
-                }
-            }*/
-            //image.AddSample(pixel, value);
-
-
-            /*Vector2i lightPixel{};
-            for(int j{2}; j <= s; ++j)
-            {
-                image.AddLightSample(lightPixel, Connect(tVertices, 1, sVertices, j, image, camera, scene, sampler, &lightPixel));
-            }*/
             image.AddLightSampleCount(1);
-
-            //if(t >= 2) value += Connect(tVertices, 2, sVertices, 0, image, camera, scene, sampler, nullptr);
-            //if(t >= 3) value += Connect(tVertices, 3, sVertices, 0, image, camera, scene, sampler, nullptr);
-            //if(t >= 2 && s >= 1) value += Connect(tVertices, 2, sVertices, 1, image, camera, scene, sampler, nullptr);
-            
-
-            //value = 0.0;
-            //Vector2i lightPixel{};
-            //if(t >= 1 && s >= 2) value = Connect(tVertices, 1, sVertices, 2, image, camera, scene, sampler, &lightPixel);
-            //image.AddLightSample(lightPixel, value);
         }
 
         int GenerateCameraSubpath(Vertex* vertices, Image& image, Vector2i const& pixel, ICamera const& camera, IScene const& scene, ISampler& sampler, MemoryAllocator& memoryAllocator) const

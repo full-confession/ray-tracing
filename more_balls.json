@@ -14,13 +14,13 @@
     },
     "integrator": {
         "type": "forward",
-        "samplesX": 100,
-        "samplesY": 100,
+        "samplesX": 16,
+        "samplesY": 16,
         "maxVertices": 10,
         "tileSize": [16, 16],
         "workerCount": 16,
         "strategy": "mis",
-        "sampleCount": 360000000
+        "sampleCount": 23040000
     },
     "sampler": {
         "type": "stratified",
@@ -125,7 +125,7 @@
                     "transform": {
                         "position": [-0.374679, 0.5, -2.60628]
                     },
-                    "radius": 0.5
+                    "radius": 0.1
                 },
                 "material": {
                     "type": "diffuse",
@@ -134,7 +134,7 @@
                 "emission": {
                     "type": "diffuse",
                     "color": [1.0, 0.176762, 0.03322],
-                    "strength": 5.0
+                    "strength": 25.0
                 }
             },
             {
@@ -143,7 +143,7 @@
                     "transform": {
                         "position": [-4.03987, 0.5, 0.045641]
                     },
-                    "radius": 0.5
+                    "radius": 0.1
                 },
                 "material": {
                     "type": "diffuse",
@@ -152,7 +152,7 @@
                 "emission": {
                     "type": "diffuse",
                     "color": [0.0, 1.0, 0.132231],
-                    "strength": 5.0
+                    "strength": 25.0
                 }
             },
             {
@@ -161,7 +161,7 @@
                     "transform": {
                         "position": [-3.09873, 0.5, 4.31356]
                     },
-                    "radius": 0.5
+                    "radius": 0.1
                 },
                 "material": {
                     "type": "diffuse",
@@ -170,7 +170,7 @@
                 "emission": {
                     "type": "diffuse",
                     "color": [1.0, 0.0, 0.057055],
-                    "strength": 5.0
+                    "strength": 25.0
                 }
             },
             {
@@ -179,7 +179,7 @@
                     "transform": {
                         "position": [1.82126, 0.5, 0.928827]
                     },
-                    "radius": 0.5
+                    "radius": 0.1
                 },
                 "material": {
                     "type": "diffuse",
@@ -188,7 +188,7 @@
                 "emission": {
                     "type": "diffuse",
                     "color": [0.0, 0.311272, 1.0],
-                    "strength": 5.0
+                    "strength": 25.0
                 }
             },
             {
