@@ -583,6 +583,12 @@ namespace Fc
             }
         }
 
+        T Area() const
+        {
+            auto d{Diagonal()};
+            return T(2.0) * (d.x * d.y + d.x * d.z + d.y * d.z);
+        }
+
         TBounds3& Union(TBounds3 const& b)
         {
             p_[0].x = std::min(p_[0].x, b.p_[0].x);

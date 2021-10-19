@@ -101,12 +101,12 @@ namespace Fc
             explicit Page(std::size_t size) : size_{size}, memory_{std::make_unique<std::byte[]>(size)}
             { }
 
-            Page(Page&& other) : size_{other.size_}, memory_{std::move(other.memory_)}
+            Page(Page&& other) noexcept : size_{other.size_}, memory_{std::move(other.memory_)}
             {
                 other.size_ = 0;
             }
 
-            Page& operator=(Page&& other)
+            Page& operator=(Page&& other) noexcept
             {
                 size_ = other.size_;
                 other.size_ = 0;

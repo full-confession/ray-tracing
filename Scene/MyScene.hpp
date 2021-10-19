@@ -2,6 +2,8 @@
 #include "IScene.hpp"
 #include "../Materials/IMaterial.hpp"
 #include "../Shapes/IShape.hpp"
+#include "IAccelerationStructure.hpp"
+#include "BVH.hpp"
 
 #include <vector>
 #include <memory>
@@ -27,7 +29,7 @@ namespace Fc
                 if(entity.areaLight) areaLightCount += entity.shape->SurfaceCount();
             }
 
-            entitySurfaces_.reserve(surfaceCount);
+            acceleration_->Reserve(surfaceCount);
             lights_.reserve(areaLightCount);
 
             for(auto const& entity : entities_)
@@ -42,7 +44,7 @@ namespace Fc
                         lights_.push_back(std::move(tmp));
                     }
 
-                    entitySurfaces_.push_back({entity.shape->Surface(i), areaLight, entity.material});
+                    acceleration_->Push({entity.shape->Surface(i), areaLight, entity.material});
 
                     if(areaLight)
                     {
@@ -50,6 +52,8 @@ namespace Fc
                     }
                 }
             }
+
+            acceleration_->Build();
         }
 
         virtual bool Raycast(SurfacePoint const& p0, Vector3 const& w01, SurfacePoint* p1) const override
@@ -64,32 +68,26 @@ namespace Fc
                 ray.origin -= Vector3{p0.Normal()} * epsilon_;
             }
 
-            double tMax{std::numeric_limits<double>::infinity()};
-            EntitySurface const* hitEntitySurface{};
-
-            for(auto const& entitySurface : entitySurfaces_)
+            EntitySurface const* entitySurface{};
+            if(acceleration_->Raycast(ray, std::numeric_limits<double>::infinity(), &entitySurface))
             {
                 double tHit{};
-                if(entitySurface.surface->Raycast(ray, tMax, &tHit))
+                bool result{entitySurface->surface->Raycast(ray, std::numeric_limits<double>::infinity(), &tHit, p1)};
+                assert(result == true);
+
+                p1->SetLight(entitySurface->areaLight);
+                if(entitySurface->areaLight != nullptr)
                 {
-                    tMax = tHit;
-                    hitEntitySurface = &entitySurface;
+                    entitySurface->areaLight->HandleRaycastedPoint(*p1);
                 }
+                p1->SetMaterial(entitySurface->material);
+                return true;
+
             }
-
-            if(hitEntitySurface == nullptr) return false;
-
-            bool result{hitEntitySurface->surface->Raycast(ray, tMax, &tMax, p1)};
-            assert(result == true);
-
-            p1->SetLight(hitEntitySurface->areaLight);
-            if(hitEntitySurface->areaLight != nullptr)
+            else
             {
-                hitEntitySurface->areaLight->HandleRaycastedPoint(*p1);
+                return false;
             }
-            p1->SetMaterial(hitEntitySurface->material);
-
-            return true;
         }
 
         virtual bool Visibility(SurfacePoint const& p0, SurfacePoint const& p1) const override
@@ -123,16 +121,7 @@ namespace Fc
             Vector3 direction{to1 / length};
             Ray3 ray{position0, direction};
 
-            for(auto const& entitySurface : entitySurfaces_)
-            {
-                double tHit{};
-                if(entitySurface.surface->Raycast(ray, length, &tHit))
-                {
-                    return false;
-                }
-            }
-
-            return true;
+            return !acceleration_->Raycast(ray, length);
         }
 
         virtual int LightCount() const override
@@ -161,9 +150,19 @@ namespace Fc
             ISurface const* surface{};
             IAreaLight const* areaLight{};
             IMaterial const* material{};
-        };
-        std::vector<EntitySurface> entitySurfaces_{};
 
+            Bounds3 Bounds() const
+            {
+                return surface->Bounds();
+            }
+
+            bool Raycast(Ray3 const& ray, double tMax, double* tHit) const
+            {
+                return surface->Raycast(ray, tMax, tHit);
+            }
+        };
+
+        std::unique_ptr<IAccelerationStructure<EntitySurface>> acceleration_{new BVH<EntitySurface>{}};
 
         std::vector<std::unique_ptr<ILight>> lights_{};
     };

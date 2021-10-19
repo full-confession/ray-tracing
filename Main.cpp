@@ -13,6 +13,7 @@ using namespace Fc;
 
 int main()
 {
+
     Fc::AssetManager am{};
     Fc::SceneFile sceneFile{Fc::SceneFileReader::Read("more_balls", am)};
 

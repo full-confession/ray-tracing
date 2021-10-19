@@ -147,6 +147,8 @@
     <ClInclude Include="Materials\DiffuseMaterial.hpp" />
     <ClInclude Include="ICamera.hpp" />
     <ClInclude Include="Materials\IMaterial.hpp" />
+    <ClInclude Include="Scene\BVH.hpp" />
+    <ClInclude Include="Scene\IAccelerationStructure.hpp" />
     <ClInclude Include="Scene\IScene.hpp" />
     <ClInclude Include="Scene\MyScene.hpp" />
     <ClInclude Include="Shapes\IShape.hpp" />
