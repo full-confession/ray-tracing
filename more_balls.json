@@ -14,8 +14,8 @@
     },
     "integrator": {
         "type": "BDPT",
-        "samplesX": 8,
-        "samplesY": 8,
+        "samplesX": 16,
+        "samplesY": 16,
         "maxVertices": 10,
         "tileSize": [16, 16],
         "workerCount": 16,

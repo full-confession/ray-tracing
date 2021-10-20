@@ -28,17 +28,105 @@ namespace Fc
 
             std::vector<TSurface> orderedSurfaces{};
             orderedSurfaces.reserve(surfaces_.size());
-            std::unique_ptr<BuildNode> root{Build(surfaceInfo, 0, static_cast<std::uint32_t>(surfaces_.size()), orderedSurfaces)};
+            Build(surfaceInfo, 0, static_cast<std::uint32_t>(surfaces_.size()), orderedSurfaces);
             std::swap(surfaces_, orderedSurfaces);
         };
 
         virtual bool Raycast(Ray3 const& ray, double tMax, TSurface const** surface) const override
         {
-            return false;
+            TSurface const* hitSurface{};
+            Vector3 invDir{1.0 / ray.direction};
+            int dirIsNeg[3]{invDir.x < 0, invDir.y < 0, invDir.z < 0};
+
+            std::uint32_t stack[64];
+            stack[0] = 0;
+            int stackSize{1};
+
+            while(stackSize > 0)
+            {
+                std::uint32_t nodeIndex{stack[--stackSize]};
+                Node const& node{nodes_[nodeIndex]};
+
+                Bounds3 bounds{node.Bounds()};
+                if(bounds.Raycast(ray, tMax, invDir, dirIsNeg))
+                {
+                    if(!node.Interior())
+                    {
+                        for(std::uint32_t i{node.FirstSurface()}; i < node.FirstSurface() + node.SurfaceCount(); ++i)
+                        {
+                            double tHit{};
+                            if(surfaces_[i].Raycast(ray, tMax, &tHit))
+                            {
+                                tMax = tHit;
+                                hitSurface = &surfaces_[i];
+                            }
+                        }
+                    }
+                    else
+                    {
+                        if(dirIsNeg[node.SplitAxis()])
+                        {
+                            stack[stackSize++] = nodeIndex + 1;
+                            stack[stackSize++] = node.SecondChild();
+                        }
+                        else
+                        {
+                            stack[stackSize++] = node.SecondChild();
+                            stack[stackSize++] = nodeIndex + 1;
+                        }
+                    }
+                }
+            }
+
+            if(hitSurface == nullptr) return false;
+            *surface = hitSurface;
+            return true;
         }
 
         virtual bool Raycast(Ray3 const& ray, double tMax) const override
         {
+            Vector3 invDir{1.0 / ray.direction};
+            int dirIsNeg[3]{invDir.x < 0, invDir.y < 0, invDir.z < 0};
+
+            std::uint32_t stack[64];
+            stack[0] = 0;
+            int stackSize{1};
+
+            while(stackSize > 0)
+            {
+                std::uint32_t nodeIndex{stack[--stackSize]};
+                Node const& node{nodes_[nodeIndex]};
+
+                Bounds3 bounds{node.Bounds()};
+                if(bounds.Raycast(ray, tMax, invDir, dirIsNeg))
+                {
+                    if(!node.Interior())
+                    {
+                        for(std::uint32_t i{node.FirstSurface()}; i < node.FirstSurface() + node.SurfaceCount(); ++i)
+                        {
+                            double tHit{};
+                            if(surfaces_[i].Raycast(ray, tMax, &tHit))
+                            {
+                                return true;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        if(dirIsNeg[node.SplitAxis()])
+                        {
+                            stack[stackSize++] = nodeIndex + 1;
+                            stack[stackSize++] = node.SecondChild();
+                        }
+                        else
+                        {
+                            stack[stackSize++] = node.SecondChild();
+                            stack[stackSize++] = nodeIndex + 1;
+                        }
+                    }
+                }
+            }
+
             return false;
         }
 
@@ -73,17 +161,23 @@ namespace Fc
             Vector3f centroid_{};
         };
 
-        class BuildNode
+        class Node
         {
+            Node(Bounds3f const& bounds, std::uint32_t a, std::uint16_t b, std::uint16_t interior)
+                : bounds_{bounds}, firstSurfaceSecondChild_{a}, surfaceCountSplitAxis_{b}, interior_{interior}
+            { }
+
         public:
-            static std::unique_ptr<BuildNode> CreateInterior(Bounds3f const& bounds, std::unique_ptr<BuildNode> leftChild, std::unique_ptr<BuildNode> rightChild, int splitAxis)
+            Node() = default;
+
+            static Node CreateLeaf(Bounds3f const& bounds, std::uint32_t firstSurface, std::uint16_t surfaceCount)
             {
-                return std::unique_ptr<BuildNode>(new BuildNode{bounds, std::move(leftChild), std::move(rightChild), splitAxis});
+                return {bounds, firstSurface, surfaceCount, 0};
             }
 
-            static std::unique_ptr<BuildNode> CreateLeaf(Bounds3f const& bounds, std::uint32_t firstSurface, std::uint32_t surfaceCount)
+            static Node CreateInterior(Bounds3f const& bounds, std::uint32_t secondChild, std::uint16_t splitAxis)
             {
-                return std::unique_ptr<BuildNode>(new BuildNode{bounds, firstSurface, surfaceCount});
+                return {bounds, secondChild, splitAxis, 1};
             }
 
             Bounds3f const& Bounds() const
@@ -91,25 +185,41 @@ namespace Fc
                 return bounds_;
             }
 
+            bool Interior() const
+            {
+                return interior_;
+            }
+
+            std::uint32_t FirstSurface() const
+            {
+                return firstSurfaceSecondChild_;
+            }
+
+            std::uint32_t SecondChild() const
+            {
+                return firstSurfaceSecondChild_;
+            }
+
+            std::uint16_t SurfaceCount() const
+            {
+                return surfaceCountSplitAxis_;
+            }
+
+            int SplitAxis() const
+            {
+                return surfaceCountSplitAxis_;
+            }
+
         private:
-            BuildNode(Bounds3f bounds, std::unique_ptr<BuildNode> leftChild, std::unique_ptr<BuildNode> rightChild, int splitAxis)
-                : bounds_{bounds}, childs_{std::move(leftChild), std::move(rightChild)}
-            { }
-
-            BuildNode(Bounds3f bounds, std::uint32_t firstSurface, std::uint32_t surfaceCount)
-                : bounds_{bounds}, firstSurface_{firstSurface}, surfaceCount_{surfaceCount}
-            { }
-
             Bounds3f bounds_{};
-            std::unique_ptr<BuildNode> childs_[2]{};
-            std::uint32_t firstSurface_{};
-            std::uint32_t surfaceCount_{};
-            int splitAxis_{};
+            std::uint32_t firstSurfaceSecondChild_{};
+            std::uint16_t surfaceCountSplitAxis_{};
+            std::uint16_t interior_{};
         };
 
+        std::vector<Node> nodes_{};
 
-
-        std::unique_ptr<BuildNode> Build(std::vector<SurfaceInfo>& surfaceInfos, std::uint32_t begin, std::uint32_t end, std::vector<TSurface>& orderedSurfaces)
+        std::uint32_t Build(std::vector<SurfaceInfo>& surfaceInfos, std::uint32_t begin, std::uint32_t end, std::vector<TSurface>& orderedSurfaces)
         {
             Bounds3f nodeBounds{surfaceInfos[begin].Bounds()};
             for(std::uint32_t i{begin + 1}; i < end; ++i)
@@ -128,7 +238,7 @@ namespace Fc
             }
         }
 
-        std::unique_ptr<BuildNode> BuildLeaf(std::vector<SurfaceInfo>& surfaceInfos, std::uint32_t begin, std::uint32_t end, Bounds3f const& bounds, std::vector<TSurface>& orderedSurfaces)
+        std::uint32_t BuildLeaf(std::vector<SurfaceInfo>& surfaceInfos, std::uint32_t begin, std::uint32_t end, Bounds3f const& bounds, std::vector<TSurface>& orderedSurfaces)
         {
             std::uint32_t firstSurface{static_cast<std::uint32_t>(orderedSurfaces.size())};
             std::uint32_t surfaceCount{end - begin};
@@ -138,10 +248,12 @@ namespace Fc
                 orderedSurfaces.push_back(surfaces_[surfaceInfos[i].SurfaceIndex()]);
             }
 
-            return BuildNode::CreateLeaf(bounds, firstSurface, surfaceCount);
+            std::uint32_t index{static_cast<uint32_t>(nodes_.size())};
+            nodes_.push_back(Node::CreateLeaf(bounds, firstSurface, surfaceCount));
+            return index;
         }
 
-        std::unique_ptr<BuildNode> BuildInterior(std::vector<SurfaceInfo>& surfaceInfos, std::uint32_t begin, std::uint32_t end, Bounds3f const& bounds, std::vector<TSurface>& orderedSurfaces)
+        std::uint32_t BuildInterior(std::vector<SurfaceInfo>& surfaceInfos, std::uint32_t begin, std::uint32_t end, Bounds3f const& bounds, std::vector<TSurface>& orderedSurfaces)
         {
             Bounds3f centroidBounds{surfaceInfos[begin].Centroid()};
             for(std::uint32_t i{begin + 1}; i < end; ++i)
@@ -237,10 +349,13 @@ namespace Fc
                 }
             }
 
-            std::unique_ptr<BuildNode> leftChild{Build(surfaceInfos, begin, middle, orderedSurfaces)};
-            std::unique_ptr<BuildNode> rightChild{Build(surfaceInfos, middle, end, orderedSurfaces)};
+            std::uint32_t index{static_cast<uint32_t>(nodes_.size())};
+            nodes_.emplace_back();
 
-            return BuildNode::CreateInterior(bounds, std::move(leftChild), std::move(rightChild), splitAxis);
+            Build(surfaceInfos, begin, middle, orderedSurfaces);
+            std::uint32_t rightChildIndex{Build(surfaceInfos, middle, end, orderedSurfaces)};
+            nodes_[index] = Node::CreateInterior(bounds, rightChildIndex, static_cast<uint16_t>(splitAxis));
+            return index;
         }
     };
 }

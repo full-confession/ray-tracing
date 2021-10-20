@@ -641,6 +641,26 @@ namespace Fc
             return true;
         }
 
+        bool Raycast(TRay3<T> const& ray, T tMax, TVector3<T> const& invDir, int const dirIsNeg[3]) const
+        {
+            T t0{(p_[dirIsNeg[0]].x - ray.origin.x) * invDir.x};
+            T t1{(p_[1 - dirIsNeg[0]].x - ray.origin.x) * invDir.x};
+
+            T ty0{(p_[dirIsNeg[1]].y - ray.origin.y) * invDir.y};
+            T ty1{(p_[1 - dirIsNeg[1]].y - ray.origin.y) * invDir.y};
+            if(t0 > ty1 || ty0 > t1) return false;
+            if(ty0 > t0) t0 = ty0;
+            if(ty1 < t1) t1 = ty1;
+
+            T tz0{(p_[dirIsNeg[2]].z - ray.origin.z) * invDir.z};
+            T tz1{(p_[1 - dirIsNeg[2]].z - ray.origin.z) * invDir.z};
+            if(t0 > tz1 || tz0 > t1) return false;
+            if(tz0 > t0) t0 = tz0;
+            if(tz1 < t1) t1 = tz1;
+
+            return (t0 < tMax) && (t1 > T(0.0));
+        }
+
     private:
         TVector3<T> p_[2]{
             {std::numeric_limits<T>::max(), std::numeric_limits<T>::max(), std::numeric_limits<T>::max()},
