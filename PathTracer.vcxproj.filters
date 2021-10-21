@@ -120,6 +120,18 @@
     <ClInclude Include="Scene\BVH.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Surfaces\Mesh.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Materials\MirrorMaterial.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Materials\TransparentMaterial.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Materials\GlassMaterial.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp">
@@ -131,5 +143,8 @@
     <ClCompile Include="SceneFileReader.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="wall_light.json" />
   </ItemGroup>
 </Project>

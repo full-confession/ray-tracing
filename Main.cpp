@@ -15,7 +15,7 @@ int main()
 {
 
     Fc::AssetManager am{};
-    Fc::SceneFile sceneFile{Fc::SceneFileReader::Read("more_balls", am)};
+    Fc::SceneFile sceneFile{Fc::SceneFileReader::Read("wall_light", am)};
 
     sceneFile.integrator->Render(*sceneFile.image, *sceneFile.camera, *sceneFile.scene, *sceneFile.sampler, sceneFile.scissor);
     sceneFile.image->Export(sceneFile.outputName, sceneFile.outputFormat);

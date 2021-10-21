@@ -121,6 +121,7 @@ namespace Fc
             BSDF bsdf{p1.Material()->EvaluateAtPoint(p1, memoryAllocator)};
 
             // 3 vertices
+            if((bsdf.FlagsBxDF(0) & BxDFFlags::Specular) != BxDFFlags::Specular)
             {
                 SurfacePoint pC{};
                 double pdf_pC{};
@@ -131,6 +132,8 @@ namespace Fc
                 {
                     Vector3 w1C{Normalize(pC.Position() - p1.Position())};
                     Vector3 f{bsdf.Evaluate(w1C, -w01)};
+                    f *= std::abs(Dot(-w01, p1.ShadingNormal())) / std::abs(Dot(-w01, p1.Normal()));
+
                     Vector3 I{beta * f * G(p1, pC, w1C) * importance / pdf_pC};
 
                     image.AddLightSample(pixel, I);
@@ -144,6 +147,7 @@ namespace Fc
                 double pdf_w12{};
                 bool delta{};
                 Vector3 f012{bsdf.SampleWi(-w01, sampler.Get2D(), &w12, &pdf_w12, &delta)};
+                f012 *= std::abs(Dot(-w01, p1.ShadingNormal())) / std::abs(Dot(-w01, p1.Normal()));
 
                 SurfacePoint p2{};
                 if(!scene.Raycast(p1, w12, &p2)) return;
@@ -151,18 +155,23 @@ namespace Fc
                 beta *= f012 * std::abs(Dot(p1.Normal(), w12)) / pdf_w12;
                 bsdf = p2.Material()->EvaluateAtPoint(p2, memoryAllocator);
 
-                SurfacePoint pC{};
-                double pdf_pC{};
-                Vector2i pixel{};
-                Vector3 importance{camera.SamplePoint(image, p2.Position(), sampler.Get2D(), &pixel, &pC, &pdf_pC)};
-
-                if((importance.x != 0.0 || importance.y != 0.0 || importance.z != 0.0) && scene.Visibility(p2, pC))
+                if((bsdf.FlagsBxDF(0) & BxDFFlags::Specular) != BxDFFlags::Specular)
                 {
-                    Vector3 w2C{Normalize(pC.Position() - p2.Position())};
-                    Vector3 f{bsdf.Evaluate(w2C, -w12)};
-                    Vector3 I{beta * f * G(p2, pC, w2C) * importance / pdf_pC};
+                    SurfacePoint pC{};
+                    double pdf_pC{};
+                    Vector2i pixel{};
+                    Vector3 importance{camera.SamplePoint(image, p2.Position(), sampler.Get2D(), &pixel, &pC, &pdf_pC)};
 
-                    image.AddLightSample(pixel, I);
+                    if((importance.x != 0.0 || importance.y != 0.0 || importance.z != 0.0) && scene.Visibility(p2, pC))
+                    {
+                        Vector3 w2C{Normalize(pC.Position() - p2.Position())};
+                        Vector3 f{bsdf.Evaluate(w2C, -w12)};
+                        f *= std::abs(Dot(-w12, p2.ShadingNormal())) / std::abs(Dot(-w12, p2.Normal()));
+
+                        Vector3 I{beta * f * G(p2, pC, w2C) * importance / pdf_pC};
+
+                        image.AddLightSample(pixel, I);
+                    }
                 }
 
                 w01 = w12;

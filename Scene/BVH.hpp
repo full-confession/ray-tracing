@@ -12,9 +12,9 @@ namespace Fc
             surfaces_.reserve(capacity);
         }
 
-        virtual void Push(TSurface const& node) override
+        virtual void Push(TSurface node) override
         {
-            surfaces_.push_back(node);
+            surfaces_.push_back(std::move(node));
         }
 
         virtual void Build() override
@@ -245,7 +245,7 @@ namespace Fc
 
             for(std::uint32_t i{begin}; i < end; ++i)
             {
-                orderedSurfaces.push_back(surfaces_[surfaceInfos[i].SurfaceIndex()]);
+                orderedSurfaces.push_back(std::move(surfaces_[surfaceInfos[i].SurfaceIndex()]));
             }
 
             std::uint32_t index{static_cast<uint32_t>(nodes_.size())};

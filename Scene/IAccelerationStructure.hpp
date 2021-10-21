@@ -24,7 +24,7 @@ namespace Fc
         ~IAccelerationStructure() = default;
 
         virtual void Reserve(std::size_t capacity) = 0;
-        virtual void Push(TNode const& node) = 0;
+        virtual void Push(TNode node) = 0;
         virtual void Build() = 0;
 
         virtual bool Raycast(Ray3 const& ray, double tMax, TNode const** node) const = 0;
@@ -40,9 +40,9 @@ namespace Fc
             nodes_.reserve(capacity);
         }
 
-        virtual void Push(TNode const& node) override
+        virtual void Push(TNode node) override
         {
-            nodes_.push_back(node);
+            nodes_.push_back(std::move(node));
         }
 
         virtual void Build() override

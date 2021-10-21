@@ -10,6 +10,6 @@ namespace Fc
         virtual ~IShape() = default;
 
         virtual std::uint32_t SurfaceCount() const = 0;
-        virtual ISurface const* Surface(std::uint32_t index) const = 0;
+        virtual std::unique_ptr<ISurface> Surface(std::uint32_t index) const = 0;
     };
 }

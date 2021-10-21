@@ -15,6 +15,7 @@ namespace Fc
     class Image
     {
     public:
+        Image() = default;
         explicit Image(Vector2i const& resolution)
             : resolution_{resolution}
         {

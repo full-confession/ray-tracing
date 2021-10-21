@@ -175,6 +175,73 @@ namespace Fc
     };
 
 
+    class FresnelSpecular : public BxDF
+    {
+    public:
+        FresnelSpecular(Vector3 const& reflectance, Vector3 const& transmittance, double etaA, double etaB)
+            : BxDF{BxDFFlags::Reflection | BxDFFlags::Transmission | BxDFFlags::Specular}
+            , reflectance_{reflectance}
+            , transmittance_{transmittance}
+            , etaA_{etaA}, etaB_{etaB}
+        { }
+
+        virtual Vector3 Evaluate(Vector3 const& wo, Vector3 const& wi) const override
+        {
+            return {};
+        }
+
+        virtual Vector3 SampleWi(Vector3 const& wo, Vector2 const& u, Vector3* wi, double* pdf) const override
+        {
+            double cosThetaI{wo.y};
+            double fr{FrDielectric(cosThetaI, etaA_, etaB_)};
+
+            if(u.x < fr)
+            {
+                *wi = Vector3(-wo.x, wo.y, -wo.z);
+                *pdf = fr;
+                return fr * reflectance_ / std::abs(wi->y);
+            }
+            else
+            {
+                bool entering{wo.y > 0.0};
+                Vector3 t{transmittance_};
+                if(entering)
+                {
+                    if(!Refract(wo, {0.0, 1.0, 0.0}, etaA_ / etaB_, wi))
+                    {
+                        return {};
+                    }
+
+                    t *= (etaA_ * etaA_) / (etaB_ * etaB_);
+                }
+                else
+                {
+                    if(!Refract(wo, {0.0, -1.0, 0.0}, etaB_ / etaA_, wi))
+                    {
+                        return {};
+                    }
+
+                    t *= (etaB_ * etaB_) / (etaA_ * etaA_);
+                }
+
+                *pdf = 1.0 - fr;
+                t *= Vector3{1.0, 1.0, 1.0} - fr;
+                return t / std::abs(wi->y);
+            }
+        }
+
+        virtual double PDF(Vector3 const& wo, Vector3 const& wi) const override
+        {
+            return 0.0;
+        }
+
+    private:
+        Vector3 reflectance_{};
+        Vector3 transmittance_{};
+        double etaA_{};
+        double etaB_{};
+    };
+
     class IMicrofacetDistribution
     {
     public:

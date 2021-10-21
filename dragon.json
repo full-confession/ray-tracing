@@ -1,6 +1,6 @@
 {
     "image": {
-        "resolution": [1600, 900],
+        "resolution": [800, 450],
         "name": "dragon",
         "format": "ppm"
     },
@@ -13,12 +13,14 @@
         "fov": 45.0
     },
     "integrator": {
-        "type": "path",
+        "type": "BDPT",
+        "strategy": "mis",
         "samplesX": 16,
         "samplesY": 16,
-        "maxBounces": 10,
-        "tileSize": [16, 16],
-        "scissor": [[0, 0], [1600, 900]]
+        "maxVertices": 10,
+        "workerCount": 16,
+        "tileSize": [4, 4],
+        "sampleCount": 100000000
     },
     "sampler": {
         "type": "stratified",
@@ -32,10 +34,10 @@
                     "name": "dragon"
                 },
                 "material": {
-                    "type": "plastic",
-                    "diffuseReflectance": [0.4, 0.67, 0.03],
-                    "specularReflectance": [1.0, 1.0, 1.0],
-                    "roughness": 0.001
+                    "type": "glass",
+                    "reflectance": [0.9, 0.9, 0.9],
+                    "transmittance": [0.2, 0.4, 0.8],
+                    "ior": 1.45
                 }
             },
             {

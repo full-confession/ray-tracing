@@ -146,12 +146,16 @@
     <ClInclude Include="Lights\ILight.hpp" />
     <ClInclude Include="Materials\DiffuseMaterial.hpp" />
     <ClInclude Include="ICamera.hpp" />
+    <ClInclude Include="Materials\GlassMaterial.hpp" />
     <ClInclude Include="Materials\IMaterial.hpp" />
+    <ClInclude Include="Materials\MirrorMaterial.hpp" />
+    <ClInclude Include="Materials\TransparentMaterial.hpp" />
     <ClInclude Include="Scene\BVH.hpp" />
     <ClInclude Include="Scene\IAccelerationStructure.hpp" />
     <ClInclude Include="Scene\IScene.hpp" />
     <ClInclude Include="Scene\MyScene.hpp" />
     <ClInclude Include="Shapes\IShape.hpp" />
+    <ClInclude Include="Surfaces\Mesh.hpp" />
     <ClInclude Include="Transform.hpp" />
     <ClInclude Include="AssetManager.hpp" />
     <ClInclude Include="BDPT.hpp" />
@@ -184,6 +188,9 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
     </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="wall_light.json" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

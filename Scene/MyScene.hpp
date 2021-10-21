@@ -36,20 +36,19 @@ namespace Fc
             {
                 for(std::uint32_t i{}; i < entity.shape->SurfaceCount(); ++i)
                 {
+                    std::unique_ptr<ISurface> surface{entity.shape->Surface(i)};
+
                     IAreaLight* areaLight{};
                     if(entity.areaLight)
                     {
                         auto tmp{entity.areaLight->Clone()};
                         areaLight = tmp.get();
+                        areaLight->SetSurface(surface.get());
                         lights_.push_back(std::move(tmp));
                     }
 
-                    acceleration_->Push({entity.shape->Surface(i), areaLight, entity.material});
+                    acceleration_->Push({std::move(surface), areaLight, entity.material});
 
-                    if(areaLight)
-                    {
-                        areaLight->SetSurface(entity.shape->Surface(i));
-                    }
                 }
             }
 
@@ -147,7 +146,7 @@ namespace Fc
 
         struct EntitySurface
         {
-            ISurface const* surface{};
+            std::unique_ptr<ISurface> surface{};
             IAreaLight const* areaLight{};
             IMaterial const* material{};
 

@@ -5,26 +5,49 @@
 
 namespace Fc
 {
-    class Plane : public ISurface, public IShape
+
+    class PlaneShape;
+    class PlaneSurface : public ISurface
     {
     public:
-        Plane(Transform const& transform, Vector2 const& size)
+        PlaneSurface(PlaneShape const* shape)
+            : shape_{shape}
+        { }
+
+        virtual Bounds3 Bounds() const override;
+        virtual double Area() const override;
+
+        virtual bool Raycast(Ray3 const& ray, double tMax, double* tHit) const override;
+        virtual bool Raycast(Ray3 const& ray, double tMax, double* tHit, SurfacePoint* p) const override;
+
+        virtual double SamplePoint(Vector2 const& u, SurfacePoint* p) const override;
+        virtual double SamplePoint(Vector3 const& viewPosition, Vector2 const& u, SurfacePoint* p) const override;
+
+        virtual double ProbabilityPoint(SurfacePoint const& p) const override;
+    private:
+        PlaneShape const* shape_{};
+    };
+
+
+    class PlaneShape : public IShape
+    {
+    public:
+        PlaneShape(Transform const& transform, Vector2 const& size)
             : transform_{transform}, size_{size}
         { }
 
-
-        virtual Bounds3 Bounds() const override
+        Bounds3 Bounds() const
         {
             Bounds3 bounds{Vector3{-size_.x / 2.0, 0.0, -size_.y / 2.0}, Vector3{size_.x / 2.0, 0.0, size_.y / 2.0}};
             return transform_.TransformBounds(bounds);
         }
 
-        virtual double Area() const override
+        double Area() const
         {
             return size_.x * size_.y;
         }
 
-        virtual bool Raycast(Ray3 const& ray, double tMax, double* tHit) const override
+        bool Raycast(Ray3 const& ray, double tMax, double* tHit) const
         {
             Vector3 o{transform_.InverseTransformPoint(ray.origin)};
             Vector3 d{transform_.InverseTransformDirection(ray.direction)};
@@ -46,7 +69,7 @@ namespace Fc
             return true;
         }
 
-        virtual bool Raycast(Ray3 const& ray, double tMax, double* tHit, SurfacePoint* p) const override
+        bool Raycast(Ray3 const& ray, double tMax, double* tHit, SurfacePoint* p) const
         {
             Vector3 o{transform_.InverseTransformPoint(ray.origin)};
             Vector3 d{transform_.InverseTransformDirection(ray.direction)};
@@ -69,31 +92,28 @@ namespace Fc
             p->SetTangent(transform_.TransformDirection({1.0, 0.0, 0.0}));
             p->SetShadingNormal(p->Normal());
             p->SetShadingTangent(p->Tangent());
-            p->SetSurface(this);
 
             return true;
         }
 
-        virtual double SamplePoint(Vector2 const& u, SurfacePoint* p) const override
+        double SamplePoint(Vector2 const& u, SurfacePoint* p) const
         {
             Vector2 tu{(u - 0.5) * size_};
             Vector3 point{tu.x, 0.0, tu.y};
 
             p->SetPosition(transform_.TransformPoint(point));
             p->SetNormal(transform_.TransformNormal({0.0, 1.0, 0.0}));
-            p->SetSurface(this);
 
             return 1.0 / Area();
         }
 
-        virtual double SamplePoint(Vector3 const& viewPosition, Vector2 const& u, SurfacePoint* p) const override
+        double SamplePoint(Vector3 const& viewPosition, Vector2 const& u, SurfacePoint* p) const
         {
             return SamplePoint(u, p);
         }
 
-        virtual double ProbabilityPoint(SurfacePoint const& p) const override
+        double ProbabilityPoint(SurfacePoint const& p) const
         {
-            if(p.Surface() != this) return 0.0;
             return 1.0 / Area();
         }
 
@@ -102,13 +122,67 @@ namespace Fc
             return 1;
         }
 
-        virtual ISurface const* Surface(std::uint32_t index) const override
+        virtual std::unique_ptr<ISurface> Surface(std::uint32_t index) const override
         {
-            return this;
+            return std::unique_ptr<ISurface>{new PlaneSurface{this}};
         }
 
     private:
         Transform transform_{};
         Vector2 size_{};
     };
+
+    inline Bounds3 PlaneSurface::Bounds() const
+    {
+        return shape_->Bounds();
+    }
+
+    inline double PlaneSurface::Area() const
+    {
+        return shape_->Area();
+    }
+
+    inline bool PlaneSurface::Raycast(Ray3 const& ray, double tMax, double* tHit) const
+    {
+        return shape_->Raycast(ray, tMax, tHit);
+    }
+
+    inline bool PlaneSurface::Raycast(Ray3 const& ray, double tMax, double* tHit, SurfacePoint* p) const
+    {
+        if(shape_->Raycast(ray, tMax, tHit, p))
+        {
+            p->SetSurface(this);
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+    inline double PlaneSurface::SamplePoint(Vector2 const& u, SurfacePoint* p) const
+    {
+        double pdf{shape_->SamplePoint(u, p)};
+        p->SetSurface(this);
+        return pdf;
+    }
+
+    inline double PlaneSurface::SamplePoint(Vector3 const& viewPosition, Vector2 const& u, SurfacePoint* p) const
+    {
+        double pdf{shape_->SamplePoint(viewPosition, u, p)};
+        p->SetSurface(this);
+        return pdf;
+    }
+
+    inline double PlaneSurface::ProbabilityPoint(SurfacePoint const& p) const
+    {
+        if(p.Surface() != this)
+        {
+            return 0.0;
+        }
+        else
+        {
+            return shape_->ProbabilityPoint(p);
+        }
+    }
 }

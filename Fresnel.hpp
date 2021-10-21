@@ -101,4 +101,13 @@ namespace Fc
             return {1.0, 1.0, 1.0};
         }
     };
+
+    class FresnelZero : public IFresnel
+    {
+    public:
+        virtual Vector3 Evaluate(double cosThetaI) const override
+        {
+            return {0.0, 0.0, 0.0};
+        }
+    };
 }

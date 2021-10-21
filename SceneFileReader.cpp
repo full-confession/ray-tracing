@@ -1,12 +1,16 @@
 #include "SceneFileReader.hpp"
 #include "Surfaces/Sphere.hpp"
 #include "Surfaces/Plane.hpp"
+#include "Surfaces/Mesh.hpp"
 #include "json.hpp"
 #include "BDPT.hpp"
 #include "Integrators/ForwardPathIntegrator.hpp"
 #include "Integrators/BackwardPathIntegrator.hpp"
 #include "Integrators/BidirectionalPathIntegrator.hpp"
 #include "Materials/DiffuseMaterial.hpp"
+#include "Materials/MirrorMaterial.hpp"
+#include "Materials/GlassMaterial.hpp"
+#include "Materials/TransparentMaterial.hpp"
 #include "Lights/DiffuseAreaLight.hpp"
 #include "Cameras/PerspectiveCamera.hpp"
 #include "Scene/MyScene.hpp"
@@ -142,7 +146,8 @@ namespace Fc
         Diffuse,
         Metal,
         Mirror,
-        Glass
+        Glass,
+        Transparent
     };
 
     NLOHMANN_JSON_SERIALIZE_ENUM(MaterialType, {
@@ -150,7 +155,8 @@ namespace Fc
         {MaterialType::Diffuse, "diffuse"},
         {MaterialType::Metal, "metal"},
         {MaterialType::Mirror, "mirror"},
-        {MaterialType::Glass, "glass"}
+        {MaterialType::Glass, "glass"},
+        {MaterialType::Transparent, "transparent"}
     });
 
     enum class EmissionType
@@ -463,7 +469,7 @@ static std::unique_ptr<IShape> ReadSphereShape(nlohmann::json const& json)
         it->get_to(radius);
     }
 
-    return std::make_unique<Sphere>(transform, radius);
+    return std::make_unique<SphereShape>(transform, radius);
 }
 static std::unique_ptr<IShape> ReadPlaneShape(nlohmann::json const& json)
 {
@@ -482,31 +488,33 @@ static std::unique_ptr<IShape> ReadPlaneShape(nlohmann::json const& json)
         it->get_to(size);
     }
 
-    return std::make_unique<Plane>(transform, size);
+    return std::make_unique<PlaneShape>(transform, size);
 }
-//static std::unique_ptr<Shape> ReadMeshShape(nlohmann::json const& json, AssetManager& assetManager)
-//{
-//    Transform transform{};
-//    std::string name{};
-//
-//    auto it{json.find("transform")};
-//    if(it != json.end())
-//    {
-//        it->get_to(transform);
-//    }
-//
-//    it = json.find("name");
-//    if(it != json.end())
-//    {
-//        it->get_to(name);
-//    }
-//
-//    return std::make_unique<Mesh>(transform, HMesh{&assetManager, name});
-//}
+
+static std::unique_ptr<IShape> ReadMeshShape(nlohmann::json const& json, AssetManager& assetManager)
+{
+    Transform transform{};
+    std::string name{};
+
+    auto it{json.find("transform")};
+    if(it != json.end())
+    {
+        it->get_to(transform);
+    }
+
+    it = json.find("name");
+    if(it != json.end())
+    {
+        it->get_to(name);
+    }
+
+    return std::make_unique<MeshShape>(transform, HMesh{&assetManager, name});
+}
+
 static std::unique_ptr<IShape> ReadShape(nlohmann::json const& json, AssetManager& assetManager)
 {
     auto shapeIt{json.find("shape")};
-    if(shapeIt == json.end()) return std::make_unique<Sphere>(Transform{}, 1.0);
+    if(shapeIt == json.end()) return std::make_unique<SphereShape>(Transform{}, 1.0);
 
 
     ShapeType shapeType{ShapeType::Sphere};
@@ -518,8 +526,8 @@ static std::unique_ptr<IShape> ReadShape(nlohmann::json const& json, AssetManage
 
     switch(shapeType)
     {
-    /*case Fc::ShapeType::Mesh:
-        return ReadMeshShape(*shapeIt, assetManager);*/
+    case Fc::ShapeType::Mesh:
+        return ReadMeshShape(*shapeIt, assetManager);
 
     case Fc::ShapeType::Plane:
         return ReadPlaneShape(*shapeIt);
@@ -594,44 +602,56 @@ static std::unique_ptr<IMaterial> ReadDiffuseMaterial(nlohmann::json const& json
 
     return std::make_unique<DiffuseMaterial>(reflectance);
 }
-//static std::shared_ptr<Material> ReadMirrorMaterial(nlohmann::json const& json)
-//{
-//    Vector3 reflectance{0.9, 0.9, 0.9};
-//
-//    auto it{json.find("reflectance")};
-//    if(it != json.end())
-//    {
-//        it->get_to(reflectance);
-//    }
-//
-//    return std::make_shared<MirrorMaterial>(reflectance);
-//}
-//static std::shared_ptr<Material> ReadGlassMaterial(nlohmann::json const& json)
-//{
-//    Vector3 reflectance{0.9, 0.9, 0.9};
-//    Vector3 transmittance{0.9, 0.9, 0.9};
-//    double ior{1.4};
-//
-//    auto it{json.find("reflectance")};
-//    if(it != json.end())
-//    {
-//        it->get_to(reflectance);
-//    }
-//
-//    it = json.find("transmittance");
-//    if(it != json.end())
-//    {
-//        it->get_to(transmittance);
-//    }
-//
-//    it = json.find("ior");
-//    if(it != json.end())
-//    {
-//        it->get_to(ior);
-//    }
-//
-//    return std::make_shared<GlassMaterial>(reflectance, transmittance, ior);
-//}
+static std::unique_ptr<IMaterial> ReadMirrorMaterial(nlohmann::json const& json)
+{
+    Vector3 reflectance{0.9, 0.9, 0.9};
+
+    auto it{json.find("reflectance")};
+    if(it != json.end())
+    {
+        it->get_to(reflectance);
+    }
+
+    return std::make_unique<MirrorMaterial>(reflectance);
+}
+static std::unique_ptr<IMaterial> ReadTransparentMaterial(nlohmann::json const& json)
+{
+    Vector3 opacity{0.9, 0.9, 0.9};
+
+    auto it{json.find("opacity")};
+    if(it != json.end())
+    {
+        it->get_to(opacity);
+    }
+
+    return std::make_unique<TransparentMaterial>(opacity);
+}
+static std::unique_ptr<IMaterial> ReadGlassMaterial(nlohmann::json const& json)
+{
+    Vector3 reflectance{0.9, 0.9, 0.9};
+    Vector3 transmittance{0.9, 0.9, 0.9};
+    double ior{1.4};
+
+    auto it{json.find("reflectance")};
+    if(it != json.end())
+    {
+        it->get_to(reflectance);
+    }
+
+    it = json.find("transmittance");
+    if(it != json.end())
+    {
+        it->get_to(transmittance);
+    }
+
+    it = json.find("ior");
+    if(it != json.end())
+    {
+        it->get_to(ior);
+    }
+
+    return std::make_unique<GlassMaterial>(reflectance, transmittance, ior);
+}
 
 static std::unique_ptr<IMaterial> ReadMaterial(nlohmann::json const& json)
 {
@@ -652,11 +672,13 @@ static std::unique_ptr<IMaterial> ReadMaterial(nlohmann::json const& json)
     /*case Fc::MaterialType::Plastic:
         return ReadPlasticMaterial(*materialIt);
     case Fc::MaterialType::Metal:
-        return ReadMetalMaterial(*materialIt);
+        return ReadMetalMaterial(*materialIt);*/
     case Fc::MaterialType::Mirror:
         return ReadMirrorMaterial(*materialIt);
+    case Fc::MaterialType::Transparent:
+        return ReadTransparentMaterial(*materialIt);
     case Fc::MaterialType::Glass:
-        return ReadGlassMaterial(*materialIt);*/
+        return ReadGlassMaterial(*materialIt);
     case Fc::MaterialType::Diffuse:
     default:
         return ReadDiffuseMaterial(*materialIt);

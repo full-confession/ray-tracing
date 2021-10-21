@@ -21,6 +21,11 @@ namespace Fc
         return std::abs(Dot(p1.Normal(), w12) * Dot(p2.Normal(), w12)) / LengthSqr(p2.Position() - p1.Position());
     }
 
+    inline double Gs(SurfacePoint const& p1, SurfacePoint const& p2, Vector3 const& w12)
+    {
+        return std::abs(Dot(p1.ShadingNormal(), w12) * Dot(p2.Normal(), w12)) / LengthSqr(p2.Position() - p1.Position());
+    }
+
 
     class IIntegrator
     {
@@ -38,6 +43,8 @@ namespace Fc
 
         virtual void Render(Image& image, ICamera const& camera, IScene const& scene, ISampler& sampler, Bounds2i const& scissor) const override
         {
+            BeginRender(image);
+
             Vector2i imageSize{image.GetResolution()};
             Vector2i min{std::max(scissor.Min().x, 0), std::max(scissor.Min().y, 0)};
             Vector2i max{std::min(scissor.Max().x, imageSize.x), std::min(scissor.Max().y, imageSize.y)};
@@ -114,10 +121,18 @@ namespace Fc
             {
                 workers[i].join();
             }
+
+            EndRender();
         }
 
     protected:
         virtual void RenderPixel(Image& image, Vector2i const& pixel, ICamera const& camera, IScene const& scene, ISampler& sampler, MemoryAllocator& memoryAllocator) const
+        { }
+
+        virtual void BeginRender(Image& image) const
+        { }
+
+        virtual void EndRender() const
         { }
 
     private:

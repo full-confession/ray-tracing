@@ -72,12 +72,12 @@ namespace Fc
 
             SurfacePoint p1{};
             if(!scene.Raycast(p0, w01, &p1)) return L10;
-            if(p1.Light() != nullptr)
+            if(p1.Light() != nullptr && maxVertices_ == 2)
             {
                 L10 += p1.Light()->EmittedRadiance(p1, -w01);
             }
 
-            for(int i{2}; i < maxVertices_; ++i)
+            for(int i{3}; i <= maxVertices_; ++i)
             {
                 BSDF bsdf{p1.Material()->EvaluateAtPoint(p1, memoryAllocator)};
                 int bxdfCount{bsdf.GetBxDFCount()};
@@ -92,7 +92,7 @@ namespace Fc
 
                 SurfacePoint p2{};
                 if(!scene.Raycast(p1, w12, &p2)) break;
-                if(p2.Light() != nullptr)
+                if(p2.Light() != nullptr && maxVertices_ == i)
                 {
                     L10 += beta * p2.Light()->EmittedRadiance(p2, -w12);
                 }
@@ -168,7 +168,7 @@ namespace Fc
             Vector3 f012{bsdf.Evaluate(w10, w12)};
             if(f012.x == 0.0 && f012.y == 0.0 && f012.z == 0.0) return{};
 
-            return beta * f012 * G(p1, p2, w12) * radiance / pdf_p2;
+            return beta * f012 * Gs(p1, p2, w12) * radiance / pdf_p2;
         }
 
         Vector3 MISStrategy(Ray3 const& ray, IScene const& scene, ISampler& sampler, MemoryAllocator& memoryAllocator) const
@@ -207,42 +207,53 @@ namespace Fc
 
                 int lightCount{scene.LightCount()};
 
-                // bsdf part
-                if(result && p2.Light() != nullptr)
+                if((bsdf.FlagsBxDF(bxdfIndex) & BxDFFlags::Specular) == BxDFFlags::Specular)
                 {
-                    Vector3 v2{beta * f012 * cos12 * p2.Light()->EmittedRadiance(p2, -w12) / pdf_w12};
-                    double pdf_p2_L{p2.Light()->ProbabilityPoint(p2) / lightCount};
-                    double x{pdf_p2_L * LengthSqr(p2.Position() - p1.Position()) / (pdf_w12 * std::abs(Dot(p2.Normal(), w12)))};
-
-                    double weight = 1.0 / (1.0 + x);
-                    L10 += v2 * weight;
-                }
-
-
-                // light part
-                int lightIndex{std::min(static_cast<int>(sampler.Get1D() * lightCount), lightCount - 1)};
-                ILight const* light{scene.Light(lightIndex)};
-
-                SurfacePoint pL{};
-                double pdf_pL{light->SamplePoint(p1.Position(), sampler.Get2D(), &pL)};
-                Vector3 w1L{Normalize(pL.Position() - p1.Position())};
-                Vector3 rL{light->EmittedRadiance(pL, -w1L)};
-                pdf_pL /= lightCount;
-
-                if(rL.x != 0.0 || rL.y != 0.0 || rL.z != 0.0)
-                {
-                    if(scene.Visibility(p1, pL))
+                    // only bsdf
+                    if(result && p2.Light() != nullptr)
                     {
-                        Vector3 f01L{bsdf.Evaluate(-w01, w1L)};
-                        if(f01L.x != 0.0 || f01L.y != 0.0 || f01L.z != 0.0)
-                        {
-                            Vector3 vL{beta * f01L * G(p1, pL, w1L) * rL / pdf_pL};
-                            double pdf_w1L{bsdf.PDFBxDF(bxdfIndex, -w01, w1L)};
-                            pdf_w1L /= bxdfCount;
-                            double x{pdf_w1L * std::abs(Dot(pL.Normal(), w1L)) / (pdf_pL * LengthSqr(pL.Position() - p1.Position()))};
-                            double weight{1.0 / (1.0 + x)};
+                        L10 += beta * f012 * cos12 * p2.Light()->EmittedRadiance(p2, -w12) / pdf_w12;
+                    }
+                }
+                else
+                {
+                    // bsdf part
+                    if(result && p2.Light() != nullptr)
+                    {
+                        Vector3 v2{beta * f012 * cos12 * p2.Light()->EmittedRadiance(p2, -w12) / pdf_w12};
+                        double pdf_p2_L{p2.Light()->ProbabilityPoint(p2) / lightCount};
+                        double x{pdf_p2_L * LengthSqr(p2.Position() - p1.Position()) / (pdf_w12 * std::abs(Dot(p2.Normal(), w12)))};
 
-                            L10 += vL * weight;
+                        double weight = 1.0 / (1.0 + x);
+                        L10 += v2 * weight;
+                    }
+
+
+                    // light part
+                    int lightIndex{std::min(static_cast<int>(sampler.Get1D() * lightCount), lightCount - 1)};
+                    ILight const* light{scene.Light(lightIndex)};
+
+                    SurfacePoint pL{};
+                    double pdf_pL{light->SamplePoint(p1.Position(), sampler.Get2D(), &pL)};
+                    Vector3 w1L{Normalize(pL.Position() - p1.Position())};
+                    Vector3 rL{light->EmittedRadiance(pL, -w1L)};
+                    pdf_pL /= lightCount;
+
+                    if(rL.x != 0.0 || rL.y != 0.0 || rL.z != 0.0)
+                    {
+                        if(scene.Visibility(p1, pL))
+                        {
+                            Vector3 f01L{bsdf.Evaluate(-w01, w1L)};
+                            if(f01L.x != 0.0 || f01L.y != 0.0 || f01L.z != 0.0)
+                            {
+                                Vector3 vL{beta * f01L * Gs(p1, pL, w1L) * rL / pdf_pL};
+                                double pdf_w1L{bsdf.PDFBxDF(bxdfIndex, -w01, w1L)};
+                                pdf_w1L /= bxdfCount;
+                                double x{pdf_w1L * std::abs(Dot(pL.Normal(), w1L)) / (pdf_pL * LengthSqr(pL.Position() - p1.Position()))};
+                                double weight{1.0 / (1.0 + x)};
+
+                                L10 += vL * weight;
+                            }
                         }
                     }
                 }
