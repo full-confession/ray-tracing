@@ -9,7 +9,8 @@ namespace Fc
     class ISurface;
     class IMaterial;
     class ICamera;
-
+    class IMedium;
+    class IShape;
     class SurfacePoint
     {
     public:
@@ -112,6 +113,46 @@ namespace Fc
             return camera_;
         }
 
+        void SetMedium(IMedium const* medium)
+        {
+            medium_ = medium;
+        }
+
+        IMedium const* Medium() const
+        {
+            return medium_;
+        }
+
+        void SetShape(IShape const* shape)
+        {
+            shape_ = shape;
+        }
+
+        IShape const* Shape() const
+        {
+            return shape_;
+        }
+
+        void SetPriority(int priority)
+        {
+            priority_ = priority;
+        }
+
+        int Priority() const
+        {
+            return priority_;
+        }
+
+        void SetIOR(double ior)
+        {
+            ior_ = ior;
+        }
+
+        double IOR() const
+        {
+            return ior_;
+        }
+
     private:
         Vector3 position_{};
         Vector3 normal_{};
@@ -124,5 +165,10 @@ namespace Fc
         ISurface const* surface_{};
         IMaterial const* material_{};
         ICamera const* camera_{};
+        IShape const* shape_{};
+        IMedium const* medium_{};
+        int priority_{};
+        double ior_{};
+
     };
 }

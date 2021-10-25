@@ -20,13 +20,10 @@ namespace Fc
         virtual Vector3 EmittedRadiance(SurfacePoint const& p, Vector3 const& w) const = 0;
     };
 
-    class IAreaLight : public ILight
+    class IEmission
     {
     public:
-        virtual ~IAreaLight() = default;
-
-        virtual std::unique_ptr<IAreaLight> Clone() const = 0;
-        virtual void SetSurface(ISurface const* surface) = 0;
-        virtual void HandleRaycastedPoint(SurfacePoint& p) const = 0;
+        virtual ~IEmission() = default;
+        virtual Vector3 EmittedRadiance(SurfacePoint const& p, Vector3 const& w) const = 0;
     };
 }

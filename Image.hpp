@@ -112,14 +112,18 @@ namespace Fc
                     Pixel const& pixel{GetPixel({j, i})};
                     LightPixel const& lightPixel{GetLightPixel({j, i})};
 
-                    if(pixel.sampleCount > 0)
+
+                   /* if(pixel.sampleCount > 0)
                     {
                         c += pixel.sampleValueSum / static_cast<double>(pixel.sampleCount);
-                    }
+                    }*/
 
                     if(lightSamples_ > 0)
                     {
+                        //c += pixel.sampleValueSum / static_cast<double>(lightSamples_.load(std::memory_order::memory_order_relaxed));
                         double samples{static_cast<double>(lightSamples_.load(std::memory_order::memory_order_relaxed))};
+                        //samples /= static_cast<double>(resolution_.x) * static_cast<double>(resolution_.y);
+                        c += pixel.sampleValueSum / samples;
                         c.x += lightPixel.sumRed.load(std::memory_order_relaxed) / samples;
                         c.y += lightPixel.sumGreen.load(std::memory_order_relaxed) / samples;
                         c.z += lightPixel.sumBlue.load(std::memory_order_relaxed) / samples;

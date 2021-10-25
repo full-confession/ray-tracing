@@ -132,7 +132,7 @@ namespace Fc
             }
             v = Normalize(v);
 
-            p->SetTangent(transform_.TransformDirection({-v.y, 0.0, v.x}));
+            p->SetTangent(Normalize(transform_.TransformDirection({-v.y, 0.0, v.x})));
             p->SetShadingNormal(p->Normal());
             p->SetShadingTangent(p->Tangent());
 

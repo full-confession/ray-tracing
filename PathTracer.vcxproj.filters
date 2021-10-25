@@ -132,6 +132,12 @@
     <ClInclude Include="Materials\GlassMaterial.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Scene\BruteForceSearch.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="IMedium.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp">

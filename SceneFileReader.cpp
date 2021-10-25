@@ -685,7 +685,7 @@ static std::unique_ptr<IMaterial> ReadMaterial(nlohmann::json const& json)
     }
 }
 
-static std::unique_ptr<IAreaLight> ReadDiffuseEmission(nlohmann::json const& json)
+static std::unique_ptr<IEmission> ReadDiffuseEmission(nlohmann::json const& json)
 {
     Vector3 color{1.0, 1.0, 1.0};
     double strength{1.0};
@@ -702,9 +702,9 @@ static std::unique_ptr<IAreaLight> ReadDiffuseEmission(nlohmann::json const& jso
         it->get_to(strength);
     }
 
-    return std::make_unique<DiffuseAreaLight>(color, strength);
+    return std::make_unique<DiffuseEmission>(color, strength);
 }
-static std::unique_ptr<IAreaLight> ReadEmission(nlohmann::json const& json)
+static std::unique_ptr<IEmission> ReadEmission(nlohmann::json const& json)
 {
     auto emissionIt{json.find("emission")};
     if(emissionIt == json.end()) return {};
@@ -725,6 +725,21 @@ static std::unique_ptr<IAreaLight> ReadEmission(nlohmann::json const& json)
     }
 }
 
+static std::unique_ptr<IMedium> ReadMedium(nlohmann::json const& json)
+{
+    auto emissionIt{json.find("medium")};
+    if(emissionIt == json.end()) return {};
+
+    Vector3 ext{0.0, 0.0, 0.0};
+    auto it = emissionIt->find("ext");
+    if(it != emissionIt->end())
+    {
+        it->get_to(ext);
+    }
+
+    return std::make_unique<UniformMedium>(ext);
+}
+
 static void ReadScene(nlohmann::json const& json, SceneFile& sceneFile, AssetManager& assetManager)
 {
     auto scene{std::make_unique<MyScene>()};
@@ -738,8 +753,13 @@ static void ReadScene(nlohmann::json const& json, SceneFile& sceneFile, AssetMan
 
     for(auto const& entity : *it)
     {
-        sceneFile.materials.push_back(ReadMaterial(entity));
-        scene->AddEntity(ReadShape(entity, assetManager), ReadEmission(entity), sceneFile.materials.back().get());
+        //sceneFile.materials.push_back(ReadMaterial(entity));
+
+        double ior{1.0};
+        auto x{entity.find("ior")};
+        if(x != entity.end()) x->get_to(ior);
+
+        scene->AddEntity(ReadShape(entity, assetManager), ReadMaterial(entity), ReadEmission(entity), ReadMedium(entity), ior);
     }
 
     //sceneFile.scene->Build(Scene::SpliMethod::Middle);

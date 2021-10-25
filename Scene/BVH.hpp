@@ -32,7 +32,7 @@ namespace Fc
             std::swap(surfaces_, orderedSurfaces);
         };
 
-        virtual bool Raycast(Ray3 const& ray, double tMax, TSurface const** surface) const override
+        virtual bool Raycast(Ray3 const& ray, int priority, double tMax, TSurface const** surface) const override
         {
             TSurface const* hitSurface{};
             Vector3 invDir{1.0 / ray.direction};
@@ -83,7 +83,7 @@ namespace Fc
             return true;
         }
 
-        virtual bool Raycast(Ray3 const& ray, double tMax) const override
+        virtual bool Raycast(Ray3 const& ray, int priority, double tMax) const override
         {
             Vector3 invDir{1.0 / ray.direction};
             int dirIsNeg[3]{invDir.x < 0, invDir.y < 0, invDir.z < 0};

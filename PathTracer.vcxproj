@@ -150,8 +150,10 @@
     <ClInclude Include="Materials\IMaterial.hpp" />
     <ClInclude Include="Materials\MirrorMaterial.hpp" />
     <ClInclude Include="Materials\TransparentMaterial.hpp" />
+    <ClInclude Include="Scene\BruteForceSearch.hpp" />
     <ClInclude Include="Scene\BVH.hpp" />
     <ClInclude Include="Scene\IAccelerationStructure.hpp" />
+    <ClInclude Include="IMedium.hpp" />
     <ClInclude Include="Scene\IScene.hpp" />
     <ClInclude Include="Scene\MyScene.hpp" />
     <ClInclude Include="Shapes\IShape.hpp" />

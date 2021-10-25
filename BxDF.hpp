@@ -13,6 +13,12 @@ namespace Fc
         Specular = 1 << 3
     };
 
+    enum class Direction
+    {
+        Incoming,
+        Outgoing
+    };
+
     inline BxDFFlags operator|(BxDFFlags a, BxDFFlags b)
     {
         return static_cast<BxDFFlags>(static_cast<int>(a) | static_cast<int>(b));
@@ -48,7 +54,7 @@ namespace Fc
         { }
 
         virtual Vector3 Evaluate(Vector3 const& wo, Vector3 const& wi) const = 0;
-        virtual Vector3 SampleWi(Vector3 const& wo, Vector2 const& u, Vector3* wi, double* pdf) const = 0;
+        virtual Vector3 SampleWi(Vector3 const& wo, Vector2 const& u, Vector3* wi, double* pdf, BxDFFlags* flags) const = 0;
         virtual double PDF(Vector3 const& wo, Vector3 const& wi) const = 0;
         
         BxDFFlags GetFlags() const
@@ -69,23 +75,24 @@ namespace Fc
 
         virtual Vector3 Evaluate(Vector3 const& wo, Vector3 const& wi) const override
         {
+            if(wo.y * wi.y <= 0.0) return {};
             return reflectance_ * Math::InvPi;
         }
 
-        virtual Vector3 SampleWi(Vector3 const& wo, Vector2 const& u, Vector3* wi, double* pdf) const override
+        virtual Vector3 SampleWi(Vector3 const& wo, Vector2 const& u, Vector3* wi, double* pdf, BxDFFlags* flags) const override
         {
             *wi = SampleHemisphereCosineWeighted(u, pdf);
             if(wo.y < 0.0)
             {
                 wi->y = -wi->y;
             }
-
+            *flags = BxDFFlags::Reflection | BxDFFlags::Diffuse;
             return reflectance_ * Math::InvPi;
         }
 
         virtual double PDF(Vector3 const& wo, Vector3 const& wi) const override
         {
-            if(wo.y * wi.y <= 0.0) return 0.0;
+            if(wo.y * wi.y <= 0.0) return {};
             return std::abs(wi.y) * Math::InvPi;
         }
 
@@ -105,11 +112,11 @@ namespace Fc
             return {};
         }
 
-        virtual Vector3 SampleWi(Vector3 const& wo, Vector2 const& u, Vector3* wi, double* pdf) const override
+        virtual Vector3 SampleWi(Vector3 const& wo, Vector2 const& u, Vector3* wi, double* pdf, BxDFFlags* flags) const override
         {
             *wi = Vector3(-wo.x, wo.y, -wo.z);
             *pdf = 1.0;
-
+            *flags = BxDFFlags::Reflection | BxDFFlags::Specular;
             return fresnel_->Evaluate(wi->y) * reflectance_ / std::abs(wi->y);
         }
 
@@ -135,7 +142,7 @@ namespace Fc
             return {};
         }
 
-        virtual Vector3 SampleWi(Vector3 const& wo, Vector2 const& u, Vector3* wi, double* pdf) const override
+        virtual Vector3 SampleWi(Vector3 const& wo, Vector2 const& u, Vector3* wi, double* pdf, BxDFFlags* flags) const override
         {
             bool entering{wo.y > 0.0};
             Vector3 t{transmittance_};
@@ -159,6 +166,7 @@ namespace Fc
             }
 
             *pdf = 1.0;
+            *flags = BxDFFlags::Transmission | BxDFFlags::Specular;
             t *= Vector3{1.0, 1.0, 1.0} - frensel_->Evaluate(wi->y);
             return t / std::abs(wi->y);
         }
@@ -190,7 +198,7 @@ namespace Fc
             return {};
         }
 
-        virtual Vector3 SampleWi(Vector3 const& wo, Vector2 const& u, Vector3* wi, double* pdf) const override
+        virtual Vector3 SampleWi(Vector3 const& wo, Vector2 const& u, Vector3* wi, double* pdf, BxDFFlags* flags) const override
         {
             double cosThetaI{wo.y};
             double fr{FrDielectric(cosThetaI, etaA_, etaB_)};
@@ -199,6 +207,7 @@ namespace Fc
             {
                 *wi = Vector3(-wo.x, wo.y, -wo.z);
                 *pdf = fr;
+                *flags = BxDFFlags::Reflection | BxDFFlags::Specular;
                 return fr * reflectance_ / std::abs(wi->y);
             }
             else
@@ -225,6 +234,7 @@ namespace Fc
                 }
 
                 *pdf = 1.0 - fr;
+                *flags = BxDFFlags::Transmission | BxDFFlags::Specular;
                 t *= Vector3{1.0, 1.0, 1.0} - fr;
                 return t / std::abs(wi->y);
             }
@@ -382,7 +392,7 @@ namespace Fc
                 / (4.0 * cosThetaI * cosThetaO);
         }
 
-        virtual Vector3 SampleWi(Vector3 const& wo, Vector2 const& u, Vector3* wi, double* pdf) const override
+        virtual Vector3 SampleWi(Vector3 const& wo, Vector2 const& u, Vector3* wi, double* pdf, BxDFFlags* flags) const override
         {
             if(wo.y == 0.0) return {};
             Vector3 wh{microfacetDistribution_->SampleWh(wo, u)};
@@ -391,6 +401,7 @@ namespace Fc
             if(!SameHemisphere(wo, *wi)) return {};
 
             *pdf = microfacetDistribution_->PDF(wo, wh) / (4.0 * Dot(wo, wh));
+            *flags = BxDFFlags::Reflection | BxDFFlags::Diffuse;
             return Evaluate(wo, *wi);
         }
 
@@ -444,17 +455,52 @@ namespace Fc
             return value;
         }
 
-        Vector3 SampleWi(Vector3 const& worldWo, Vector2 const& u, Vector3* worldWi, double* pdf, bool* delta) const
+        Vector3 SampleWi(Vector3 const& worldWo, Vector2 const& u, Vector3* worldWi, double* pdf, BxDFFlags* flags) const
         {
             int index{std::min(static_cast<int>(std::floor(u.x * bxdfCount_)), bxdfCount_ - 1)};
             Vector2 remappedSample{u.x * bxdfCount_ - index, u.y};
 
+            Vector3 wo{WorldToLocal(worldWo)};
             Vector3 wi{};
-            Vector3 value{bxdfs_[index]->SampleWi(WorldToLocal(worldWo), remappedSample, &wi, pdf)};
+            Vector3 value{bxdfs_[index]->SampleWi(WorldToLocal(worldWo), remappedSample, &wi, pdf, flags)};
+            *pdf /= bxdfCount_;
+
+            bool entering{Dot(worldWo, geometryNormal_) > 0.0};
+            if((*flags & BxDFFlags::Reflection) == BxDFFlags::Reflection)
+            {
+                if((entering && Dot(*worldWi, geometryNormal_) <= 0.0) || (!entering && Dot(*worldWi, geometryNormal_) >= 0.0))
+                {
+                    return {};
+                }
+            }
+            else if((*flags & BxDFFlags::Transmission) == BxDFFlags::Transmission)
+            {
+                if((entering && Dot(*worldWi, geometryNormal_) >= 0.0) || (!entering && Dot(*worldWi, geometryNormal_) <= 0.0))
+                {
+                    return {};
+                }
+            }
+
+
+            if((*flags & BxDFFlags::Diffuse) == BxDFFlags::Diffuse)
+            {
+                for(int i{}; i < bxdfCount_; ++i)
+                {
+                    if((bxdfs_[i]->GetFlags() & BxDFFlags::Diffuse) == BxDFFlags::Diffuse)
+                    {
+                        value += bxdfs_[i]->Evaluate(wo, wi);
+                    }
+                }
+            }
+
+
+
             *worldWi = LocalToWorld(wi);
 
+            
+
             *pdf /= bxdfCount_;
-            *delta = (bxdfs_[index]->GetFlags() & BxDFFlags::Specular) == BxDFFlags::Specular;
+            //*delta = (bxdfs_[index]->GetFlags() & BxDFFlags::Specular) == BxDFFlags::Specular;
             return value;
         }
 
@@ -483,10 +529,38 @@ namespace Fc
             return bxdfCount_;
         }
 
-        Vector3 SampleBxDF(int index, Vector3 const& worldWo, Vector2 const& u, Vector3* worldWi, double* pdf) const
+        Vector3 SampleBxDF(int index, Vector3 const& w, Vector2 const& u, Direction sampledDirection,
+            Vector3* sampledW, double* pdf) const
         {
-            Vector3 f{bxdfs_[index]->SampleWi(WorldToLocal(worldWo), u, worldWi, pdf)};
-            *worldWi = LocalToWorld(*worldWi);
+            BxDFFlags flags;
+            Vector3 f{bxdfs_[index]->SampleWi(WorldToLocal(w), u, sampledW, pdf, &flags)};
+            *sampledW = LocalToWorld(*sampledW);
+
+            bool entering{Dot(w, geometryNormal_) > 0.0};
+
+            if((flags & BxDFFlags::Reflection) == BxDFFlags::Reflection)
+            {
+                if((entering && Dot(*sampledW, geometryNormal_) <= 0.0) || (!entering && Dot(*sampledW, geometryNormal_) >= 0.0))
+                {
+                    return {};
+                }
+            }
+            else if((flags & BxDFFlags::Transmission) == BxDFFlags::Transmission)
+            {
+                if((entering && Dot(*sampledW, geometryNormal_) >= 0.0) || (!entering && Dot(*sampledW, geometryNormal_) <= 0.0))
+                {
+                    return {};
+                }
+            }
+
+            if(sampledDirection == Direction::Incoming)
+            {
+                f *= std::abs(Dot(*sampledW, shadingNormal_)) / std::abs(Dot(*sampledW, geometryNormal_));
+            }
+            else
+            {
+                f *= std::abs(Dot(w, shadingNormal_)) / std::abs(Dot(w, geometryNormal_));
+            }
             return f;
         }
 
@@ -497,13 +571,12 @@ namespace Fc
             Vector3 wo{WorldToLocal(worldWo)};
             Vector3 wi{WorldToLocal(worldWi)};
 
-            if(reflection && ((bxdfs_[index]->GetFlags() & BxDFFlags::Reflection) == BxDFFlags::Reflection))
+            if((reflection && ((bxdfs_[index]->GetFlags() & BxDFFlags::Reflection) == BxDFFlags::Reflection))
+                || (!reflection && ((bxdfs_[index]->GetFlags() & BxDFFlags::Transmission) == BxDFFlags::Transmission)))
             {
-                return bxdfs_[index]->Evaluate(wo, wi);
-            }
-            else if(!reflection && ((bxdfs_[index]->GetFlags() & BxDFFlags::Transmission) == BxDFFlags::Transmission))
-            {
-                return bxdfs_[index]->Evaluate(wo, wi);
+                Vector3 f{bxdfs_[index]->Evaluate(wo, wi)};
+                f *= std::abs(Dot(worldWi, shadingNormal_)) / std::abs(Dot(worldWi, geometryNormal_));
+                return f;
             }
 
             return {};
@@ -513,7 +586,6 @@ namespace Fc
         {
             Vector3 wo{WorldToLocal(worldWo)};
             Vector3 wi{WorldToLocal(worldWi)};
-
             return bxdfs_[index]->PDF(wo, wi);
         }
 

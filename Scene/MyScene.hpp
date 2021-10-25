@@ -4,6 +4,8 @@
 #include "../Shapes/IShape.hpp"
 #include "IAccelerationStructure.hpp"
 #include "BVH.hpp"
+#include "../IMedium.hpp"
+#include "../Lights/DiffuseAreaLight.hpp"
 
 #include <vector>
 #include <memory>
@@ -14,40 +16,29 @@ namespace Fc
     class MyScene : public IScene
     {
     public:
-        void AddEntity(std::unique_ptr<IShape> shape, std::unique_ptr<IAreaLight> areaLight, IMaterial const* material)
+        void AddEntity(std::unique_ptr<IShape> shape, std::unique_ptr<IMaterial> material,
+            std::unique_ptr<IEmission> emission, std::unique_ptr<IMedium> medium, double ior)
         {
-            entities_.push_back({std::move(shape), std::move(areaLight), material});
+            int priority{static_cast<int>(entities_.size()) + 1};
+            entities_.push_back({std::move(shape), std::move(material), std::move(emission), std::move(medium), priority, ior});
         }
 
         void Build()
         {
-            std::size_t surfaceCount{};
-            std::size_t areaLightCount{};
-            for(auto const& entity : entities_)
-            {
-                surfaceCount += entity.shape->SurfaceCount();
-                if(entity.areaLight) areaLightCount += entity.shape->SurfaceCount();
-            }
-
-            acceleration_->Reserve(surfaceCount);
-            lights_.reserve(areaLightCount);
-
             for(auto const& entity : entities_)
             {
                 for(std::uint32_t i{}; i < entity.shape->SurfaceCount(); ++i)
                 {
                     std::unique_ptr<ISurface> surface{entity.shape->Surface(i)};
 
-                    IAreaLight* areaLight{};
-                    if(entity.areaLight)
+                    AreaLight* areaLight{};
+                    if(entity.emission != nullptr)
                     {
-                        auto tmp{entity.areaLight->Clone()};
-                        areaLight = tmp.get();
-                        areaLight->SetSurface(surface.get());
-                        lights_.push_back(std::move(tmp));
+                        areaLight = new AreaLight{entity.emission.get(), surface.get()};
+                        lights_.emplace_back(areaLight);
                     }
 
-                    acceleration_->Push({std::move(surface), areaLight, entity.material});
+                    acceleration_->Push({std::move(surface), &entity, areaLight});
 
                 }
             }
@@ -68,7 +59,7 @@ namespace Fc
             }
 
             EntitySurface const* entitySurface{};
-            if(acceleration_->Raycast(ray, std::numeric_limits<double>::infinity(), &entitySurface))
+            if(acceleration_->Raycast(ray, 0, std::numeric_limits<double>::infinity(), &entitySurface))
             {
                 double tHit{};
                 bool result{entitySurface->surface->Raycast(ray, std::numeric_limits<double>::infinity(), &tHit, p1)};
@@ -79,7 +70,12 @@ namespace Fc
                 {
                     entitySurface->areaLight->HandleRaycastedPoint(*p1);
                 }
-                p1->SetMaterial(entitySurface->material);
+                p1->SetMaterial(entitySurface->entity->material.get());
+                p1->SetMedium(entitySurface->entity->medium.get());
+                p1->SetShape(entitySurface->entity->shape.get());
+                p1->SetPriority(entitySurface->entity->priority);
+                p1->SetIOR(entitySurface->entity->ior);
+
                 return true;
 
             }
@@ -120,7 +116,7 @@ namespace Fc
             Vector3 direction{to1 / length};
             Ray3 ray{position0, direction};
 
-            return !acceleration_->Raycast(ray, length);
+            return !acceleration_->Raycast(ray, 0, length);
         }
 
         virtual int LightCount() const override
@@ -139,16 +135,20 @@ namespace Fc
         struct Entity
         {
             std::unique_ptr<IShape> shape{};
-            std::unique_ptr<IAreaLight> areaLight{};
-            IMaterial const* material{};
+            std::unique_ptr<IMaterial> material{};
+            std::unique_ptr<IEmission> emission{};
+            std::unique_ptr<IMedium> medium{};
+            int priority{};
+            double ior{};
         };
+
         std::vector<Entity> entities_{};
 
         struct EntitySurface
         {
             std::unique_ptr<ISurface> surface{};
-            IAreaLight const* areaLight{};
-            IMaterial const* material{};
+            Entity const* entity{};
+            AreaLight const* areaLight{};
 
             Bounds3 Bounds() const
             {
@@ -162,7 +162,6 @@ namespace Fc
         };
 
         std::unique_ptr<IAccelerationStructure<EntitySurface>> acceleration_{new BVH<EntitySurface>{}};
-
         std::vector<std::unique_ptr<ILight>> lights_{};
     };
 }

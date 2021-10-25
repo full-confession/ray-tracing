@@ -15,10 +15,10 @@
     "integrator": {
         "type": "BDPT",
         "strategy": "bsdf",
-        "samplesX": 4,
-        "samplesY": 4,
-        "maxVertices": 5,
-        "workerCount": 1,
+        "samplesX": 32,
+        "samplesY": 32,
+        "maxVertices": 10,
+        "workerCount": 16,
         "tileSize": [8, 8],
         "sampleCount": 100000000
     },

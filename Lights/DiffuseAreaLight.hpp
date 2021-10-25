@@ -4,11 +4,11 @@
 
 namespace Fc
 {
-    class DiffuseAreaLight : public IAreaLight
+    class AreaLight : public ILight
     {
     public:
-        DiffuseAreaLight(Vector3 const& color, double strength)
-            : color_{color}, strength_{strength}
+        AreaLight(IEmission const* emission, ISurface const* surface)
+            : emission_{emission}, surface_{surface}
         { }
 
         virtual double ProbabilityPoint(SurfacePoint const& p) const override
@@ -57,27 +57,34 @@ namespace Fc
             if(p.Light() != this || p.Surface() != surface_) return {};
             if(Dot(p.Normal(), w) <= 0.0) return {};
 
-            return color_ * strength_;
+            return emission_->EmittedRadiance(p, w);
         }
 
-        virtual std::unique_ptr<IAreaLight> Clone() const override
-        {
-            return std::make_unique<DiffuseAreaLight>(color_, strength_);
-        }
-
-        virtual void SetSurface(ISurface const* surface) override
-        {
-            surface_ = surface;
-        }
-
-        virtual void HandleRaycastedPoint(SurfacePoint& p) const override
+        void HandleRaycastedPoint(SurfacePoint& p) const
         {
             p.SetLight(this);
         }
 
     private:
+        IEmission const* emission_{};
+        ISurface const* surface_{};
+    };
+
+
+    class DiffuseEmission : public IEmission
+    {
+    public:
+        DiffuseEmission(Vector3 const& color, double strength)
+            : color_{color}, strength_{strength}
+        { }
+
+        virtual Vector3 EmittedRadiance(SurfacePoint const& p, Vector3 const& w) const override
+        {
+            return color_ * strength_;
+        }
+
+    private:
         Vector3 color_{};
         double strength_{};
-        ISurface const* surface_{};
     };
 }

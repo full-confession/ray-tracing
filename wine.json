@@ -1,24 +1,24 @@
 {
     "image": {
-        "resolution": [800, 450],
-        "name": "dragon",
+        "resolution": [600, 900],
+        "name": "wine",
         "format": "ppm"
     },
     "camera": {
         "type": "perspective",
         "transform": {
-            "position": [0.05, 0.66, 1.07],
-            "rotation": [15.745, -178.81, 0.0]
+            "position": [0.00, 0.6, 2],
+            "rotation": [0, 180, 0.0]
         },
         "fov": 45.0
     },
     "integrator": {
-        "type": "BDPT",
-        "strategy": "measure",
-        "samplesX": 16,
-        "samplesY": 16,
+        "type": "forward",
+        "strategy": "bsdf",
+        "samplesX": 32,
+        "samplesY": 32,
         "maxVertices": 10,
-        "workerCount": 16,
+        "workerCount": 1,
         "tileSize": [4, 4],
         "sampleCount": 100000000
     },
@@ -31,19 +31,40 @@
             {
                 "shape": {
                     "type": "mesh",
-                    "radius": 1.0,
                     "transform": {
-                        "position": [0.0, 0.4, 0.0],
-                        "scale": [0.25, 0.25, 0.25]
+                        "scale": [0.2, 0.2, 0.2]
                     },
-                    "name": "sphere_high"
+                    "name": "glass"
                 },
                 "material": {
-                    "type": "diffuse",
+                    "type": "glass",
                     "reflectance": [1.0, 1.0, 1.0],
                     "transmittance": [1.0, 1.0, 1.0],
-                    "ior": 1.45
-                }
+                    "ior": 1.5
+                },
+                "medium": {
+                    "ext": [1.0, 1.0, 1.0]
+                },
+                "ior": 1.5
+            },
+            {
+                "shape": {
+                    "type": "mesh",
+                    "transform": {
+                        "scale": [0.2, 0.2, 0.2]
+                    },
+                    "name": "wine"
+                },
+                "material": {
+                    "type": "glass",
+                    "reflectance": [1.0, 1.0, 1.0],
+                    "transmittance": [1.0, 1.0, 1.0],
+                    "ior": 1.3
+                },
+                "medium": {
+                    "ext": [10.0, 10.0, 10.0]
+                },
+                "ior": 1.3
             },
             {
                 "shape": {

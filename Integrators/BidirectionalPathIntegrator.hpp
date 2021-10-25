@@ -1,6 +1,6 @@
 #pragma once
 #include "IIntegrator.hpp"
-
+#include <intrin.h>
 namespace Fc
 {
     template<typename T>
@@ -35,20 +35,20 @@ namespace Fc
     protected:
         virtual void BeginRender(Image& image) const
         {
-            p50_ = new Image{image.GetResolution()};
+           /* p50_ = new Image{image.GetResolution()};
             p41_ = new Image{image.GetResolution()};
             p32_ = new Image{image.GetResolution()};
             p23_ = new Image{image.GetResolution()};
-            p14_ = new Image{image.GetResolution()};
+            p14_ = new Image{image.GetResolution()};*/
         }
 
         virtual void EndRender() const
         {
-            p50_->Export("p50", Fc::ImageFormat::PPM);
+            /*p50_->Export("p50", Fc::ImageFormat::PPM);
             p41_->Export("p41", Fc::ImageFormat::PPM);
             p32_->Export("p32", Fc::ImageFormat::PPM);
             p23_->Export("p23", Fc::ImageFormat::PPM);
-            p14_->Export("p14", Fc::ImageFormat::PPM);
+            p14_->Export("p14", Fc::ImageFormat::PPM);*/
         }
 
         virtual void RenderPixel(Image& image, Vector2i const& pixel, ICamera const& camera,
@@ -93,60 +93,23 @@ namespace Fc
             int t{GenerateCameraSubpath(tVertices, image, pixel, camera, scene, sampler, memoryAllocator)};
             int s{GenerateLightSubpath(sVertices, scene, sampler, memoryAllocator)};
 
-
-
+          
             Vector3 value{};
             double weight{};
-
-            if(t >= 5)
+            if(t > 1)
             {
-                Vector3 v{Connect(tVertices, 5, sVertices, 0, image, camera, scene, sampler, nullptr, &weight)};
-                p50_->AddSample(pixel, {weight});
-                image.AddSample(pixel, v * weight);
-            }
-            else
-            {
-                p50_->AddSample(pixel, {});
-                image.AddSample(pixel, {});
+                Vector3 v{Connect(tVertices, 2, sVertices, 0, image, camera, scene, sampler, nullptr, &weight)};
+                value += v;
             }
 
-            Vector2i lightPixel{};
-            if(s >= 4)
-            {
-                Vector3 v{Connect(tVertices, 1, sVertices, 4, image, camera, scene, sampler, &lightPixel, &weight)};
-                p14_->AddSample(lightPixel, {weight});
-                image.AddLightSample(lightPixel, v * weight);
-            }
-            else
-            {
-                p14_->AddSample(lightPixel, {});
-            }
-
-            //p14_->AddLightSampleCount(1);
-            image.AddLightSampleCount(1);
-
-
-            /*if(t > 1)
-            {
-                value += Connect(tVertices, 2, sVertices, 0, image, camera, scene, sampler, nullptr, &weight);
-            }
-
-            for(int i{5}; i <= maxVertices_; ++i)
+            for(int i{3}; i <= maxVertices_; ++i)
             {
                 for(int j{i}; j > 1; --j)
                 {
                     if(t >= j && s >= i - j)
                     {
                         Vector3 v{Connect(tVertices, j, sVertices, i - j, image, camera, scene, sampler, nullptr, &weight)};
-                        value += v;
-
-                        if(i == 5)
-                        {
-                            if(j == 5) p50_->AddSample(pixel, v);
-                            if(j == 4) p41_->AddSample(pixel, v);
-                            if(j == 3) p32_->AddSample(pixel, v);
-                            if(j == 2) p23_->AddSample(pixel, v);
-                        }
+                        value += v * weight;
                     }
                 }
 
@@ -154,18 +117,12 @@ namespace Fc
                 {
                     Vector2i lightPixel{};
                     Vector3 v{Connect(tVertices, 1, sVertices, i - 1, image, camera, scene, sampler, &lightPixel, &weight)};
-                    image.AddLightSample(lightPixel, v);
-
-                    if(i == 5)
-                    {
-                        p14_->AddLightSample(lightPixel, v);
-                    }
+                    image.AddLightSample(lightPixel, v * weight);
                 }
             }
+
             image.AddSample(pixel, value);
             image.AddLightSampleCount(1);
-
-            p14_->AddLightSampleCount(1);*/
         }
 
         int GenerateCameraSubpath(Vertex* vertices, Image& image, Vector2i const& pixel, ICamera const& camera, IScene const& scene, ISampler& sampler, MemoryAllocator& memoryAllocator) const
@@ -192,8 +149,8 @@ namespace Fc
                 Vertex& v2{vertices[i]};
 
 
-                Vector3 f210{v1.bsdf.SampleBxDF(0, -v0.w, sampler.Get2D(), &v1.w, &v1.pdf_w)};
-                f210 *= std::abs(Dot(v1.p.ShadingNormal(), v1.w)) / std::abs(Dot(v1.p.Normal(), v1.w));
+                Vector3 f210{v1.bsdf.SampleBxDF(0, -v0.w, sampler.Get2D(), Direction::Incoming, &v1.w, &v1.pdf_w)};
+                if(!f210) break;
                 if(!scene.Raycast(v1.p, v1.w, &v2.p)) return vertexCount;
 
                 v2.beta = v1.beta * f210 * std::abs(Dot(v1.p.Normal(), v1.w)) / v1.pdf_w;
@@ -242,9 +199,8 @@ namespace Fc
                 Vertex& v1{vertices[i - 1]};
                 Vertex& v2{vertices[i]};
 
-                Vector3 f210{v1.bsdf.SampleBxDF(0, -v0.w, sampler.Get2D(), &v1.w, &v1.pdf_w)};
-                f210 *= std::abs(Dot(v1.p.ShadingNormal(), -v0.w)) / std::abs(Dot(v1.p.Normal(), -v0.w));
-
+                Vector3 f210{v1.bsdf.SampleBxDF(0, -v0.w, sampler.Get2D(), Direction::Outgoing, &v1.w, &v1.pdf_w)};
+                if(!f210) break;
                 if(!scene.Raycast(v1.p, v1.w, &v2.p)) return vertexCount;
 
                 v2.beta = v1.beta * f210 * std::abs(Dot(v1.p.Normal(), v1.w)) / v1.pdf_w;
@@ -292,7 +248,7 @@ namespace Fc
                     return value;
                 }
             }
-            /*else if(t > 1 && s == 1 && sVertices[s - 1].p.Light() != nullptr)
+            else if(t > 1 && s == 1 && sVertices[s - 1].p.Light() != nullptr)
             {
                 Vertex& v0{tVertices[t - 2]};
                 Vertex& v1{tVertices[t - 1]};
@@ -305,10 +261,7 @@ namespace Fc
 
                 if(v1.connectable && radiance && scene.Visibility(v1.p, v2.p))
                 {
-                    Vector3 f012{v1.bsdf.EvaluateBxDF(0, wo, wi) * std::abs(Dot(v1.p.ShadingNormal(), wi)) };
-                    double x{std::abs(Dot(v1.p.Normal(), wi))};
-                    if(x > 0.000'1) f012 /= x;
-
+                    Vector3 f012{v1.bsdf.EvaluateBxDF(0, wo, wi)};
                     Vector3 value{v1.beta * f012 * G(v1.p, v2.p, wi) * v2.p.Light()->EmittedRadiance(v2.p, -wi) * v2.beta};
 
                     if(value)
@@ -326,7 +279,7 @@ namespace Fc
                     }
 
                 }
-            }*/
+            }
             //// t = 1, s > 1
             else if(t == 1 && s > 1)
             {
@@ -343,12 +296,9 @@ namespace Fc
                 if(v1.connectable && importance && scene.Visibility(v0.p, v1.p))
                 {
                     Vector3 w10{Normalize(v0.p.Position() - v1.p.Position())};
-                    Vector3 w12{v1.w};
+                    Vector3 w12{-v2.w};
 
-                    Vector3 f012{v1.bsdf.EvaluateBxDF(0, w10, w12) * std::abs(Dot(v1.p.ShadingNormal(), w12))};
-                    double x{std::abs(Dot(v1.p.Normal(), w12))};
-                    if(x > 0.000'1) f012 /= x;
-
+                    Vector3 f012{v1.bsdf.EvaluateBxDF(0, w10, w12)};
                     Vector3 value{v0.beta * importance * G(v0.p, v1.p, w10) * f012 * v1.beta};
 
                     if(value)
@@ -364,48 +314,42 @@ namespace Fc
                     }
                 }
             }
-            //else if(t > 1 && s > 1)
-            //{
-            //    Vertex& v0{tVertices[t - 2]};
-            //    Vertex& v1{tVertices[t - 1]};
-            //    Vertex& v2{sVertices[s - 1]};
-            //    Vertex& v3{sVertices[s - 2]};
+            else if(t > 1 && s > 1)
+            {
+                Vertex& v0{tVertices[t - 2]};
+                Vertex& v1{tVertices[t - 1]};
+                Vertex& v2{sVertices[s - 1]};
+                Vertex& v3{sVertices[s - 2]};
 
-            //    if(v1.connectable && v2.connectable && scene.Visibility(v1.p, v2.p))
-            //    {
-            //        Vector3 w10{-v0.w};
-            //        Vector3 w12{Normalize(v2.p.Position() - v1.p.Position())};
-            //        Vector3 w21{-w12};
-            //        Vector3 w23{-v3.w};
-            //        
-            //        Vector3 f012{v1.bsdf.EvaluateBxDF(0, w10, w12) * std::abs(Dot(v1.p.ShadingNormal(), w12))};
-            //        double x{std::abs(Dot(v1.p.Normal(), w12))};
-            //        if(x > 0.000'1) f012 /= x;
+                if(v1.connectable && v2.connectable && scene.Visibility(v1.p, v2.p))
+                {
+                    Vector3 w10{-v0.w};
+                    Vector3 w12{Normalize(v2.p.Position() - v1.p.Position())};
+                    Vector3 w21{-w12};
+                    Vector3 w23{-v3.w};
+                    
+                    Vector3 f012{v1.bsdf.EvaluateBxDF(0, w10, w12)};
+                    Vector3 f123{v2.bsdf.EvaluateBxDF(0, w21, w23)};
+                    Vector3 value{v1.beta * f012 * G(v1.p, v2.p, w12) * f123 * v2.beta};
 
-            //        Vector3 f123{v2.bsdf.EvaluateBxDF(0, w21, w23) * std::abs(Dot(v2.p.ShadingNormal(), w23))};
-            //        double y{std::abs(Dot(v2.p.Normal(), w23))};
-            //        if(y > 0.000'1) f123 /= y;
+                    if(value)
+                    {
+                        RestoreValue rv0{v1.pdf_p_backward};
+                        RestoreValue rv1{v0.pdf_p_backward};
+                        RestoreValue rv2{v2.pdf_p_forward};
+                        RestoreValue rv3{v3.pdf_p_forward};
 
-            //        Vector3 value{v1.beta * f012 * G(v1.p, v2.p, w12) * f123 * v2.beta};
+                        v1.pdf_p_backward = v2.bsdf.PDFBxDF(0, w21, w23) * std::abs(Dot(v1.p.Normal(), w21)) / LengthSqr(v1.p.Position() - v2.p.Position());
+                        v0.pdf_p_backward = v1.bsdf.PDFBxDF(0, w10, w12) * std::abs(Dot(v0.p.Normal(), w10)) / LengthSqr(v0.p.Position() - v1.p.Position());
 
-            //        if(value)
-            //        {
-            //            RestoreValue rv0{v1.pdf_p_backward};
-            //            RestoreValue rv1{v0.pdf_p_backward};
-            //            RestoreValue rv2{v2.pdf_p_forward};
-            //            RestoreValue rv3{v3.pdf_p_forward};
+                        v2.pdf_p_forward = v1.bsdf.PDFBxDF(0, w10, w12) * std::abs(Dot(v2.p.Normal(), w12)) / LengthSqr(v2.p.Position() - v1.p.Position());
+                        v3.pdf_p_forward = v2.bsdf.PDFBxDF(0, w21, w23) * std::abs(Dot(v3.p.Normal(), w23)) / LengthSqr(v3.p.Position() - v2.p.Position());
 
-            //            v1.pdf_p_backward = v2.bsdf.PDFBxDF(0, w21, w23) * std::abs(Dot(v1.p.Normal(), w21)) / LengthSqr(v1.p.Position() - v2.p.Position());
-            //            v0.pdf_p_backward = v1.bsdf.PDFBxDF(0, w10, w12) * std::abs(Dot(v0.p.Normal(), w10)) / LengthSqr(v0.p.Position() - v1.p.Position());
-
-            //            v2.pdf_p_forward = v1.bsdf.PDFBxDF(0, w10, w12) * std::abs(Dot(v2.p.Normal(), w12)) / LengthSqr(v2.p.Position() - v1.p.Position());
-            //            v3.pdf_p_forward = v2.bsdf.PDFBxDF(0, w21, w23) * std::abs(Dot(v3.p.Normal(), w23)) / LengthSqr(v3.p.Position() - v2.p.Position());
-
-            //            *weight = Weight(tVertices, t, sVertices, s);
-            //            return value;
-            //        }
-            //    }
-            //}
+                        *weight = Weight(tVertices, t, sVertices, s);
+                        return value;
+                    }
+                }
+            }
 
             return {};
         }

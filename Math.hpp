@@ -271,6 +271,12 @@ namespace Fc
     }
 
     template <typename T>
+    TVector3<T> Exp(TVector3<T> const& v)
+    {
+        return {std::exp(v.x), std::exp(v.y), std::exp(v.z)};
+    }
+
+    template <typename T>
     void CoordinateSystem(TVector3<T> const& v1, TVector3<T>* v2, TVector3<T>* v3)
     {
         if(std::abs(v1.x) > std::abs(v1.y))
