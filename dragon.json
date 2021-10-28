@@ -7,17 +7,17 @@
     "camera": {
         "type": "perspective",
         "transform": {
-            "position": [0.05, 0.66, 1.07],
+            "position": [0.05, 0.66, 2.07],
             "rotation": [15.745, -178.81, 0.0]
         },
         "fov": 45.0
     },
     "integrator": {
-        "type": "BDPT",
+        "type": "forward",
         "strategy": "measure",
-        "samplesX": 16,
-        "samplesY": 16,
-        "maxVertices": 10,
+        "samplesX": 8,
+        "samplesY": 8,
+        "maxVertices": 20,
         "workerCount": 16,
         "tileSize": [4, 4],
         "sampleCount": 100000000
@@ -30,8 +30,8 @@
         "entities": [
             {
                 "shape": {
-                    "type": "mesh",
-                    "radius": 1.0,
+                    "type": "sphere",
+                    "radius": 3,
                     "transform": {
                         "position": [0.0, 0.4, 0.0],
                         "scale": [0.25, 0.25, 0.25]
@@ -39,11 +39,33 @@
                     "name": "sphere_high"
                 },
                 "material": {
-                    "type": "diffuse",
+                    "type": "glass",
                     "reflectance": [1.0, 1.0, 1.0],
                     "transmittance": [1.0, 1.0, 1.0],
                     "ior": 1.45
-                }
+                },
+                "ior": 1.45
+            },
+            {
+                "shape": {
+                    "type": "sphere",
+                    "radius": 1.0,
+                    "transform": {
+                        "position": [0.0, 0.4, 0.0],
+                        "scale": [0.15, 0.15, 0.15]
+                    },
+                    "name": "sphere_high"
+                },
+                "material": {
+                    "type": "diffuse",
+                    "reflectance": [1.0, 1.0, 1.0],
+                    "transmittance": [1.0, 1.0, 1.0],
+                    "ior": 1.75
+                },
+                "medium": {
+                    "ext": [10.0, 10.0, 10.0]
+                },
+                "ior": 1.75
             },
             {
                 "shape": {

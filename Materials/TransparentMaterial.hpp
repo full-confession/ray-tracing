@@ -11,7 +11,7 @@ namespace Fc
             : opacity_{opacity}
         { }
 
-        virtual BSDF EvaluateAtPoint(SurfacePoint const& p, MemoryAllocator& ma) const override
+        virtual BSDF EvaluateAtPoint(SurfacePoint const& p, MemoryAllocator& ma, double ior) const override
         {
             BSDF bsdf{p.Normal(), p.ShadingNormal(), p.ShadingTangent(), Cross(p.ShadingNormal(), p.ShadingTangent())};
             IFresnel* fresnel{ma.Emplace<FresnelZero>()};

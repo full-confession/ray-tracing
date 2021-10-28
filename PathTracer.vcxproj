@@ -158,9 +158,12 @@
     <ClInclude Include="Scene\MyScene.hpp" />
     <ClInclude Include="Shapes\IShape.hpp" />
     <ClInclude Include="Surfaces\Mesh.hpp" />
+    <ClInclude Include="Textures\Checkerboard3DTexture.hpp" />
+    <ClInclude Include="Textures\ConstantTexture.hpp" />
+    <ClInclude Include="Textures\ImageTexture.hpp" />
+    <ClInclude Include="Textures\ITexture.hpp" />
     <ClInclude Include="Transform.hpp" />
     <ClInclude Include="AssetManager.hpp" />
-    <ClInclude Include="BDPT.hpp" />
     <ClInclude Include="BxDF.hpp" />
     <ClInclude Include="Fresnel.hpp" />
     <ClInclude Include="Halton.hpp" />
@@ -181,7 +184,6 @@
     <ClInclude Include="Surfaces\ISurface.hpp" />
     <ClInclude Include="Surfaces\Plane.hpp" />
     <ClInclude Include="Surfaces\Sphere.hpp" />
-    <ClInclude Include="Texture.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="AssetManager.cpp" />
@@ -192,6 +194,7 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <None Include="Scenes\ball_in_ball.json" />
     <None Include="wall_light.json" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

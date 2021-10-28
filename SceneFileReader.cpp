@@ -3,7 +3,6 @@
 #include "Surfaces/Plane.hpp"
 #include "Surfaces/Mesh.hpp"
 #include "json.hpp"
-#include "BDPT.hpp"
 #include "Integrators/ForwardPathIntegrator.hpp"
 #include "Integrators/BackwardPathIntegrator.hpp"
 #include "Integrators/BidirectionalPathIntegrator.hpp"
@@ -11,6 +10,9 @@
 #include "Materials/MirrorMaterial.hpp"
 #include "Materials/GlassMaterial.hpp"
 #include "Materials/TransparentMaterial.hpp"
+#include "Textures/Checkerboard3DTexture.hpp"
+#include "Textures/ConstantTexture.hpp"
+#include "Textures/ImageTexture.hpp"
 #include "Lights/DiffuseAreaLight.hpp"
 #include "Cameras/PerspectiveCamera.hpp"
 #include "Scene/MyScene.hpp"
@@ -167,6 +169,17 @@ namespace Fc
     NLOHMANN_JSON_SERIALIZE_ENUM(EmissionType, {
         {EmissionType::Diffuse, "diffuse"},
     });
+
+    enum class TextureType
+    {
+        Image,
+        Checkerboard3D
+    };
+
+    NLOHMANN_JSON_SERIALIZE_ENUM(TextureType, {
+        {TextureType::Image, "image"},
+        {TextureType::Checkerboard3D, "checkerboard3d"}
+    });
 }
 
 using namespace Fc;
@@ -199,7 +212,7 @@ static void ReadImage(nlohmann::json const& json, SceneFile& sceneFile)
         }
     }
 
-    sceneFile.image = std::make_unique<Image>(defaultResolution);
+    sceneFile.image = std::make_shared<Image>(defaultResolution);
     sceneFile.outputFormat = defaultFormat;
     sceneFile.outputName = std::move(defaultName);
 }
@@ -235,7 +248,7 @@ static void ReadPerspectiveCamera(nlohmann::json const& json, SceneFile& sceneFi
         it->get_to(focusDistance);
     }
 
-    sceneFile.camera = std::make_unique<PerspectiveCamera>(transform, Math::DegToRad(fov), lensRadius, focusDistance);
+    sceneFile.camera = std::make_unique<PerspectiveCamera>(sceneFile.image, std::make_shared<BoxFilter>(0.5), transform, Math::DegToRad(fov));
 }
 static void ReadCamera(nlohmann::json const& json, SceneFile& sceneFile)
 {
@@ -260,47 +273,48 @@ static void ReadCamera(nlohmann::json const& json, SceneFile& sceneFile)
     }
 }
 
-static void ReadBDPTIntegrator(nlohmann::json const& json, SceneFile& sceneFile)
-{
-    Vector2i tileSize{16, 16};
-    int workerCount{static_cast<int>(std::thread::hardware_concurrency())};
-    int samplesX{1};
-    int samplesY{1};
-    int maxVertices{10};
+//static void ReadBDPTIntegrator(nlohmann::json const& json, SceneFile& sceneFile)
+//{
+//    Vector2i tileSize{16, 16};
+//    int workerCount{static_cast<int>(std::thread::hardware_concurrency())};
+//    int samplesX{1};
+//    int samplesY{1};
+//    int maxVertices{10};
+//
+//    auto it{json.find("samplesX")};
+//    if(it != json.end())
+//    {
+//        it->get_to(samplesX);
+//    }
+//
+//    it = json.find("samplesY");
+//    if(it != json.end())
+//    {
+//        it->get_to(samplesY);
+//    }
+//
+//    it = json.find("maxVertices");
+//    if(it != json.end())
+//    {
+//        it->get_to(maxVertices);
+//    }
+//
+//    it = json.find("tileSize");
+//    if(it != json.end())
+//    {
+//        it->get_to(tileSize);
+//    }
+//
+//    it = json.find("workerCount");
+//    if(it != json.end())
+//    {
+//        it->get_to(workerCount);
+//    }
+//
+//
+//    sceneFile.integrator = std::make_unique<BidirectionalPathIntegrator>(tileSize, workerCount, samplesX, samplesY, maxVertices);
+//}
 
-    auto it{json.find("samplesX")};
-    if(it != json.end())
-    {
-        it->get_to(samplesX);
-    }
-
-    it = json.find("samplesY");
-    if(it != json.end())
-    {
-        it->get_to(samplesY);
-    }
-
-    it = json.find("maxVertices");
-    if(it != json.end())
-    {
-        it->get_to(maxVertices);
-    }
-
-    it = json.find("tileSize");
-    if(it != json.end())
-    {
-        it->get_to(tileSize);
-    }
-
-    it = json.find("workerCount");
-    if(it != json.end())
-    {
-        it->get_to(workerCount);
-    }
-
-
-    sceneFile.integrator = std::make_unique<BidirectionalPathIntegrator>(tileSize, workerCount, samplesX, samplesY, maxVertices);
-}
 static void ReadForwardPathIntegrator(nlohmann::json const& json, SceneFile& sceneFile)
 {
     Vector2i tileSize{16, 16};
@@ -397,9 +411,9 @@ static void ReadIntegrator(nlohmann::json const& json, SceneFile& sceneFile)
 
     switch(integratorType)
     {
-    case IntegratorType::BDPT:
+    /*case IntegratorType::BDPT:
         ReadBDPTIntegrator(*itIntegrator, sceneFile);
-        break;
+        break;*/
     default:
     case IntegratorType::Forward:
         ReadForwardPathIntegrator(*itIntegrator, sceneFile);
@@ -592,15 +606,41 @@ static std::unique_ptr<IShape> ReadShape(nlohmann::json const& json, AssetManage
 //}
 static std::unique_ptr<IMaterial> ReadDiffuseMaterial(nlohmann::json const& json)
 {
-    Vector3 reflectance{0.9, 0.9, 0.9};
 
     auto it{json.find("reflectance")};
-    if(it != json.end())
+    if(it != json.end() && it->is_array())
     {
+        Vector3 reflectance{0.9, 0.9, 0.9};
         it->get_to(reflectance);
+        return std::make_unique<DiffuseMaterial>(std::make_shared<ConstantTexture>(reflectance));
     }
 
-    return std::make_unique<DiffuseMaterial>(reflectance);
+    if(it != json.end() && it->is_object())
+    {
+        TextureType type{};
+        it->at("type").get_to(type);
+
+        if(type == TextureType::Checkerboard3D)
+        {
+            Vector3 a{};
+            Vector3 b{};
+            it->at("a").get_to(a);
+            it->at("b").get_to(b);
+            return std::make_unique<DiffuseMaterial>(std::make_shared<Checkerboard3DTexture>(a, b));
+        }
+
+        if(type == TextureType::Image)
+        {
+            std::string name{};
+            Vector2i resolution{};
+
+            it->at("name").get_to(name);
+            it->at("resolution").get_to(resolution);
+            return std::make_unique<DiffuseMaterial>(std::make_shared<ImageTexture>(name, resolution, false));
+        }
+    }
+
+    return std::make_unique<DiffuseMaterial>(std::make_shared<ConstantTexture>(Vector3{0.8, 0.8, 0.8}));
 }
 static std::unique_ptr<IMaterial> ReadMirrorMaterial(nlohmann::json const& json)
 {
@@ -656,7 +696,7 @@ static std::unique_ptr<IMaterial> ReadGlassMaterial(nlohmann::json const& json)
 static std::unique_ptr<IMaterial> ReadMaterial(nlohmann::json const& json)
 {
     auto materialIt{json.find("material")};
-    if(materialIt == json.end()) return std::make_unique<DiffuseMaterial>(Vector3{0.9, 0.0, 0.9});
+    if(materialIt == json.end()) return std::make_unique<DiffuseMaterial>(std::make_shared<ConstantTexture>(Vector3{0.9, 0.9, 0.9}));
 
 
 

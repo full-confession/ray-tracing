@@ -16,7 +16,7 @@ namespace Fc
         {
         }
 
-        virtual void Render(Image& image, ICamera const& camera, IScene const& scene, ISampler& sampler, Bounds2i const& scissor) const override
+        virtual void Render(ICamera& camera, IScene const& scene, ISampler& sampler, Bounds2i const& scissor) const override
         {
             std::vector<std::thread> workers{};
 
@@ -26,7 +26,7 @@ namespace Fc
             for(int i{}; i < workerCount_; ++i)
             {
                 workers.emplace_back(
-                    [this, &image, &camera, &scene, &sampler, &nextSample, &samplesDone, i]()
+                    [this, &camera, &scene, &sampler, &nextSample, &samplesDone, i]()
                     {
                         auto localSampler{sampler.Clone(i)};
                         MemoryAllocator localMemoryAllocator{1024 * 1024};
@@ -46,8 +46,8 @@ namespace Fc
                             {
                                 localSampler->BeginSample();
 
-                                Sample(image, camera, scene, *localSampler, localMemoryAllocator);
-                                image.AddLightSampleCount(1);
+                                Sample(camera, scene, *localSampler, localMemoryAllocator);
+                                camera.AddSampleCount(1);
 
                                 localSampler->EndSample();
                                 localMemoryAllocator.Clear();
@@ -80,10 +80,8 @@ namespace Fc
             }
         };
     private:
-        void Sample(Image& image, ICamera const& camera, IScene const& scene, ISampler& sampler, MemoryAllocator& memoryAllocator) const
+        void Sample(ICamera& camera, IScene const& scene, ISampler& sampler, MemoryAllocator& memoryAllocator) const
         {
-            //double x{360000.0f};
-
             int lightCount{scene.LightCount()};
             int lightIndex{std::min(static_cast<int>(sampler.Get1D() * lightCount), lightCount - 1)};
             ILight const* light{scene.Light(lightIndex)};
@@ -101,15 +99,15 @@ namespace Fc
             {
                 SurfacePoint pC{};
                 double pdf_pC{};
-                Vector2i pixel{};
-                Vector3 importance{camera.SamplePoint(image, p0.Position(), sampler.Get2D(), &pixel, &pC, &pdf_pC)};
+                Vector2 samplePosition{};
+                Vector3 importance{camera.SamplePoint(p0.Position(), &samplePosition, &pC, &pdf_pC)};
 
                 if((importance.x != 0.0 || importance.y != 0.0 || importance.z != 0.0) && scene.Visibility(p0, pC))
                 {
                     Vector3 w0C{Normalize(pC.Position() - p0.Position())};
                     Vector3 I{beta * light->EmittedRadiance(p0, w0C) * G(p0, pC, w0C) * importance / (pdf_p0 * pdf_pC)};
 
-                    image.AddLightSample(pixel, I);
+                    camera.AddSample(samplePosition, I);
                 }
             }
 
@@ -125,8 +123,8 @@ namespace Fc
             {
                 SurfacePoint pC{};
                 double pdf_pC{};
-                Vector2i pixel{};
-                Vector3 importance{camera.SamplePoint(image, p1.Position(), sampler.Get2D(), &pixel, &pC, &pdf_pC)};
+                Vector2 samplePosition{};
+                Vector3 importance{camera.SamplePoint(p1.Position(), &samplePosition, &pC, &pdf_pC)};
 
                 if((importance.x != 0.0 || importance.y != 0.0 || importance.z != 0.0) && scene.Visibility(p1, pC))
                 {
@@ -135,7 +133,7 @@ namespace Fc
 
                     Vector3 I{beta * f * G(p1, pC, w1C) * importance / pdf_pC};
 
-                    image.AddLightSample(pixel, I);
+                    camera.AddSample(samplePosition, I);
                 }
             }
 
@@ -156,8 +154,8 @@ namespace Fc
                 {
                     SurfacePoint pC{};
                     double pdf_pC{};
-                    Vector2i pixel{};
-                    Vector3 importance{camera.SamplePoint(image, p2.Position(), sampler.Get2D(), &pixel, &pC, &pdf_pC)};
+                    Vector2 samplePosition{};
+                    Vector3 importance{camera.SamplePoint(p2.Position(), &samplePosition, &pC, &pdf_pC)};
 
                     if((importance.x != 0.0 || importance.y != 0.0 || importance.z != 0.0) && scene.Visibility(p2, pC))
                     {
@@ -165,7 +163,7 @@ namespace Fc
                         Vector3 f{bsdf.EvaluateBxDF(0, w2C, -w12)};
                         Vector3 I{beta * f * G(p2, pC, w2C) * importance / pdf_pC};
 
-                        image.AddLightSample(pixel, I);
+                        camera.AddSample(samplePosition, I);
                     }
                 }
 

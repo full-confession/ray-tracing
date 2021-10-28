@@ -30,7 +30,7 @@ namespace Fc
     class IIntegrator
     {
     public:
-        virtual void Render(Image& image, ICamera const& camera, IScene const& scene, ISampler& sampler, Bounds2i const& scissor) const = 0;
+        virtual void Render(ICamera& camera, IScene const& scene, ISampler& sampler, Bounds2i const& scissor) const = 0;
     };
 
 
@@ -41,16 +41,17 @@ namespace Fc
             : tileSize_{tileSize}, workerCount_{workerCount}
         { }
 
-        virtual void Render(Image& image, ICamera const& camera, IScene const& scene, ISampler& sampler, Bounds2i const& scissor) const override
+        virtual void Render(ICamera& camera, IScene const& scene, ISampler& sampler, Bounds2i const& scissor) const override
         {
-            BeginRender(image);
+            //BeginRender(image);
 
-            Vector2i imageSize{image.GetResolution()};
-            Vector2i min{std::max(scissor.Min().x, 0), std::max(scissor.Min().y, 0)};
-            Vector2i max{std::min(scissor.Max().x, imageSize.x), std::min(scissor.Max().y, imageSize.y)};
-            Vector2i scissorSize{max - min};
+            //Vector2i imageSize{image.GetResolution()};
+            //Vector2i min{std::max(scissor.Min().x, 0), std::max(scissor.Min().y, 0)};
+            //Vector2i max{std::min(scissor.Max().x, imageSize.x), std::min(scissor.Max().y, imageSize.y)};
+            //Vector2i scissorSize{max - min};
 
-            Vector2i tileCount{(scissorSize + tileSize_ - 1) / tileSize_};
+            Bounds2i sampleBounds{camera.GetSampleBounds()};
+            Vector2i tileCount{(sampleBounds.Diagonal() + tileSize_ - 1) / tileSize_};
             int totalTiles{tileCount.x * tileCount.y};
 
             std::vector<Bounds2i> tiles{};
@@ -59,10 +60,10 @@ namespace Fc
                 for(int j{}; j < tileCount.x; ++j)
                 {
                     tiles.push_back({
-                        {scissor.Min().x + j * tileSize_.x, scissor.Min().y + i * tileSize_.y},
+                        {sampleBounds.Min().x + j * tileSize_.x, sampleBounds.Min().y + i * tileSize_.y},
                         {
-                            std::min(std::min(scissor.Min().x + (j + 1) * tileSize_.x, imageSize.x), scissor.Max().x),
-                            std::min(std::min(scissor.Min().y + (i + 1) * tileSize_.y, imageSize.y), scissor.Max().y)
+                            std::min(sampleBounds.Min().x + (j + 1) * tileSize_.x, sampleBounds.Max().x),
+                            std::min(sampleBounds.Min().y + (i + 1) * tileSize_.y, sampleBounds.Max().y)
                         }
                     });
                 }
@@ -75,7 +76,7 @@ namespace Fc
             for(int i{}; i < workerCount_; ++i)
             {
                 workers.emplace_back(
-                    [this, &image, &camera, &scene, &sampler, &nextTile, &tilesDone, &tiles, i]()
+                    [this, &camera, &scene, &sampler, &nextTile, &tilesDone, &tiles, i]()
                     {
                         auto localSampler{sampler.Clone(i)};
                         MemoryAllocator localMemoryAllocator{1024 * 1024};
@@ -93,7 +94,7 @@ namespace Fc
                             {
                                 for(int j{tile.Min().x}; j < tile.Max().x; ++j)
                                 {
-                                    RenderPixel(image, {j, i}, camera, scene, *localSampler, localMemoryAllocator);
+                                    RenderPixel({j, i}, camera, scene, *localSampler, localMemoryAllocator);
                                 }
                             }
 
@@ -126,7 +127,7 @@ namespace Fc
         }
 
     protected:
-        virtual void RenderPixel(Image& image, Vector2i const& pixel, ICamera const& camera, IScene const& scene, ISampler& sampler, MemoryAllocator& memoryAllocator) const
+        virtual void RenderPixel(Vector2i const& pixel, ICamera& camera, IScene const& scene, ISampler& sampler, MemoryAllocator& memoryAllocator) const
         { }
 
         virtual void BeginRender(Image& image) const

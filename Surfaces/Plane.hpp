@@ -93,6 +93,13 @@ namespace Fc
             p->SetShadingNormal(p->Normal());
             p->SetShadingTangent(p->Tangent());
 
+
+            Vector2 uv{
+                (position.x + halfSize.x) / (halfSize.x * 2.0),
+                (position.z + halfSize.y) / (halfSize.y * 2.0)
+            };
+            p->SetUV(uv);
+
             return true;
         }
 

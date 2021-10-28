@@ -11,7 +11,7 @@ namespace Fc
 
     struct SceneFile
     {
-        std::unique_ptr<Image> image{};
+        std::shared_ptr<Image> image{};
         std::unique_ptr<ICamera> camera{};
         std::unique_ptr<IIntegrator> integrator{};
         std::unique_ptr<ISampler> sampler{};

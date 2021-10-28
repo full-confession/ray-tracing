@@ -73,6 +73,16 @@ namespace Fc
             return shadingTangent_;
         }
 
+        void SetUV(Vector2 const& uv)
+        {
+            uv_ = uv;
+        }
+
+        Vector2 const& UV() const
+        {
+            return uv_;
+        }
+
         void SetLight(ILight const* light)
         {
             light_ = light;
@@ -160,6 +170,8 @@ namespace Fc
 
         Vector3 shadingNormal_{};
         Vector3 shadingTangent_{};
+
+        Vector2 uv_{};
 
         ILight const* light_{};
         ISurface const* surface_{};

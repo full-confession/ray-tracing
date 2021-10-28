@@ -49,9 +49,9 @@ int main()
     //f({1600, 900}, {0, 0}, Math::DegToRad(45.0));
 
     Fc::AssetManager am{};
-    Fc::SceneFile sceneFile{Fc::SceneFileReader::Read("dragon", am)};
+    Fc::SceneFile sceneFile{Fc::SceneFileReader::Read("scenes/ball_in_ball", am)};
 
-    sceneFile.integrator->Render(*sceneFile.image, *sceneFile.camera, *sceneFile.scene, *sceneFile.sampler, sceneFile.scissor);
+    sceneFile.integrator->Render(*sceneFile.camera, *sceneFile.scene, *sceneFile.sampler, sceneFile.scissor);
     sceneFile.image->Export(sceneFile.outputName, sceneFile.outputFormat);
 
     return 0;

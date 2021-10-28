@@ -51,9 +51,6 @@
     <ClInclude Include="Image.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Texture.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="json.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -61,9 +58,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Fresnel.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="BDPT.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Integrators\IIntegrator.hpp">
@@ -138,6 +132,18 @@
     <ClInclude Include="IMedium.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Textures\ITexture.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Textures\ConstantTexture.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Textures\Checkerboard3DTexture.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Textures\ImageTexture.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp">
@@ -152,5 +158,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="wall_light.json" />
+    <None Include="Scenes\ball_in_ball.json" />
   </ItemGroup>
 </Project>

@@ -23,7 +23,7 @@ namespace Fc
 
 
     protected:
-        virtual void RenderPixel(Image& image, Vector2i const& pixel, ICamera const& camera,
+        virtual void RenderPixel(Vector2i const& pixel, ICamera& camera,
             IScene const& scene, ISampler& sampler, MemoryAllocator& memoryAllocator) const override
         {
             sampler.BeginPixel(xSamples_, ySamples_, maxVertices_ - 1, 2 + (maxVertices_ - 1));
@@ -31,7 +31,7 @@ namespace Fc
             {
                 sampler.BeginSample();
 
-                if(strategy_ != Strategy::Measure)
+                /*if(strategy_ != Strategy::Measure)
                 {
                     Ray3 ray{camera.GenerateRay(image, pixel, sampler.Get2D(), sampler.Get2D())};
                     Vector3 value{};
@@ -50,11 +50,11 @@ namespace Fc
                     image.AddSample(pixel, value);
                     image.AddLightSampleCount(1);
                 }
-                else
-                {
-                    image.AddSample(pixel, Measure(image, pixel, camera, scene, sampler, memoryAllocator));
-                    image.AddLightSampleCount(1);
-                }
+                else*/
+
+                Measure(pixel, camera, scene, sampler, memoryAllocator);
+                camera.AddSampleCount(1);
+
                 sampler.EndSample();
                 memoryAllocator.Clear();
             }
@@ -116,8 +116,13 @@ namespace Fc
         bool Raycast(std::vector<std::pair<int, double>>& stack, SurfacePoint const& p0, Vector3 const& w01, IScene const& scene,
             SurfacePoint* p1, double* iorAbove) const
         {
-            SurfacePoint p{p0};
+            bool reflection{Dot(p0.Normal(), w01) > 0.0};
+            if(!reflection)
+            {
+                stack.push_back({p0.Priority(), p0.IOR()});
+            }
 
+            SurfacePoint p{p0};
             while(scene.Raycast(p, w01, p1))
             {
                 auto top{stack.begin()};
@@ -133,21 +138,18 @@ namespace Fc
                     if(entering)
                     {
                         *iorAbove = top->second;
-                        //stack.push_back({p1->Priority(), p1->IOR()});
                         return true;
                     }
                     else
                     {
-                        // undefined
-                        p = *p1;
+                        return false;
                     }
                 }
                 else if(p1->Priority() == top->first)
                 {
                     if(entering)
                     {
-                        // undefined
-                        p = *p1;
+                        return false;
                     }
                     else
                     {
@@ -176,34 +178,9 @@ namespace Fc
                     }
                     p = *p1;
                 }
-
             }
 
             return false;
-
-            /*if(!scene.Raycast(p0, w01, p1)) return false;
-
-            auto topPriority{stack.begin()};
-            for(auto i{stack.begin() + 1}; i != stack.end(); ++i)
-            {
-                if(i->first > topPriority->first) topPriority = i;
-            }
-
-            if(p1->GetPriority() > topPriority->first)
-            {
-                stack.push_back({p1->GetPriority(), p1->GetIOR()});
-                return true;
-            }
-            else if(p1->GetPriority() == topPriority->first)
-            {
-                stack.erase(topPriority);
-                return true;
-            }
-            else if(p1->GetPriority() < topPriority->first)
-            {
-                stack.erase(topPriority);
-            }*/
-
         }
 
         Vector3 LightStrategy(Ray3 const& ray, IScene const& scene, ISampler& sampler, MemoryAllocator& memoryAllocator) const
@@ -370,21 +347,25 @@ namespace Fc
             return L10;
         }
 
-        Vector3 Measure(Image& image, Vector2i const& pixel, ICamera const& camera, IScene const& scene, ISampler& sampler, MemoryAllocator& memoryAllocator) const
+        void Measure(Vector2i const& pixel, ICamera& camera, IScene const& scene, ISampler& sampler, MemoryAllocator& memoryAllocator) const
         {
-            if(maxVertices_ == 1) return {};
+            if(maxVertices_ == 1) return;
+           
             Vector3 I{};
+            Vector2 samplePosition{static_cast<Vector2>(pixel) + sampler.Get2D()};
 
             SurfacePoint p0{};
             double pdf_p0{};
             Vector3 w01{};
             double pdf_w01{};
 
-            Vector3 importance{camera.SamplePointAndDirection(image, pixel, sampler.Get2D(), sampler.Get2D(), &p0, &pdf_p0, &w01, &pdf_w01)};
+            Vector3 importance{camera.SamplePointAndDirection(samplePosition, &p0, &pdf_p0, &w01, &pdf_w01)};
             Vector3 beta{1.0 / Vector3{pdf_p0}};
 
             SurfacePoint p1{};
-            if(!scene.Raycast(p0, w01, &p1)) return {};
+            double ior{1.0};
+            if(!scene.Raycast(p0, w01, &p1)) return;
+            //if(!Raycast(stack, p0, w01, scene, &p1, &ior)) return I;
 
             beta *= importance * std::abs(Dot(p0.Normal(), w01)) / pdf_w01;
             if(p1.Light() != nullptr)
@@ -394,7 +375,7 @@ namespace Fc
 
             for(int i{2}; i < maxVertices_; ++i)
             {
-                BSDF bsdf{p1.Material()->EvaluateAtPoint(p1, memoryAllocator)};
+                BSDF bsdf{p1.Material()->EvaluateAtPoint(p1, memoryAllocator, ior)};
 
                 Vector3 w12{};
                 double pdf_w12{};
@@ -404,7 +385,17 @@ namespace Fc
                 beta *= f012 * std::abs(Dot(p1.Normal(), w12)) / pdf_w12;
 
                 SurfacePoint p2{};
+                //if(!Raycast(stack, p1, w12, scene, &p2, &ior)) break;
                 if(!scene.Raycast(p1, w12, &p2)) break;
+
+                if(p1.Medium() != nullptr)
+                {
+                    if(Dot(p1.Normal(), w12) < 0.0)
+                    {
+                        beta *= p1.Medium()->Transmittance(p1.Position(), p2.Position());
+                    }
+                }
+
                 if(p2.Light() != nullptr)
                 {
                     I += beta * p2.Light()->EmittedRadiance(p2, -w12);
@@ -414,7 +405,7 @@ namespace Fc
                 w01 = w12;
             }
 
-            return I;
+            camera.AddSample(samplePosition, I);
         }
 
 

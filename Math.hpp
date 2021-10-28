@@ -745,6 +745,7 @@ namespace Fc
     using Bounds3 = TBounds3<double>;
     using Bounds3f = TBounds3<float>;
 
+    using Bounds2 = TBounds2<double>;
     using Bounds2i = TBounds2<int>;
 
     using Matrix4x4 = TMatrix4x4<double>;

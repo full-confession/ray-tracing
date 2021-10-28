@@ -7,18 +7,18 @@
     "camera": {
         "type": "perspective",
         "transform": {
-            "position": [0.00, 0.6, 2],
-            "rotation": [0, 180, 0.0]
+            "position": [0.00, 2.0, 2],
+            "rotation": [30, 180, 0.0]
         },
         "fov": 45.0
     },
     "integrator": {
         "type": "forward",
-        "strategy": "bsdf",
-        "samplesX": 32,
-        "samplesY": 32,
-        "maxVertices": 10,
-        "workerCount": 1,
+        "strategy": "measure",
+        "samplesX": 16,
+        "samplesY": 16,
+        "maxVertices": 20,
+        "workerCount": 16,
         "tileSize": [4, 4],
         "sampleCount": 100000000
     },
@@ -62,7 +62,7 @@
                     "ior": 1.3
                 },
                 "medium": {
-                    "ext": [10.0, 10.0, 10.0]
+                    "ext": [3.0, 15.0, 15.0]
                 },
                 "ior": 1.3
             },

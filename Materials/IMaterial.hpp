@@ -9,6 +9,6 @@ namespace Fc
     public:
         virtual ~IMaterial() = default;
 
-        virtual BSDF EvaluateAtPoint(SurfacePoint const& p, MemoryAllocator& ma) const = 0;
+        virtual BSDF EvaluateAtPoint(SurfacePoint const& p, MemoryAllocator& ma, double ior = 1.0) const = 0;
     };
 }
