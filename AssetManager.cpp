@@ -2,6 +2,8 @@
 #include <filesystem>
 #include <fstream>
 
+#include "json.hpp"
+
 using namespace Fc;
 
 enum class MeshFlags : std::uint32_t
@@ -230,4 +232,68 @@ void AssetManager::LoadMeshFromFile(std::string const& name, MeshData* meshData)
     }
 
     throw std::exception("File does not exists");
+}
+
+namespace Fc
+{
+    static void from_json(nlohmann::json const& json, Vector2i& v)
+    {
+        json.at(0).get_to(v.x);
+        json.at(1).get_to(v.y);
+    }
+
+    enum class ImageFormat
+    {
+        UInt8
+    };
+
+    NLOHMANN_JSON_SERIALIZE_ENUM(ImageFormat, {
+        {ImageFormat::UInt8, "uint8"}
+    });
+}
+
+std::shared_ptr<IImage> Fc::AssetManager::LoadImage(std::string const& name)
+{
+    std::filesystem::path workingDirectory{std::filesystem::current_path()};
+    std::filesystem::path metaPath{workingDirectory / "Assets\\Images" / (name + ".meta")};
+    if(!std::filesystem::exists(metaPath)) throw std::runtime_error(std::string{"Couldn't find file '"} + metaPath.string() + "'");
+    std::ifstream metaFile{metaPath, std::ios::in};
+    nlohmann::json metaJson{nlohmann::json::parse(metaFile)};
+
+    Vector2i resolution{metaJson.at("resolution").get_to(resolution)};
+    int channels{metaJson.at("channels").get_to(channels)};
+    ImageFormat format{metaJson.at("format").get_to(format)};
+    bool linear{metaJson.at("linear").get_to(linear)};
+
+    if(channels == 3 && format == ImageFormat::UInt8)
+    {
+        static_assert(std::is_trivially_copyable_v<SRGBPixel>);
+
+        std::filesystem::path imagePath{workingDirectory / "Assets\\Images" / (name + ".asset")};
+        if(!std::filesystem::exists(imagePath)) throw std::runtime_error(std::string{"Couldn't find file '"} + imagePath.string() + "'");
+        std::size_t fileSize{std::filesystem::file_size(imagePath)};
+        std::size_t pixelSize{linear ? sizeof(RGBPixel) : sizeof(SRGBPixel)};
+        std::size_t expectedSize{static_cast<std::size_t>(resolution.x) * static_cast<std::size_t>(resolution.y) * pixelSize};
+        if(fileSize != expectedSize) throw std::runtime_error(std::string{"Incorrect file size '"} + imagePath.string() + "'");
+
+        std::ifstream imageFile{imagePath, std::ios::in | std::ios::binary};
+
+        if(linear == false)
+        {
+            std::unique_ptr<SRGBPixel[]> pixels{std::make_unique<SRGBPixel[]>(static_cast<std::size_t>(resolution.x) * static_cast<std::size_t>(resolution.y))};
+            imageFile.read(reinterpret_cast<char*>(pixels.get()), fileSize);
+            return std::make_shared<UncompressedImage<SRGBPixel>>(resolution, std::move(pixels));
+        }
+        else
+        {
+            std::unique_ptr<RGBPixel[]> pixels{std::make_unique<RGBPixel[]>(static_cast<std::size_t>(resolution.x) * static_cast<std::size_t>(resolution.y))};
+            imageFile.read(reinterpret_cast<char*>(pixels.get()), fileSize);
+            return std::make_shared<UncompressedImage<RGBPixel>>(resolution, std::move(pixels));
+        }
+
+    }
+    else
+    {
+        throw std::runtime_error("Invalid image format or channel count");
+    }
 }

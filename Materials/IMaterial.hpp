@@ -1,6 +1,6 @@
 #pragma once
-#include "../BxDF.hpp"
 #include "../SurfacePoint.hpp"
+#include "../BSDF/IBxDF.hpp"
 
 namespace Fc
 {
@@ -9,6 +9,6 @@ namespace Fc
     public:
         virtual ~IMaterial() = default;
 
-        virtual BSDF EvaluateAtPoint(SurfacePoint const& p, MemoryAllocator& ma, double ior = 1.0) const = 0;
+        virtual IBxDF const* EvaluateAtPoint(SurfacePoint const& p, MemoryAllocator& ma, double ior = 1.0) const = 0;
     };
 }

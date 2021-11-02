@@ -3,7 +3,8 @@
 #include <vector>
 #include <memory>
 #include <unordered_map>
-#include <exception>    
+#include <exception>
+#include <array>
 namespace Fc
 {
     struct MeshHandle
@@ -27,9 +28,146 @@ namespace Fc
         std::uintptr_t v{};
     };
 
+    class IImage
+    {
+    public:
+        virtual ~IImage() = default;
+        virtual Vector2i Resolution() const = 0;
+
+        virtual double R(Vector2i const& pixel) const = 0;
+        virtual double G(Vector2i const& pixel) const = 0;
+        virtual double B(Vector2i const& pixel) const = 0;
+
+        virtual Vector3 RGB(Vector2i const& pixel) const = 0;
+    };
+
+    struct RGBPixel
+    {
+    public:
+        double R() const
+        {
+            return value_[0] / 255.0;
+        }
+
+        double G() const
+        {
+            return value_[1] / 255.0;
+        }
+
+        double B() const
+        {
+            return value_[2] / 255.0;
+        }
+
+        Vector3 RGB() const
+        {
+            return {value_[0] / 255.0, value_[1] / 255.0, value_[2] / 255.0};
+        }
+    private:
+        std::array<std::uint8_t, 3> value_{};
+    };
+
+    struct SRGBPixel
+    {
+    public:
+        double R() const
+        {
+            return ToLinear(value_[0]);
+        }
+
+        double G() const
+        {
+            return ToLinear(value_[1]);
+        }
+
+        double B() const
+        {
+            return ToLinear(value_[2]);
+        }
+
+        Vector3 RGB() const
+        {
+            return {ToLinear(value_[0]), ToLinear(value_[1]), ToLinear(value_[2])};
+        }
+    private:
+        std::array<std::uint8_t, 3> value_{};
+
+        static double ToLinear(std::uint8_t value)
+        {
+            double x{value / 255.0};
+            if(x <= 0.04045)
+            {
+                x = x / 12.92;
+            }
+            else
+            {
+                x = std::pow((x + 0.055) / 1.055, 2.4);
+            }
+
+            return x;
+        }
+    };
+
+    template<typename T>
+    class UncompressedImage : public IImage
+    {
+    public:
+        UncompressedImage(Vector2i const& resolution, std::unique_ptr<T[]> pixels)
+            : resolution_{resolution}, pixels_{std::move(pixels)}
+        { }
+
+        virtual Vector2i Resolution() const override
+        {
+            return resolution_;
+        }
+
+        virtual double R(Vector2i const& pixel) const override
+        {
+            return GetPixel(pixel).R();
+        }
+
+        virtual double G(Vector2i const& pixel) const override
+        {
+            return GetPixel(pixel).G();
+        }
+
+        virtual double B(Vector2i const& pixel) const override
+        {
+            return GetPixel(pixel).B();
+        }
+
+        virtual Vector3 RGB(Vector2i const& pixel) const override
+        {
+            return GetPixel(pixel).RGB();
+        }
+
+    private:
+        Vector2i resolution_{};
+        std::unique_ptr<T[]> pixels_{};
+
+        T const& GetPixel(Vector2i const& pixel) const
+        {
+            return pixels_[static_cast<std::size_t>(resolution_.x) * static_cast<std::size_t>(pixel.y) + static_cast<std::size_t>(pixel.x)];
+        }
+    };
+
     class AssetManager
     {
     public:
+        std::shared_ptr<IImage> GetImage(std::string const& name)
+        {
+            auto it{images_.find(name)};
+            if(it != images_.end())
+            {
+                return it->second;
+            }
+
+            auto image{LoadImage(name)};
+            images_.insert({name, image});
+
+            return image;
+        }
+
         MeshHandle AcquireMesh(std::string const& name)
         {
             auto it{nameToMesh_.find(name)};
@@ -93,6 +231,8 @@ namespace Fc
         std::unordered_map<std::string, MeshData*> nameToMesh_{};
         std::unordered_map<MeshData*, std::unique_ptr<MeshData>> meshes_{};
 
+        std::unordered_map<std::string, std::shared_ptr<IImage>> images_{};
+
 
         MeshData* ToPointerSafe(MeshHandle meshHandle) const
         {
@@ -130,5 +270,6 @@ namespace Fc
         }
 
         static void LoadMeshFromFile(std::string const& name, MeshData* meshData);
+        static std::shared_ptr<IImage> LoadImage(std::string const& name);
     };
 }

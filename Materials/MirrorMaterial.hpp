@@ -3,7 +3,7 @@
 
 namespace Fc
 {
-    class MirrorMaterial : public IMaterial
+    /*class MirrorMaterial : public IMaterial
     {
     public:
         MirrorMaterial(Vector3 const& reflectance)
@@ -20,5 +20,5 @@ namespace Fc
 
     private:
         Vector3 reflectance_{};
-    };
+    };*/
 }

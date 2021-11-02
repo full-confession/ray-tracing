@@ -13,7 +13,7 @@
         "fov": 45.0
     },
     "integrator": {
-        "type": "BDPT",
+        "type": "forward",
         "samplesX": 16,
         "samplesY": 16,
         "maxVertices": 10,

@@ -3,7 +3,7 @@
 
 namespace Fc
 {
-    class GlassMaterial : public IMaterial
+    /*class GlassMaterial : public IMaterial
     {
     public:
         GlassMaterial(Vector3 const& reflectance, Vector3 const& transmittance, double ior)
@@ -22,5 +22,5 @@ namespace Fc
         Vector3 reflectance_{};
         Vector3 transmittance_{};
         double ior_{};
-    };
+    };*/
 }

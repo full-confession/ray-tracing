@@ -30,6 +30,13 @@ namespace Fc
         return r * Vector2{std::cos(theta), std::sin(theta)};
     }
 
+    inline Vector3 SampleHemisphereCosineWeighted(Vector2 const& u)
+    {
+        Vector2 d{SampleDiskConcentric(u)};
+        double z{std::sqrt(std::max(0.0, 1.0 - d.x * d.x - d.y * d.y))};
+        return {d.x, z, d.y};
+    }
+
     inline Vector3 SampleHemisphereCosineWeighted(Vector2 const& u, double* pdf)
     {
         Vector2 d{SampleDiskConcentric(u)};

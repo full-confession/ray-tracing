@@ -141,6 +141,8 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="BSDF\Frame.hpp" />
+    <ClInclude Include="BSDF\IBxDF.hpp" />
     <ClInclude Include="Cameras\PerspectiveCamera.hpp" />
     <ClInclude Include="Lights\DiffuseAreaLight.hpp" />
     <ClInclude Include="Lights\ILight.hpp" />
@@ -158,6 +160,7 @@
     <ClInclude Include="Scene\MyScene.hpp" />
     <ClInclude Include="Shapes\IShape.hpp" />
     <ClInclude Include="Surfaces\Mesh.hpp" />
+    <ClInclude Include="Test\TestScene.hpp" />
     <ClInclude Include="Textures\Checkerboard3DTexture.hpp" />
     <ClInclude Include="Textures\ConstantTexture.hpp" />
     <ClInclude Include="Textures\ImageTexture.hpp" />

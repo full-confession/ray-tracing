@@ -362,32 +362,32 @@ static void ReadForwardPathIntegrator(nlohmann::json const& json, SceneFile& sce
 
     sceneFile.integrator = std::make_unique<ForwardPathIntegrator>(tileSize, workerCount, samplesX, samplesY, maxVertices, strategy);
 }
-static void ReadBackwardPathIntegrator(nlohmann::json const& json, SceneFile& sceneFile)
-{
-    std::uint64_t sampleCount{1'000'000};
-    int workerCount{static_cast<int>(std::thread::hardware_concurrency())};
-    int maxVertices{10};
-
-    auto it{json.find("sampleCount")};
-    if(it != json.end())
-    {
-        it->get_to(sampleCount);
-    }
-
-    it = json.find("workerCount");
-    if(it != json.end())
-    {
-        it->get_to(workerCount);
-    }
-
-    it = json.find("maxVertices");
-    if(it != json.end())
-    {
-        it->get_to(maxVertices);
-    }
-
-    sceneFile.integrator = std::make_unique<BackwardPathIntegrator>(sampleCount, workerCount, maxVertices);
-}
+//static void ReadBackwardPathIntegrator(nlohmann::json const& json, SceneFile& sceneFile)
+//{
+//    std::uint64_t sampleCount{1'000'000};
+//    int workerCount{static_cast<int>(std::thread::hardware_concurrency())};
+//    int maxVertices{10};
+//
+//    auto it{json.find("sampleCount")};
+//    if(it != json.end())
+//    {
+//        it->get_to(sampleCount);
+//    }
+//
+//    it = json.find("workerCount");
+//    if(it != json.end())
+//    {
+//        it->get_to(workerCount);
+//    }
+//
+//    it = json.find("maxVertices");
+//    if(it != json.end())
+//    {
+//        it->get_to(maxVertices);
+//    }
+//
+//    sceneFile.integrator = std::make_unique<BackwardPathIntegrator>(sampleCount, workerCount, maxVertices);
+//}
 static void ReadIntegrator(nlohmann::json const& json, SceneFile& sceneFile)
 {
     IntegratorType integratorType{IntegratorType::Forward};
@@ -418,9 +418,9 @@ static void ReadIntegrator(nlohmann::json const& json, SceneFile& sceneFile)
     case IntegratorType::Forward:
         ReadForwardPathIntegrator(*itIntegrator, sceneFile);
         break;
-    case IntegratorType::Backward:
+    /*case IntegratorType::Backward:
         ReadBackwardPathIntegrator(*itIntegrator, sceneFile);
-        break;
+        break;*/
     }
 
     sceneFile.scissor = scissor;
@@ -604,15 +604,24 @@ static std::unique_ptr<IShape> ReadShape(nlohmann::json const& json, AssetManage
 //
 //    return std::make_shared<MetalMaterial>(ior, k, roughness);
 //}
-static std::unique_ptr<IMaterial> ReadDiffuseMaterial(nlohmann::json const& json)
+static std::unique_ptr<IMaterial> ReadDiffuseMaterial(nlohmann::json const& json, AssetManager& assetManager)
 {
+    std::shared_ptr<ITexture> normalMap{};
 
-    auto it{json.find("reflectance")};
+    auto it{json.find("normal")};
+    if(it != json.end())
+    {
+        std::string name{};
+        it->get_to(name);
+        normalMap = std::make_shared<ImageTexture>(assetManager.GetImage(name));
+    }
+
+    it = json.find("reflectance");
     if(it != json.end() && it->is_array())
     {
         Vector3 reflectance{0.9, 0.9, 0.9};
         it->get_to(reflectance);
-        return std::make_unique<DiffuseMaterial>(std::make_shared<ConstantTexture>(reflectance));
+        return std::make_unique<DiffuseMaterial>(std::make_shared<ConstantTexture>(reflectance), normalMap);
     }
 
     if(it != json.end() && it->is_object())
@@ -626,77 +635,75 @@ static std::unique_ptr<IMaterial> ReadDiffuseMaterial(nlohmann::json const& json
             Vector3 b{};
             it->at("a").get_to(a);
             it->at("b").get_to(b);
-            return std::make_unique<DiffuseMaterial>(std::make_shared<Checkerboard3DTexture>(a, b));
+            return std::make_unique<DiffuseMaterial>(std::make_shared<Checkerboard3DTexture>(a, b), normalMap);
         }
 
         if(type == TextureType::Image)
         {
-            std::string name{};
-            Vector2i resolution{};
-
-            it->at("name").get_to(name);
-            it->at("resolution").get_to(resolution);
-            return std::make_unique<DiffuseMaterial>(std::make_shared<ImageTexture>(name, resolution, false));
+            std::string s{};
+            it->at("name").get_to(s);
+            auto texture{std::make_shared<ImageTexture>(assetManager.GetImage(s))};
+            return std::make_unique<DiffuseMaterial>(texture, normalMap);
         }
     }
 
-    return std::make_unique<DiffuseMaterial>(std::make_shared<ConstantTexture>(Vector3{0.8, 0.8, 0.8}));
+    return std::make_unique<DiffuseMaterial>(std::make_shared<ConstantTexture>(Vector3{0.8, 0.8, 0.8}), normalMap);
 }
-static std::unique_ptr<IMaterial> ReadMirrorMaterial(nlohmann::json const& json)
-{
-    Vector3 reflectance{0.9, 0.9, 0.9};
+//static std::unique_ptr<IMaterial> ReadMirrorMaterial(nlohmann::json const& json)
+//{
+//    Vector3 reflectance{0.9, 0.9, 0.9};
+//
+//    auto it{json.find("reflectance")};
+//    if(it != json.end())
+//    {
+//        it->get_to(reflectance);
+//    }
+//
+//    return std::make_unique<MirrorMaterial>(reflectance);
+//}
+//static std::unique_ptr<IMaterial> ReadTransparentMaterial(nlohmann::json const& json)
+//{
+//    Vector3 opacity{0.9, 0.9, 0.9};
+//
+//    auto it{json.find("opacity")};
+//    if(it != json.end())
+//    {
+//        it->get_to(opacity);
+//    }
+//
+//    return std::make_unique<TransparentMaterial>(opacity);
+//}
+//static std::unique_ptr<IMaterial> ReadGlassMaterial(nlohmann::json const& json)
+//{
+//    Vector3 reflectance{0.9, 0.9, 0.9};
+//    Vector3 transmittance{0.9, 0.9, 0.9};
+//    double ior{1.4};
+//
+//    auto it{json.find("reflectance")};
+//    if(it != json.end())
+//    {
+//        it->get_to(reflectance);
+//    }
+//
+//    it = json.find("transmittance");
+//    if(it != json.end())
+//    {
+//        it->get_to(transmittance);
+//    }
+//
+//    it = json.find("ior");
+//    if(it != json.end())
+//    {
+//        it->get_to(ior);
+//    }
+//
+//    return std::make_unique<GlassMaterial>(reflectance, transmittance, ior);
+//}
 
-    auto it{json.find("reflectance")};
-    if(it != json.end())
-    {
-        it->get_to(reflectance);
-    }
-
-    return std::make_unique<MirrorMaterial>(reflectance);
-}
-static std::unique_ptr<IMaterial> ReadTransparentMaterial(nlohmann::json const& json)
-{
-    Vector3 opacity{0.9, 0.9, 0.9};
-
-    auto it{json.find("opacity")};
-    if(it != json.end())
-    {
-        it->get_to(opacity);
-    }
-
-    return std::make_unique<TransparentMaterial>(opacity);
-}
-static std::unique_ptr<IMaterial> ReadGlassMaterial(nlohmann::json const& json)
-{
-    Vector3 reflectance{0.9, 0.9, 0.9};
-    Vector3 transmittance{0.9, 0.9, 0.9};
-    double ior{1.4};
-
-    auto it{json.find("reflectance")};
-    if(it != json.end())
-    {
-        it->get_to(reflectance);
-    }
-
-    it = json.find("transmittance");
-    if(it != json.end())
-    {
-        it->get_to(transmittance);
-    }
-
-    it = json.find("ior");
-    if(it != json.end())
-    {
-        it->get_to(ior);
-    }
-
-    return std::make_unique<GlassMaterial>(reflectance, transmittance, ior);
-}
-
-static std::unique_ptr<IMaterial> ReadMaterial(nlohmann::json const& json)
+static std::unique_ptr<IMaterial> ReadMaterial(nlohmann::json const& json, AssetManager& assetManager)
 {
     auto materialIt{json.find("material")};
-    if(materialIt == json.end()) return std::make_unique<DiffuseMaterial>(std::make_shared<ConstantTexture>(Vector3{0.9, 0.9, 0.9}));
+    if(materialIt == json.end()) return std::make_unique<DiffuseMaterial>(std::make_shared<ConstantTexture>(Vector3{0.9, 0.9, 0.9}), nullptr);
 
 
 
@@ -713,15 +720,15 @@ static std::unique_ptr<IMaterial> ReadMaterial(nlohmann::json const& json)
         return ReadPlasticMaterial(*materialIt);
     case Fc::MaterialType::Metal:
         return ReadMetalMaterial(*materialIt);*/
-    case Fc::MaterialType::Mirror:
-        return ReadMirrorMaterial(*materialIt);
-    case Fc::MaterialType::Transparent:
-        return ReadTransparentMaterial(*materialIt);
-    case Fc::MaterialType::Glass:
-        return ReadGlassMaterial(*materialIt);
+    //case Fc::MaterialType::Mirror:
+    //    return ReadMirrorMaterial(*materialIt);
+    //case Fc::MaterialType::Transparent:
+    //    return ReadTransparentMaterial(*materialIt);
+    //case Fc::MaterialType::Glass:
+    //    return ReadGlassMaterial(*materialIt);
     case Fc::MaterialType::Diffuse:
     default:
-        return ReadDiffuseMaterial(*materialIt);
+        return ReadDiffuseMaterial(*materialIt, assetManager);
     }
 }
 
@@ -799,7 +806,7 @@ static void ReadScene(nlohmann::json const& json, SceneFile& sceneFile, AssetMan
         auto x{entity.find("ior")};
         if(x != entity.end()) x->get_to(ior);
 
-        scene->AddEntity(ReadShape(entity, assetManager), ReadMaterial(entity), ReadEmission(entity), ReadMedium(entity), ior);
+        scene->AddEntity(ReadShape(entity, assetManager), ReadMaterial(entity, assetManager), ReadEmission(entity), ReadMedium(entity), ior);
     }
 
     //sceneFile.scene->Build(Scene::SpliMethod::Middle);

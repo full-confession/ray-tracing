@@ -13,11 +13,11 @@
         "fov": 45.0
     },
     "integrator": {
-        "type": "backward",
+        "type": "forward",
         "strategy": "measure",
         "samplesX": 64,
         "samplesY": 64,
-        "maxVertices": 10,
+        "maxVertices": 3,
         "workerCount": 16,
         "tileSize": [32, 32],
         "sampleCount": 100000000
@@ -30,22 +30,6 @@
         "entities": [
             {
                 "shape": {
-                    "type": "sphere",
-                    "radius": 1.0,
-                    "transform": {
-                        "position": [0.0, 2.0, 0.0]
-                    }
-                },
-                "material": {
-                    "type": "glass",
-                    "reflectance": [1.0, 1.0, 1.0],
-                    "transmittance": [1.0, 1.0, 1.0],
-                    "ior": 1.45
-                },
-                "ior": 1.5
-            },
-            {
-                "shape": {
                     "type": "plane",
                     "size": [12.0, 12.0],
                     "transform": {
@@ -54,85 +38,8 @@
                 },
                 "material": {
                     "type": "diffuse",
-                    "reflectance": {
-                        "type": "checkerboard3d",
-                        "a": [0.483802, 0.8, 0.19376],
-                        "b": [0.1, 0.1, 0.1]
-                    }
-                }
-            },
-            {
-                "shape": {
-                    "type": "plane",
-                    "size": [3.5523, 2.0],
-                    "transform": {
-                        "position": [1.1, 1.5, 4.95],
-                        "rotation": [90.0, 180.0, 0.0]
-                    }
-                },
-                "material": {
-                    "type": "diffuse",
-                    "reflectance": {
-                        "type": "image",
-                        "name": "soraka.raw",
-                        "resolution": [1000, 563]
-                    }
-                }
-            },
-            {
-                "shape": {
-                    "type": "plane",
-                    "size": [12.0, 12.0],
-                    "transform": {
-                        "position": [4.99999, 5.0, 0.0],
-                        "rotation": [90.0, -90.0, 0.0]
-                    }
-                },
-                "material": {
-                    "type": "diffuse",
-                    "reflectance": [0.8, 0.186534, 0.036765]
-                }
-            },
-            {
-                "shape": {
-                    "type": "plane",
-                    "size": [12.0, 12.0],
-                    "transform": {
-                        "position": [0.0, 5.0, 4.99999],
-                        "rotation": [-90.0, 0.0, 0.0]
-                    }
-                },
-                "material": {
-                    "type": "diffuse",
-                    "reflectance": [0.041621, 0.5023584, 0.8]
-                }
-            },
-            {
-                "shape": {
-                    "type": "plane",
-                    "size": [12.0, 12.0],
-                    "transform": {
-                        "position": [-4.99999, 5.0, 0.0],
-                        "rotation": [90.0, 90.0, 0.0]
-                    }
-                },
-                "material": {
-                    "type": "diffuse",
-                    "reflectance": [0.141203, 0.8, 0.348158]
-                }
-            },
-            {
-                "shape": {
-                    "type": "plane",
-                    "size": [12.0, 12.0],
-                    "transform": {
-                        "position": [0.0, 5.0, -4.99999],
-                        "rotation": [90.0, 0.0, 0.0]
-                    }
-                },
-                "material": {
-                    "type": "diffuse",
-                    "reflectance": [0.718548, 0.125767, 0.8]
+                    "normal": "wallpaper-normal",
+                    "reflectance": [0.8, 0.8, 0.8]
                 }
             },
             {

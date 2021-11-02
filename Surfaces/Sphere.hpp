@@ -2,7 +2,7 @@
 #include "ISurface.hpp"
 #include "../Transform.hpp"
 #include "../Shapes/IShape.hpp"
-
+#include "../Sampling.hpp"
 namespace Fc
 {
     class SphereShape;

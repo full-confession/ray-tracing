@@ -4,7 +4,7 @@
 
 namespace Fc
 {
-    class TransparentMaterial : public IMaterial
+    /*class TransparentMaterial : public IMaterial
     {
     public:
         TransparentMaterial(Vector3 const& opacity)
@@ -21,5 +21,5 @@ namespace Fc
 
     private:
         Vector3 opacity_{};
-    };
+    };*/
 }
