@@ -18,6 +18,57 @@
       <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="src\accelerationstructures\bruteforce.hpp" />
+    <ClInclude Include="src\accelerationstructures\bvh.hpp" />
+    <ClInclude Include="src\bxdfs\lambertian.hpp" />
+    <ClInclude Include="src\cameras\perspective.hpp" />
+    <ClInclude Include="src\core\accelerationstructure.hpp" />
+    <ClInclude Include="src\core\allocator.hpp" />
+    <ClInclude Include="src\core\arealight.hpp" />
+    <ClInclude Include="src\core\assets.hpp" />
+    <ClInclude Include="src\core\bxdf.hpp" />
+    <ClInclude Include="src\core\camera.hpp" />
+    <ClInclude Include="src\core\common.hpp" />
+    <ClInclude Include="src\core\emission.hpp" />
+    <ClInclude Include="src\core\export.hpp" />
+    <ClInclude Include="src\core\frame.hpp" />
+    <ClInclude Include="src\core\image.hpp" />
+    <ClInclude Include="src\core\integrator.hpp" />
+    <ClInclude Include="src\core\light.hpp" />
+    <ClInclude Include="src\core\material.hpp" />
+    <ClInclude Include="src\core\mesh.hpp" />
+    <ClInclude Include="src\core\random.hpp" />
+    <ClInclude Include="src\core\rendertarget.hpp" />
+    <ClInclude Include="src\core\math.hpp" />
+    <ClInclude Include="src\core\sampler.hpp" />
+    <ClInclude Include="src\core\sampling.hpp" />
+    <ClInclude Include="src\core\scene.hpp" />
+    <ClInclude Include="src\core\surface.hpp" />
+    <ClInclude Include="src\core\surfacepoint.hpp" />
+    <ClInclude Include="src\core\texture.hpp" />
+    <ClInclude Include="src\core\transform.hpp" />
+    <ClInclude Include="src\demoscenes.hpp" />
+    <ClInclude Include="src\integrators\backward.hpp" />
+    <ClInclude Include="src\integrators\forward.hpp" />
+    <ClInclude Include="src\lights\diffuseemission.hpp" />
+    <ClInclude Include="src\materials\diffuse.hpp" />
+    <ClInclude Include="src\bxdfs\frame.hpp" />
+    <ClInclude Include="src\samplers\random.hpp" />
+    <ClInclude Include="src\surfaces\plane.hpp" />
+    <ClInclude Include="src\surfaces\sphere.hpp" />
+    <ClInclude Include="src\surfaces\mesh.hpp" />
+    <ClInclude Include="src\textures\consttexture.hpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\core\assets.cpp" />
+    <ClCompile Include="src\core\export.cpp" />
+    <ClCompile Include="src\main.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include=".gitattributes" />
+    <None Include=".gitignore" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
@@ -140,66 +191,6 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
   </ItemDefinitionGroup>
-  <ItemGroup>
-    <ClInclude Include="BSDF\Frame.hpp" />
-    <ClInclude Include="BSDF\IBxDF.hpp" />
-    <ClInclude Include="Cameras\PerspectiveCamera.hpp" />
-    <ClInclude Include="Lights\DiffuseAreaLight.hpp" />
-    <ClInclude Include="Lights\ILight.hpp" />
-    <ClInclude Include="Materials\DiffuseMaterial.hpp" />
-    <ClInclude Include="ICamera.hpp" />
-    <ClInclude Include="Materials\GlassMaterial.hpp" />
-    <ClInclude Include="Materials\IMaterial.hpp" />
-    <ClInclude Include="Materials\MirrorMaterial.hpp" />
-    <ClInclude Include="Materials\TransparentMaterial.hpp" />
-    <ClInclude Include="Scene\BruteForceSearch.hpp" />
-    <ClInclude Include="Scene\BVH.hpp" />
-    <ClInclude Include="Scene\IAccelerationStructure.hpp" />
-    <ClInclude Include="IMedium.hpp" />
-    <ClInclude Include="Scene\IScene.hpp" />
-    <ClInclude Include="Scene\MyScene.hpp" />
-    <ClInclude Include="Shapes\IShape.hpp" />
-    <ClInclude Include="Surfaces\Mesh.hpp" />
-    <ClInclude Include="Test\TestScene.hpp" />
-    <ClInclude Include="Textures\Checkerboard3DTexture.hpp" />
-    <ClInclude Include="Textures\ConstantTexture.hpp" />
-    <ClInclude Include="Textures\ImageTexture.hpp" />
-    <ClInclude Include="Textures\ITexture.hpp" />
-    <ClInclude Include="Transform.hpp" />
-    <ClInclude Include="AssetManager.hpp" />
-    <ClInclude Include="BxDF.hpp" />
-    <ClInclude Include="Fresnel.hpp" />
-    <ClInclude Include="Halton.hpp" />
-    <ClInclude Include="Image.hpp" />
-    <ClInclude Include="Integrators\BackwardPathIntegrator.hpp" />
-    <ClInclude Include="Integrators\BidirectionalPathIntegrator.hpp" />
-    <ClInclude Include="Integrators\ForwardPathIntegrator.hpp" />
-    <ClInclude Include="Integrators\IIntegrator.hpp" />
-    <ClInclude Include="json.hpp" />
-    <ClInclude Include="Math.hpp" />
-    <ClInclude Include="MemoryAllocator.hpp" />
-    <ClInclude Include="Mesh.hpp" />
-    <ClInclude Include="Random.hpp" />
-    <ClInclude Include="Sampler.hpp" />
-    <ClInclude Include="Sampling.hpp" />
-    <ClInclude Include="SceneFileReader.hpp" />
-    <ClInclude Include="SurfacePoint.hpp" />
-    <ClInclude Include="Surfaces\ISurface.hpp" />
-    <ClInclude Include="Surfaces\Plane.hpp" />
-    <ClInclude Include="Surfaces\Sphere.hpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="AssetManager.cpp" />
-    <ClCompile Include="Main.cpp" />
-    <ClCompile Include="SceneFileReader.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
-    </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Scenes\ball_in_ball.json" />
-    <None Include="wall_light.json" />
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

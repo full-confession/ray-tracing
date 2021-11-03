@@ -15,158 +15,140 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Math.hpp">
+    <ClInclude Include="src\core\math.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Transform.hpp">
+    <ClInclude Include="src\core\bxdf.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="SurfacePoint.hpp">
+    <ClInclude Include="src\core\camera.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="BxDF.hpp">
+    <ClInclude Include="src\core\surfacepoint.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Sampling.hpp">
+    <ClInclude Include="src\core\common.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="MemoryAllocator.hpp">
+    <ClInclude Include="src\core\rendertarget.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="AssetManager.hpp">
+    <ClInclude Include="src\cameras\perspective.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Mesh.hpp">
+    <ClInclude Include="src\core\transform.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Sampler.hpp">
+    <ClInclude Include="src\core\integrator.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Random.hpp">
+    <ClInclude Include="src\core\scene.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Halton.hpp">
+    <ClInclude Include="src\core\assets.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Image.hpp">
+    <ClInclude Include="src\core\mesh.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="json.hpp">
+    <ClInclude Include="src\core\image.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="SceneFileReader.hpp">
+    <ClInclude Include="src\core\accelerationstructure.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Fresnel.hpp">
+    <ClInclude Include="src\accelerationstructures\bruteforce.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Integrators\IIntegrator.hpp">
+    <ClInclude Include="src\core\light.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Integrators\ForwardPathIntegrator.hpp">
+    <ClInclude Include="src\core\emission.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Integrators\BackwardPathIntegrator.hpp">
+    <ClInclude Include="src\core\surface.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Integrators\BidirectionalPathIntegrator.hpp">
+    <ClInclude Include="src\surfaces\sphere.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Surfaces\ISurface.hpp">
+    <ClInclude Include="src\core\material.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Surfaces\Sphere.hpp">
+    <ClInclude Include="src\surfaces\mesh.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Surfaces\Plane.hpp">
+    <ClInclude Include="src\materials\diffuse.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Lights\ILight.hpp">
+    <ClInclude Include="src\lights\diffuseemission.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Lights\DiffuseAreaLight.hpp">
+    <ClInclude Include="src\core\arealight.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Scene\IScene.hpp">
+    <ClInclude Include="src\integrators\forward.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Scene\MyScene.hpp">
+    <ClInclude Include="src\core\sampler.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Materials\IMaterial.hpp">
+    <ClInclude Include="src\core\allocator.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Shapes\IShape.hpp">
+    <ClInclude Include="src\core\texture.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Materials\DiffuseMaterial.hpp">
+    <ClInclude Include="src\textures\consttexture.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ICamera.hpp">
+    <ClInclude Include="src\core\frame.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Cameras\PerspectiveCamera.hpp">
+    <ClInclude Include="src\bxdfs\lambertian.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Scene\IAccelerationStructure.hpp">
+    <ClInclude Include="src\core\sampling.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Scene\BVH.hpp">
+    <ClInclude Include="src\bxdfs\frame.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Surfaces\Mesh.hpp">
+    <ClInclude Include="src\samplers\random.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Materials\MirrorMaterial.hpp">
+    <ClInclude Include="src\core\random.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Materials\TransparentMaterial.hpp">
+    <ClInclude Include="src\core\export.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Materials\GlassMaterial.hpp">
+    <ClInclude Include="src\accelerationstructures\bvh.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Scene\BruteForceSearch.hpp">
+    <ClInclude Include="src\surfaces\plane.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="IMedium.hpp">
+    <ClInclude Include="src\demoscenes.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Textures\ITexture.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Textures\ConstantTexture.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Textures\Checkerboard3DTexture.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Textures\ImageTexture.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Test\TestScene.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="BSDF\IBxDF.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="BSDF\Frame.hpp">
+    <ClInclude Include="src\integrators\backward.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Main.cpp">
+    <ClCompile Include="src\core\assets.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="AssetManager.cpp">
+    <ClCompile Include="src\main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SceneFileReader.cpp">
+    <ClCompile Include="src\core\export.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="wall_light.json" />
-    <None Include="Scenes\ball_in_ball.json" />
+    <None Include=".gitattributes" />
+    <None Include=".gitignore" />
   </ItemGroup>
 </Project>
