@@ -38,11 +38,12 @@ namespace Fc
             for(int i{2}; i <= maxLength; ++i)
             {
                 if(p1.GetMaterial() == nullptr) break;
-                IBxDF const* bxdf_p1{p1.GetMaterial()->Evaluate(p1, allocator)};
+                IBxDF const* b1{p1.GetMaterial()->Evaluate(p1, allocator)};
+                if(b1 == nullptr) break;
 
                 Vector3 w12{};
                 Vector3 weight{};
-                if(bxdf_p1->Sample(w10, sampler.Get2D(), &w12, &weight) != SampleResult::Success) break;
+                if(b1->Sample(w10, sampler.Get2D(), &w12, &weight) != SampleResult::Success) break;
 
                 SurfacePoint p2{};
                 if(scene.Raycast(p1, w12, &p2) != RaycastResult::Hit) break;

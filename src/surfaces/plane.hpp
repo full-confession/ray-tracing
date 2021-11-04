@@ -91,6 +91,12 @@ namespace Fc
             return SampleResult::Success;
         }
 
+        virtual double PDF(SurfacePoint const& p) const override
+        {
+            if(p.GetSurface() != this) return {};
+            return 1.0 / GetArea();
+        }
+
     private:
         Transform transform_{};
         Vector2 size_{};

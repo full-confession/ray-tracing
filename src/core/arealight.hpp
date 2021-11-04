@@ -37,6 +37,21 @@ namespace Fc
             return SampleResult::Success;
         }
 
+        virtual double PDF(SurfacePoint const& p) const override
+        {
+            if(p.GetLight() != this) return {};
+            return surface_->PDF(p);
+        }
+
+        virtual double PDF(SurfacePoint const& p, Vector3 const& w) const override
+        {
+            if(p.GetLight() != this || p.GetSurface() != surface_) return {};
+
+            double cos{Dot(p.GetNormal(), w)};
+            if(cos <= 0.0) return 0.0;
+            return cos * Math::InvPi;
+        }
+
     private:
         ISurface const* surface_{};
         IEmission const* emission_{};

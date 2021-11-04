@@ -17,7 +17,7 @@ namespace Fc
             SurfacePoint* p, double* pdf_p, Vector3* w, double* pdf_w, Vector3* importance) const = 0;
 
         virtual SampleResult Sample(Vector3 const& viewPosition, Vector2 const& u,
-            SurfacePoint* p, double* pdf_p, Vector3* importance) const = 0;
+            SurfacePoint* p, double* pdf_p, Vector3* importance, double* pdf_w = nullptr) const = 0;
 
         virtual void AddSample(SurfacePoint const& p, Vector3 const& w, Vector3 const& value) = 0;
 

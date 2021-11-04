@@ -21,6 +21,9 @@ namespace Fc
         virtual RaycastResult Raycast(std::uint32_t primitive, Ray3 const& ray, double tMax, double* tHit, SurfacePoint* p) const = 0;
 
         virtual SampleResult Sample(Vector2 const& u, SurfacePoint* p, double* pdf_p) const = 0;
+
+        virtual double PDF(SurfacePoint const& p) const = 0;
+
         //virtual double SamplePoint(Vector3 const& viewPosition, Vector2 const& u, SurfacePoint* p) const = 0;
 
         //virtual double ProbabilityPoint(SurfacePoint const& p) const = 0;

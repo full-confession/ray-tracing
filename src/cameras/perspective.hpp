@@ -48,7 +48,7 @@ namespace Fc
         }
 
         virtual SampleResult Sample(Vector3 const& viewPosition, Vector2 const& u,
-            SurfacePoint* p, double* pdf_p, Vector3* importance) const override
+            SurfacePoint* p, double* pdf_p, Vector3* importance, double* pdf_w) const override
         {
             Vector3 w{Normalize(transform_.InverseTransformPoint(viewPosition))};
             if(w.z <= 0.0) return SampleResult::Fail;
@@ -66,6 +66,8 @@ namespace Fc
             p->SetNormal(transform_.TransformNormal({0.0, 0.0, 1.0}));
             p->SetCamera(this);
             *pdf_p = 1.0;
+
+            if(pdf_w != nullptr) *pdf_w = 1.0 / (samplePlaneSize_.x * samplePlaneSize_.y * w.z * w.z * w.z);
 
             double x{1.0 / (pixelSize_ * pixelSize_ * w.z * w.z * w.z * w.z)};
             *importance = {x, x, x};

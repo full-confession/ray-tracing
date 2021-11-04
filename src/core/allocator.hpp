@@ -126,4 +126,29 @@ namespace Fc
         Page activePage_{};
         std::size_t activePageOffset_{};
     };
+
+    template <typename T>
+    struct AllocatorWrapper
+    {
+    public:
+        using value_type = T;
+
+        template <class K>
+        explicit AllocatorWrapper(AllocatorWrapper<K> const& other) noexcept
+            : allocator_{other.allocator_}
+        { }
+
+        explicit AllocatorWrapper(Allocator* allocator)
+            : allocator_{allocator}
+        { }
+
+        T* allocate(std::size_t n)
+        {
+            return reinterpret_cast<T*>(allocator_->Allocate(sizeof(T) * n));
+        }
+
+        void deallocate(T* p, std::size_t n) noexcept { }
+
+        Allocator* allocator_{};
+    };
 }

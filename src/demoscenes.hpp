@@ -11,6 +11,7 @@
 #include "samplers/random.hpp"
 #include "integrators/forward.hpp"
 #include "integrators/backward.hpp"
+#include "integrators/bidir.hpp"
 #include "core/export.hpp"
 
 #include <thread>
@@ -21,7 +22,7 @@ namespace Fc
     inline void MoreBalls()
     {
         static constexpr int THREADS = 16;
-        static constexpr int SAMPLES_PER_PIXEL = 512;
+        static constexpr int SAMPLES_PER_PIXEL = 1024;
         static constexpr int SAMPLES_PER_THREAD = 10000;
 
 
@@ -132,7 +133,7 @@ namespace Fc
                     s->BeingSample(firstSampleIndex);
                     for(std::uint64_t i{}; i < count; ++i)
                     {
-                        BackwardWalk::Sample(*c, scene, *s, *a, 9);
+                        BidirWalk::Sample(*c, scene, *s, *a, 9);
                         s->NextSample();
                         a->Clear();
                     }

@@ -50,6 +50,7 @@
     <ClInclude Include="src\core\transform.hpp" />
     <ClInclude Include="src\demoscenes.hpp" />
     <ClInclude Include="src\integrators\backward.hpp" />
+    <ClInclude Include="src\integrators\bidir.hpp" />
     <ClInclude Include="src\integrators\forward.hpp" />
     <ClInclude Include="src\lights\diffuseemission.hpp" />
     <ClInclude Include="src\materials\diffuse.hpp" />
