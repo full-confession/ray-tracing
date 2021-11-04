@@ -1,6 +1,7 @@
 #pragma once
 #include "../core/surface.hpp"
 #include "../core/transform.hpp"
+#include "../core/sampling.hpp"
 
 namespace Fc
 {
@@ -112,6 +113,19 @@ namespace Fc
             *tHit = t;
 
             return RaycastResult::Hit;
+        }
+
+        virtual SampleResult Sample(Vector2 const& u, SurfacePoint* p, double* pdf_p) const override
+        {
+            Vector3 n{SampleSphereUniform(u)};
+
+            p->SetPosition(transform_.TransformPoint(n * radius_));
+            p->SetNormal(transform_.TransformNormal(n));
+            p->SetSurface(this);
+
+            *pdf_p = 1.0 / GetArea();
+
+            return SampleResult::Success;
         }
 
     private:

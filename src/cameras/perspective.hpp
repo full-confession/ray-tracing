@@ -22,26 +22,81 @@ namespace Fc
             return {{}, renderTarget_->GetResolution()};
         }
 
-        virtual SampleResult Sample(Vector2i const& pixel, Vector2 const& u1, Vector2 const& u2, SurfacePoint* p, Vector3* w, Vector3* weight) const override
+        virtual SampleResult Sample(Vector2 const& u1, Vector2 const& u2,
+            SurfacePoint* p, double* pdf_p, Vector3* w, double* pdf_w, Vector3* importance) const override
         {
             Vector3 samplePlanePosition{
-                samplePlaneSize_.x / -2.0 + (pixel.x + u1.x) * pixelSize_,
-                samplePlaneSize_.y / 2.0 - (pixel.y + u1.y) * pixelSize_,
+                (u1.x - 0.5) * samplePlaneSize_.x,
+                (u1.y - 0.5) * samplePlaneSize_.y,
                 1.0
             };
 
             p->SetPosition(transform_.TransformPoint({}));
             p->SetNormal(transform_.TransformNormal({0.0, 0.0, 1.0}));
             p->SetCamera(this);
-            *w = Normalize(transform_.TransformVector(samplePlanePosition));
-            *weight = static_cast<double>(renderTarget_->GetResolution().x) * static_cast<double>(renderTarget_->GetResolution().y);
+            *pdf_p = 1.0;
 
+            Vector3 w01{Normalize(samplePlanePosition)};
+            double cos{w01.z};
+            *w = transform_.TransformVector(w01);
+            *pdf_w = 1.0 / (samplePlaneSize_.x * samplePlaneSize_.y * cos * cos * cos);
+
+            double x{1.0 / (pixelSize_ * pixelSize_ * cos * cos * cos * cos)};
+            *importance = {x, x, x};
+
+            return SampleResult::Success;
+        }
+
+        virtual SampleResult Sample(Vector3 const& viewPosition, Vector2 const& u,
+            SurfacePoint* p, double* pdf_p, Vector3* importance) const override
+        {
+            Vector3 w{Normalize(transform_.InverseTransformPoint(viewPosition))};
+            if(w.z <= 0.0) return SampleResult::Fail;
+
+            double t{1.0 / w.z};
+            Vector3 samplePlanePosition{w * t};
+
+            if(samplePlanePosition.x < samplePlaneSize_.x / -2.0 || samplePlanePosition.x > samplePlaneSize_.x / 2.0
+                || samplePlanePosition.y > samplePlaneSize_.y / 2.0 || samplePlanePosition.y < samplePlaneSize_.y / -2.0)
+            {
+                return SampleResult::Fail;
+            }
+
+            p->SetPosition(transform_.TransformPoint({}));
+            p->SetNormal(transform_.TransformNormal({0.0, 0.0, 1.0}));
+            p->SetCamera(this);
+            *pdf_p = 1.0;
+
+            double x{1.0 / (pixelSize_ * pixelSize_ * w.z * w.z * w.z * w.z)};
+            *importance = {x, x, x};
             return SampleResult::Success;
         }
 
         virtual void AddSample(Vector2i const& pixel, Vector3 const& value) override
         {
             renderTarget_->AddSample(pixel, value);
+        }
+        
+        virtual void AddSample(SurfacePoint const& p, Vector3 const& w, Vector3 const& value) override
+        {
+            if(p.GetCamera() != this) return;
+            Vector3 w01{transform_.InverseTransformVector(w)};
+            if(w01.z <= 0.0) return;
+
+            double t{1.0 / w01.z};
+            Vector3 samplePlanePosition{w01 * t};
+
+            if(samplePlanePosition.x < samplePlaneSize_.x / -2.0 || samplePlanePosition.x > samplePlaneSize_.x / 2.0
+                || samplePlanePosition.y > samplePlaneSize_.y / 2.0 || samplePlanePosition.y < samplePlaneSize_.y / -2.0)
+            {
+                return;
+            }
+
+            Vector2i resolution{renderTarget_->GetResolution()};
+            int x = std::clamp(static_cast<int>((samplePlanePosition.x / samplePlaneSize_.x + 0.5) * resolution.x), 0, resolution.x - 1);
+            int y = std::clamp(static_cast<int>((samplePlanePosition.y / samplePlaneSize_.y + 0.5) * resolution.y), 0, resolution.y - 1);
+
+            renderTarget_->AddSample({x, y}, value);
         }
 
         virtual void AddSampleCount(std::uint64_t value) override

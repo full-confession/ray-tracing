@@ -78,6 +78,19 @@ namespace Fc
             return RaycastResult::Hit;
         }
 
+        virtual SampleResult Sample(Vector2 const& u, SurfacePoint* p, double* pdf_p) const override
+        {
+            Vector2 tu{(u - 0.5) * size_};
+
+            p->SetPosition(transform_.TransformPoint(Vector3{tu.x, 0.0, tu.y}));
+            p->SetNormal(transform_.TransformNormal({0.0, 1.0, 0.0}));
+            p->SetSurface(this);
+
+            *pdf_p = 1.0 / GetArea();
+
+            return SampleResult::Success;
+        }
+
     private:
         Transform transform_{};
         Vector2 size_{};

@@ -2,6 +2,8 @@
 #include "light.hpp"
 #include "surface.hpp"
 #include "emission.hpp"
+#include "frame.hpp"
+#include "sampling.hpp"
 
 namespace Fc
 {
@@ -18,6 +20,21 @@ namespace Fc
             if(Dot(p.GetNormal(), w) <= 0.0) return {};
 
             return emission_->EmittedRadiance(p, w);
+        }
+
+        virtual SampleResult Sample(Vector2 const& u1, Vector2 const& u2,
+            SurfacePoint* p, double* pdf_p, Vector3* w, double* pdf_w, Vector3* radiance) const override
+        {
+            if(surface_->Sample(u1, p, pdf_p) != SampleResult::Success) return SampleResult::Fail;
+            p->SetLight(this);
+
+            Frame frame{p->GetNormal()};
+            *w = SampleHemisphereCosineWeighted(u2);
+            *pdf_w = w->y * Math::InvPi;
+            *w = frame.LocalToWorld(*w);
+
+            *radiance = emission_->EmittedRadiance(*p, *w);
+            return SampleResult::Success;
         }
 
     private:

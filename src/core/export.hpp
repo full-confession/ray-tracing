@@ -2,10 +2,12 @@
 #include "rendertarget.hpp"
 #include <string>
 #include <cmath>
-
+#include <vector>
+#include <memory>
 namespace Fc
 {
     void ExportPPM(std::string const& filename, RenderTarget const& renderTarget);
+    void ExportPPM(std::string const& filename, std::vector<std::shared_ptr<RenderTarget>> const& renderTargets);
 
     inline std::uint8_t RGBToSRGB(double value)
     {

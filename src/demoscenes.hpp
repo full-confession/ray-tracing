@@ -10,15 +10,37 @@
 #include "textures/consttexture.hpp"
 #include "samplers/random.hpp"
 #include "integrators/forward.hpp"
+#include "integrators/backward.hpp"
 #include "core/export.hpp"
+
+#include <thread>
+#include <atomic>
+#include <iostream>
 namespace Fc
 {
     inline void MoreBalls()
     {
-        auto renderTarget = std::make_shared<RenderTarget>(Vector2i{1600, 900});
-        auto camera = std::make_shared<PerspectiveCamera>(renderTarget, Transform::TranslationRotationDeg({1.987698, 6.547128, -5.249698}, {46.925, -29.667, 0.0}), Math::DegToRad(45.0));
-        auto sampler = RandomSampler({1600, 900}, 0);
-        auto allocator = Allocator(1024 * 1024);
+        static constexpr int THREADS = 16;
+        static constexpr int SAMPLES_PER_PIXEL = 512;
+        static constexpr int SAMPLES_PER_THREAD = 10000;
+
+
+        std::vector<std::shared_ptr<RenderTarget>> renderTargets{};
+        std::vector<std::shared_ptr<PerspectiveCamera>> cameras{};
+        std::vector<std::shared_ptr<RandomSampler>> samplers{};
+        std::vector<std::shared_ptr<Allocator>> allocators{};
+        for(int i{}; i < THREADS; ++i)
+        {
+            renderTargets.emplace_back(new RenderTarget{Vector2i{800, 450}});
+            cameras.emplace_back(new PerspectiveCamera{renderTargets.back(), Transform::TranslationRotationDeg({1.987698, 6.547128, -5.249698}, {46.925, -29.667, 0.0}), Math::DegToRad(45.0)});
+            samplers.emplace_back(new RandomSampler{Vector2i{800, 450}, static_cast<std::uint64_t>(i)});
+            allocators.emplace_back(new Allocator{1024 * 1024});
+        }
+
+        //auto renderTarget = std::make_shared<RenderTarget>(Vector2i{800, 450});
+        //auto camera = std::make_shared<PerspectiveCamera>(renderTarget, Transform::TranslationRotationDeg({1.987698, 6.547128, -5.249698}, {46.925, -29.667, 0.0}), Math::DegToRad(45.0));
+        //auto sampler = RandomSampler({800, 450}, 0);
+        //auto allocator = Allocator(1024 * 1024);
 
         auto textureA = std::make_shared<ConstTextureRGB>(Vector3{1.0, 1.0, 1.0});
         auto textureB = std::make_shared<ConstTextureRGB>(Vector3{0.8, 0.8, 0.8});
@@ -90,16 +112,58 @@ namespace Fc
         BVHFactory<Primitive> factory{};
         Scene scene{std::move(entities), factory};
 
-        std::uint64_t samples{1600 * 900 * 256};
+        //std::uint64_t samples{800 * 450 * 16};
 
-        sampler.BeingSample(0);
-        for(std::uint64_t i{}; i < samples; ++i)
+
+        std::uint64_t samples{800 * 450 * SAMPLES_PER_PIXEL};
+        std::atomic<std::uint64_t> nextSampleIndex{};
+        std::vector<std::thread> threads{};
+        for(int i{}; i < THREADS; ++i)
         {
-            ForwardWalk::Sample(*camera, scene, sampler, allocator, 1, 9);
-            sampler.NextSample();
-            allocator.Clear();
+            threads.emplace_back([&nextSampleIndex, &scene, samples, rt{renderTargets[i]}, c{cameras[i]}, s{samplers[i]}, a{allocators[i]}]() {
+
+                while(true)
+                {
+                    std::uint64_t firstSampleIndex{nextSampleIndex.fetch_add(SAMPLES_PER_THREAD, std::memory_order_relaxed)};
+                    if(firstSampleIndex >= samples) break;
+
+                    std::uint64_t count{std::min(static_cast<std::uint64_t>(SAMPLES_PER_THREAD), samples - firstSampleIndex)};
+
+                    s->BeingSample(firstSampleIndex);
+                    for(std::uint64_t i{}; i < count; ++i)
+                    {
+                        BackwardWalk::Sample(*c, scene, *s, *a, 9);
+                        s->NextSample();
+                        a->Clear();
+                    }
+
+                }
+            });
         }
 
-        ExportPPM("test", *renderTarget);
+        while(true)
+        {
+            std::uint64_t x{nextSampleIndex.load(std::memory_order_relaxed)};
+            if(x >= samples) break;
+            std::cout << static_cast<double>(x) / static_cast<double>(samples) * 100.0 << std::endl;
+            std::this_thread::sleep_for(std::chrono::seconds{1});
+        }
+
+        for(int i{}; i < THREADS; ++i)
+        {
+            threads[i].join();
+        }
+
+        ExportPPM("test", renderTargets);
+
+        /*sampler.BeingSample(0);
+        for(std::uint64_t i{}; i < samples; ++i)
+        {
+            BackwardWalk::Sample(*camera, scene, sampler, allocator, 9);
+            sampler.NextSample();
+            allocator.Clear();
+        }*/
+
+        //ExportPPM("test", *renderTarget);
     }
 }

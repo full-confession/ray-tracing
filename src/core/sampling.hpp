@@ -34,4 +34,13 @@ namespace Fc
         double z{std::sqrt(std::max(0.0, 1.0 - d.x * d.x - d.y * d.y))};
         return {d.x, z, d.y};
     }
+
+    inline Vector3 SampleSphereUniform(Vector2 const& u)
+    {
+        double z{1.0 - 2.0 * u.x};
+        double r{std::sqrt(std::max(0.0, 1.0 - z * z))};
+        double phi{2.0 * Math::Pi * u.y};
+
+        return {r * std::cos(phi), z, r * std::sin(phi)};
+    }
 }
