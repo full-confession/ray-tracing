@@ -5,7 +5,7 @@ using namespace Fc;
 
 int main()
 {
-    Normals();
+    Mask();
 
     return 0;
 }

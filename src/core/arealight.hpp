@@ -37,6 +37,16 @@ namespace Fc
             return SampleResult::Success;
         }
 
+        virtual SampleResult Sample(Vector3 const& viewPosition, Vector2 const& u,
+            SurfacePoint* p, double* pdf_p, Vector3* radiance) const override
+        {
+            if(surface_->Sample(u, p, pdf_p) != SampleResult::Success) return SampleResult::Fail;
+            p->SetLight(this);
+
+            *radiance = emission_->EmittedRadiance(*p, Normalize(viewPosition - p->GetPosition()));
+            return SampleResult::Success;
+        }
+
         virtual double PDF(SurfacePoint const& p) const override
         {
             if(p.GetLight() != this) return {};

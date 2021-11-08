@@ -38,8 +38,8 @@ namespace Fc
             IBxDF const* plastic{allocator.Emplace<RoughPlastic>(alpha, alpha, 1.0, 1.45, rD_->Evaluate(p), rS_->Evaluate(p))};
 
             IBxDF const* mix{allocator.Emplace<MixBxDF>(metal, plastic, metalness_->Evaluate(p))};
-            //IBxDF const* frame{allocator.Emplace<ShadingNormalClampBxDF>(Frame{p.GetShadingNormal()}, p.GetNormal(), mix)};
-            IBxDF const* frame{allocator.Emplace<FrameBxDF>(Frame{p.GetNormal()}, mix)};
+            IBxDF const* frame{allocator.Emplace<ShadingNormalClampBxDF>(Frame{p.GetShadingNormal()}, p.GetNormal(), mix)};
+            //IBxDF const* frame{allocator.Emplace<FrameBxDF>(Frame{p.GetNormal()}, mix)};
             return frame;
         }
 

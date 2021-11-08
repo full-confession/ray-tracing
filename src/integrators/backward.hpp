@@ -91,9 +91,10 @@ namespace Fc
             {
                 // extend
                 Vector3 w12{};
-                Vector3 weight{};
+                Vector3 value{};
+                double pdf_w12{};
                 BxDFFlags flags{};
-                if(b1->Sample(-w01, sampler, &w12, &weight, &flags) != SampleResult::Success) return;
+                if(b1->Sample(-w01, sampler, TransportMode::Importance, &w12, &pdf_w12, &value, &flags) != SampleResult::Success) return;
 
                 SurfacePoint p2{};
                 if(scene.Raycast(p1, w12, &p2) != RaycastResult::Hit) return;
@@ -103,7 +104,7 @@ namespace Fc
 
 
                 // move
-                T *= weight;
+                T *= value * std::abs(Dot(p1.GetNormal(), w12)) / pdf_w12;
                 p1 = p2;
                 b1 = b2;
                 w01 = w12;

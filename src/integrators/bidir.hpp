@@ -115,8 +115,9 @@ namespace Fc
             for(int i{2}; i <= maxLength; ++i)
             {
                 vertices.emplace_back();
+                double pdf_w12{};
                 BxDFFlags flags{};
-                if(vertices[v1].b->Sample(-vertices[v0].w, sampler, &vertices[v1].w, &vertices[v2].beta, &flags) != SampleResult::Success)
+                if(vertices[v1].b->Sample(-vertices[v0].w, sampler, TransportMode::Radiance, &vertices[v1].w, &pdf_w12, &vertices[v2].beta, &flags) != SampleResult::Success)
                 {
                     vertices.pop_back();
                     return;
@@ -128,7 +129,7 @@ namespace Fc
                     return;
                 }
 
-                vertices[v2].beta *= vertices[v1].beta;
+                vertices[v2].beta *= vertices[v1].beta * std::abs(Dot(vertices[v1].p.GetNormal(), vertices[v1].w)) / pdf_w12;
                 vertices[v2].b = vertices[v2].p.GetMaterial()->Evaluate(vertices[v2].p, allocator);
 
                 double pdf2{vertices[v1].b->PDF(-vertices[v0].w, vertices[v1].w)};
@@ -179,8 +180,9 @@ namespace Fc
             for(int i{2}; i < maxLength; ++i)
             {
                 vertices.emplace_back();
+                double pdf_w12{};
                 BxDFFlags flags{};
-                if(vertices[v1].b->Sample(-vertices[v0].w, sampler, &vertices[v1].w, &vertices[v2].beta, &flags) != SampleResult::Success)
+                if(vertices[v1].b->Sample(-vertices[v0].w, sampler, TransportMode::Importance, &vertices[v1].w, &pdf_w12, &vertices[v2].beta, &flags) != SampleResult::Success)
                 {
                     vertices.pop_back();
                     return;
@@ -192,7 +194,7 @@ namespace Fc
                     return;
                 }
 
-                vertices[v2].beta *= vertices[v1].beta;
+                vertices[v2].beta *= vertices[v1].beta * std::abs(Dot(vertices[v1].p.GetNormal(), vertices[v1].w)) / pdf_w12;
                 vertices[v2].b = vertices[v2].p.GetMaterial()->Evaluate(vertices[v2].p, allocator);
                 double pdf2{vertices[v1].b->PDF(-vertices[v0].w, vertices[v1].w)};
                 double pdf0{vertices[v1].b->PDF(vertices[v1].w, -vertices[v0].w)};

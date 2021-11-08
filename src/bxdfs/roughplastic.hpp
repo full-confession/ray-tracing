@@ -11,40 +11,42 @@ namespace Fc
             : alphaX_{alphaX}, alphaY_{alphaY}, etaI_{etaI}, etaT_{etaT}, rD_{rD}, rS_{rS}
         { }
 
-        virtual SampleResult Sample(Vector3 const& wi, ISampler& sampler, Vector3* wo, Vector3* weight, BxDFFlags* flags) const override
+        virtual SampleResult Sample(Vector3 const& wi, ISampler& sampler, TransportMode mode, Vector3* wo, double* pdf, Vector3* value, BxDFFlags* flags) const override
         {
             if(wi.y == 0.0) return SampleResult::Fail;
+
+            Vector3 wh{};
             if(sampler.Get1D() < 0.5)
             {
                 // sample diffuse
                 *wo = SampleHemisphereCosineWeighted(sampler.Get2D());
                 if(wi.y < 0.0) wo->y = -wo->y;
+                wh = Normalize(wi + *wo);
             }
             else
             {
                 // sample specular
-                Vector3 wh{SampleWh(wi, sampler.Get2D(), alphaX_, alphaY_)};
+                wh = SampleWh(wi, sampler.Get2D(), alphaX_, alphaY_);
                 if(Dot(wi, wh) < 0.0) return SampleResult::Fail;
                 *wo = Reflect(wi, wh);
                 if(wo->y * wi.y <= 0.0) return SampleResult::Fail;
             }
 
-            *weight = Weight(wi, *wo);
-            return SampleResult::Success;
-        }
+            double d{D(wh, alphaX_, alphaY_)};
+            double f{FrDielectric(Dot(wi, wh), etaI_, etaT_)};
+            double g{G(*wo, wi, alphaX_, alphaY_)};
 
-        virtual Vector3 Weight(Vector3 const& wi, Vector3 const& wo) const override
-        {
-            Vector3 value{Evaluate(wi, wo)};
-            if(value)
-            {
-                double pdf{PDF(wi, wo)};
-                return value / pdf * std::abs(wo.y);
-            }
-            else
-            {
-                return {};
-            }
+            double pdfSpecular{d * std::abs(wh.y) / (4.0 * Dot(*wo, wh))};
+            double pdfDiffuse{std::abs(wo->y) * Math::InvPi};
+
+            Vector3 specular{(f * d * g / (4.0 * std::abs(wi.y) * std::abs(wo->y))) * rS_};
+            Vector3 diffuse{(1.0 - f) * rD_};
+
+            *value = specular + diffuse;
+            *pdf = 0.5 * (pdfDiffuse + pdfSpecular);
+            *flags = BxDFFlags::Diffuse | BxDFFlags::Reflection;
+
+            return SampleResult::Success;
         }
 
         virtual double PDF(Vector3 const& wi, Vector3 const& wo) const override

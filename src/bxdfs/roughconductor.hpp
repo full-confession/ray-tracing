@@ -11,7 +11,7 @@ namespace Fc
             : alphaX_{alphaX}, alphaY_{alphaY}, etaI_{etaI}, etaT_{etaT}, k_{k}
         { }
 
-        virtual SampleResult Sample(Vector3 const& wi, ISampler& sampler, Vector3* wo, Vector3* weight, BxDFFlags* flags) const override
+        virtual SampleResult Sample(Vector3 const& wi, ISampler& sampler, TransportMode mode, Vector3* wo, double* pdf, Vector3* value, BxDFFlags* flags) const override
         {
             Vector2 sample{sampler.Get2D()};
             if(wi.y == 0.0) return SampleResult::Fail;
@@ -21,21 +21,15 @@ namespace Fc
             *wo = Reflect(wi, wh);
             if(wi.y * wo->y <= 0.0) return SampleResult::Fail;
 
-            Vector3 fresnel{FrConductor(Dot(wi, wh), etaI_, etaT_, k_)};
-            *weight = G(*wo, wi, alphaX_, alphaY_) * Dot(*wo, wh) / (std::abs(wi.y) * std::abs(wh.y)) * fresnel;
+            double d{D(wh, alphaX_, alphaY_)};
+            Vector3 f{FrConductor(Dot(wi, wh), etaI_, etaT_, k_)};
+            double g{G(*wo, wi, alphaX_, alphaY_)};
+
+            *pdf = d * std::abs(wh.y) / (4.0 * Dot(*wo, wh));
+            *value = (d * g / (4.0 * std::abs(wi.y) * std::abs(wo->y))) * f;
+            *flags = BxDFFlags::Diffuse | BxDFFlags::Reflection;
 
             return SampleResult::Success;
-        }
-
-        virtual Vector3 Weight(Vector3 const& wi, Vector3 const& wo) const override
-        {
-            if(wo.y * wi.y <= 0.0) return {};
-            Vector3 wh{wi + wo};
-            if(!wh) return {};
-            wh = Normalize(wh);
-
-            Vector3 fresnel{FrConductor(Dot(wi, wh), etaI_, etaT_, k_)};
-            return G(wo, wi, alphaX_, alphaY_) * Dot(wo, wh) / (std::abs(wi.y) * std::abs(wh.y)) * fresnel;
         }
 
         virtual double PDF(Vector3 const& wi, Vector3 const& wo) const override

@@ -14,14 +14,18 @@ namespace Fc
         Specular = 1 << 3
     };
 
+    enum class TransportMode
+    {
+        Radiance,
+        Importance
+    };
+
     class IBxDF
     {
     public:
         virtual ~IBxDF() = default;
 
-        // weight = f(wi, wo) * |cos(wo)| / p(wo)
-        virtual SampleResult Sample(Vector3 const& wi, ISampler& sampler, Vector3* wo, Vector3* weight, BxDFFlags* flags) const = 0;
-        virtual Vector3 Weight(Vector3 const& wi, Vector3 const& wo) const = 0;
+        virtual SampleResult Sample(Vector3 const& wi, ISampler& sampler, TransportMode mode, Vector3* wo, double* pdf, Vector3* value, BxDFFlags* flags) const = 0;
         virtual double PDF(Vector3 const& wi, Vector3 const& wo) const = 0;
         virtual Vector3 Evaluate(Vector3 const& wi, Vector3 const& wo) const = 0;
         virtual BxDFFlags GetFlags() const = 0;

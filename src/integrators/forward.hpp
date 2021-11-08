@@ -42,14 +42,15 @@ namespace Fc
                 if(b1 == nullptr) break;
 
                 Vector3 w12{};
-                Vector3 weight{};
+                Vector3 value{};
+                double pdf_w12{};
                 BxDFFlags flags{};
-                if(b1->Sample(w10, sampler, &w12, &weight, &flags) != SampleResult::Success) break;
+                if(b1->Sample(w10, sampler, TransportMode::Radiance, &w12, &pdf_w12, &value, &flags) != SampleResult::Success) break;
 
                 SurfacePoint p2{};
                 if(scene.Raycast(p1, w12, &p2) != RaycastResult::Hit) break;
 
-                T *= weight;
+                T *= value * std::abs(Dot(p1.GetNormal(), w12)) / pdf_w12;
                 Vector3 w21{-w12};
                 if(p2.GetLight() != nullptr)
                     I += T * p2.GetLight()->EmittedRadiance(p2, w21);

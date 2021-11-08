@@ -12,31 +12,29 @@ namespace Fc
             : shadingFrame_{shadingFrame}, geometryNormal_{geometryNormal}, bxdf_{bxdf}
         { }
 
-        virtual SampleResult Sample(Vector3 const& wi, ISampler& sampler, Vector3* wo, Vector3* weight, BxDFFlags* flags) const override
+        virtual SampleResult Sample(Vector3 const& wi, ISampler& sampler, TransportMode mode, Vector3* wo, double* pdf, Vector3* value, BxDFFlags* flags) const override
         {
             double wi_wg{Dot(wi, geometryNormal_)};
             double wi_ws{Dot(wi, shadingFrame_.GetNormal())};
             if(wi_wg * wi_ws <= 0.0) return SampleResult::Fail;
 
-            if(bxdf_->Sample(shadingFrame_.WorldToLocal(wi), sampler, wo, weight, flags) == SampleResult::Fail) return SampleResult::Fail;
+            if(bxdf_->Sample(shadingFrame_.WorldToLocal(wi), sampler, mode, wo, pdf, value, flags) == SampleResult::Fail) return SampleResult::Fail;
             *wo = shadingFrame_.LocalToWorld(*wo);
 
             double wo_wg{Dot(*wo, geometryNormal_)};
             double wo_ws{Dot(*wo, shadingFrame_.GetNormal())};
             if(wo_wg * wo_ws <= 0.0) return SampleResult::Fail;
 
+            if(mode == TransportMode::Radiance)
+            {
+                *value *= wo_ws / wo_wg;
+            }
+            else
+            {
+                *value *= wi_ws / wi_wg;
+            }
+
             return SampleResult::Success;
-        }
-
-        virtual Vector3 Weight(Vector3 const& wi, Vector3 const& wo) const override
-        {
-            double wi_wg{Dot(wi, geometryNormal_)};
-            double wi_ws{Dot(wi, shadingFrame_.GetNormal())};
-            double wo_wg{Dot(wo, geometryNormal_)};
-            double wo_ws{Dot(wo, shadingFrame_.GetNormal())};
-            if(wi_wg * wi_ws < 0.0 || wo_wg * wo_ws < 0.0) return {};
-
-            return bxdf_->Weight(wi, wo);
         }
 
         virtual double PDF(Vector3 const& wi, Vector3 const& wo) const override

@@ -57,6 +57,8 @@
     <ClInclude Include="src\integrators\backward.hpp" />
     <ClInclude Include="src\integrators\bidir.hpp" />
     <ClInclude Include="src\integrators\forward.hpp" />
+    <ClInclude Include="src\integrators\forwardlight.hpp" />
+    <ClInclude Include="src\integrators\forwardmis.hpp" />
     <ClInclude Include="src\lib\json.hpp" />
     <ClInclude Include="src\lights\diffuseemission.hpp" />
     <ClInclude Include="src\materials\diffuse.hpp" />

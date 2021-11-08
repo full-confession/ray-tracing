@@ -18,6 +18,8 @@
 #include "integrators/forward.hpp"
 #include "integrators/backward.hpp"
 #include "integrators/bidir.hpp"
+#include "integrators/forwardlight.hpp"
+#include "integrators/forwardmis.hpp"
 #include "core/export.hpp"
 #include "core/assets.hpp"
 
@@ -27,7 +29,7 @@
 namespace Fc
 {
     static constexpr int THREADS = 16;
-    static constexpr int SAMPLES_PER_PIXEL = 10000;
+    static constexpr int SAMPLES_PER_PIXEL = 1000;
     static constexpr int SAMPLES_PER_THREAD = 10000;
 
     inline void Render(std::string const& name, Vector2i resolution, Scene const& scene, ICameraFactory const& cameraFactory)
@@ -64,7 +66,7 @@ namespace Fc
                     s->BeingSample(firstSampleIndex);
                     for(std::uint64_t i{}; i < count; ++i)
                     {
-                        ForwardWalk::Sample(*c, scene, *s, *a, 9);
+                        BidirWalk::Sample(*c, scene, *s, *a, 9);
                         s->NextSample();
                         a->Clear();
                     }
@@ -237,7 +239,8 @@ namespace Fc
         auto metalness = std::make_shared<ConstTextureR>(0.5);
 
         entities.push_back(Entity{
-            std::make_unique<SphereSurface>(Transform{}, 2.0),
+            std::make_unique<MeshSurface>(assets.GetMesh("sphere"), Transform::Scale({2.0, 2.0, 2.0})),
+            //std::make_unique<SphereSurface>(Transform{}, 2.0),
             //std::make_unique<MetalMaterial>(eta, k, roughness),
             //std::make_unique<RoughPlasticMaterial>(constOrange, const1, roughness),
             //std::make_unique<DiffuseMaterial>(const08),
