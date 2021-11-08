@@ -73,6 +73,13 @@ namespace Fc
             p->SetSurface(this);
             p->SetPosition(transform_.TransformPoint(position));
             p->SetNormal(transform_.TransformNormal({0.0, 1.0, 0.0}));
+            p->SetShadingNormal(p->GetNormal());
+
+            Vector2 uv{
+                (position.x + halfSize.x) / (halfSize.x * 2.0),
+                (position.z + halfSize.y) / (halfSize.y * 2.0)
+            };
+            p->SetUV(uv);
 
             *tHit = t;
             return RaycastResult::Hit;

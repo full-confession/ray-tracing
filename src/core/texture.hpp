@@ -4,6 +4,14 @@
 
 namespace Fc
 {
+    class ITextureR
+    {
+    public:
+        virtual ~ITextureR() = default;
+
+        virtual double Evaluate(SurfacePoint const& p) const = 0;
+    };
+
     class ITextureRGB
     {
     public:
@@ -11,4 +19,5 @@ namespace Fc
 
         virtual Vector3 Evaluate(SurfacePoint const& p) const = 0;
     };
+
 }

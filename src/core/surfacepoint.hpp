@@ -42,6 +42,16 @@ namespace Fc
             return shadingNormal_;
         }
 
+        void SetUV(Vector2 const& uv)
+        {
+            uv_ = uv;
+        }
+
+        Vector2 const& GetUV() const
+        {
+            return uv_;
+        }
+
         void SetCamera(ICamera const* camera)
         {
             camera_ = camera;
@@ -86,6 +96,7 @@ namespace Fc
         Vector3 position_{};
         Vector3 normal_{};
         Vector3 shadingNormal_{};
+        Vector2 uv_{};
 
         ICamera const* camera_{};
         ISurface const* surface_{};

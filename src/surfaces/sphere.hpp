@@ -110,6 +110,8 @@ namespace Fc
             p->SetSurface(this);
             p->SetPosition(transform_.TransformPoint(position));
             p->SetNormal(transform_.TransformNormal(Normalize(position)));
+            p->SetShadingNormal(p->GetNormal());
+
             *tHit = t;
 
             return RaycastResult::Hit;

@@ -24,6 +24,11 @@ namespace Fc
     public:
         static void Sample(ICamera& camera, Scene const& scene, ISampler& sampler, Allocator& allocator, int maxLength)
         {
+            //if(sampler.GetSampleIndex() == 232103)
+            //{
+            //    int x = 0;
+            //}
+
             std::vector<Vertex, AllocatorWrapper<Vertex>> cameraVertices{AllocatorWrapper<Vertex>{&allocator}};
             std::vector<Vertex, AllocatorWrapper<Vertex>> lightVertices{AllocatorWrapper<Vertex>{&allocator}};
 
@@ -73,7 +78,6 @@ namespace Fc
                 }
             }
 
-
             camera.AddSample(cameraVertices[0].p, cameraVertices[0].w, I);
             camera.AddSampleCount(1);
         }
@@ -111,7 +115,8 @@ namespace Fc
             for(int i{2}; i <= maxLength; ++i)
             {
                 vertices.emplace_back();
-                if(vertices[v1].b->Sample(-vertices[v0].w, sampler.Get2D(), &vertices[v1].w, &vertices[v2].beta) != SampleResult::Success)
+                BxDFFlags flags{};
+                if(vertices[v1].b->Sample(-vertices[v0].w, sampler, &vertices[v1].w, &vertices[v2].beta, &flags) != SampleResult::Success)
                 {
                     vertices.pop_back();
                     return;
@@ -174,7 +179,8 @@ namespace Fc
             for(int i{2}; i < maxLength; ++i)
             {
                 vertices.emplace_back();
-                if(vertices[v1].b->Sample(-vertices[v0].w, sampler.Get2D(), &vertices[v1].w, &vertices[v2].beta) != SampleResult::Success)
+                BxDFFlags flags{};
+                if(vertices[v1].b->Sample(-vertices[v0].w, sampler, &vertices[v1].w, &vertices[v2].beta, &flags) != SampleResult::Success)
                 {
                     vertices.pop_back();
                     return;

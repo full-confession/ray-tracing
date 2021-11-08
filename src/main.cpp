@@ -1,10 +1,11 @@
 
 #include "demoscenes.hpp"
+#include "core/assets.hpp"
 using namespace Fc;
 
 int main()
 {
-    MoreBalls();
+    Normals();
 
     return 0;
 }

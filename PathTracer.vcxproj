@@ -22,6 +22,11 @@
     <ClInclude Include="src\accelerationstructures\bruteforce.hpp" />
     <ClInclude Include="src\accelerationstructures\bvh.hpp" />
     <ClInclude Include="src\bxdfs\lambertian.hpp" />
+    <ClInclude Include="src\bxdfs\mix.hpp" />
+    <ClInclude Include="src\bxdfs\roughconductor.hpp" />
+    <ClInclude Include="src\bxdfs\roughplastic.hpp" />
+    <ClInclude Include="src\bxdfs\shadingnormal.hpp" />
+    <ClInclude Include="src\bxdfs\shadingnormalclamp.hpp" />
     <ClInclude Include="src\cameras\perspective.hpp" />
     <ClInclude Include="src\core\accelerationstructure.hpp" />
     <ClInclude Include="src\core\allocator.hpp" />
@@ -52,14 +57,20 @@
     <ClInclude Include="src\integrators\backward.hpp" />
     <ClInclude Include="src\integrators\bidir.hpp" />
     <ClInclude Include="src\integrators\forward.hpp" />
+    <ClInclude Include="src\lib\json.hpp" />
     <ClInclude Include="src\lights\diffuseemission.hpp" />
     <ClInclude Include="src\materials\diffuse.hpp" />
     <ClInclude Include="src\bxdfs\frame.hpp" />
+    <ClInclude Include="src\materials\metal.hpp" />
+    <ClInclude Include="src\materials\metalplastic.hpp" />
+    <ClInclude Include="src\materials\roughplastic.hpp" />
     <ClInclude Include="src\samplers\random.hpp" />
     <ClInclude Include="src\surfaces\plane.hpp" />
     <ClInclude Include="src\surfaces\sphere.hpp" />
     <ClInclude Include="src\surfaces\mesh.hpp" />
     <ClInclude Include="src\textures\consttexture.hpp" />
+    <ClInclude Include="src\textures\imagetexture.hpp" />
+    <ClInclude Include="src\textures\uvtexture.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\core\assets.cpp" />

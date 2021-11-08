@@ -92,7 +92,8 @@ namespace Fc
                 // extend
                 Vector3 w12{};
                 Vector3 weight{};
-                if(b1->Sample(-w01, sampler.Get2D(), &w12, &weight) != SampleResult::Success) return;
+                BxDFFlags flags{};
+                if(b1->Sample(-w01, sampler, &w12, &weight, &flags) != SampleResult::Success) return;
 
                 SurfacePoint p2{};
                 if(scene.Raycast(p1, w12, &p2) != RaycastResult::Hit) return;

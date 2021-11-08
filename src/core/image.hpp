@@ -8,7 +8,7 @@ namespace Fc
     {
     public:
         virtual ~IImage() = default;
-        virtual Vector2i Resolution() const = 0;
+        virtual Vector2i GetResolution() const = 0;
 
         virtual double R(Vector2i const& pixel) const = 0;
         virtual double G(Vector2i const& pixel) const = 0;

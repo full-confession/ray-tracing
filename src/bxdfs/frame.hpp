@@ -11,9 +11,9 @@ namespace Fc
             : frame_{frame}, bxdf_{bxdf}
         { }
 
-        virtual SampleResult Sample(Vector3 const& wi, Vector2 const& u, Vector3* wo, Vector3* weight) const override
+        virtual SampleResult Sample(Vector3 const& wi, ISampler& sampler, Vector3* wo, Vector3* weight, BxDFFlags* flags) const override
         {
-            if(bxdf_->Sample(frame_.WorldToLocal(wi), u, wo, weight) == SampleResult::Success)
+            if(bxdf_->Sample(frame_.WorldToLocal(wi), sampler, wo, weight, flags) == SampleResult::Success)
             {
                 *wo = frame_.LocalToWorld(*wo);
                 return SampleResult::Success;
@@ -22,6 +22,11 @@ namespace Fc
             {
                 return SampleResult::Fail;
             }
+        }
+
+        virtual Vector3 Weight(Vector3 const& wi, Vector3 const& wo) const override
+        {
+            return bxdf_->Weight(frame_.WorldToLocal(wi), frame_.WorldToLocal(wo));
         }
 
         virtual double PDF(Vector3 const& wi, Vector3 const& wo) const override

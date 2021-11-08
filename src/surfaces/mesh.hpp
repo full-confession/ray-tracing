@@ -219,9 +219,13 @@ namespace Fc
             Vector3 dp02{p0 - p2};
             Vector3 dp12{p1 - p2};
 
+            auto [uv0, uv1, uv2] {GetUVs(primitive)};
+            Vector2 uv{b0 * uv0 + b1 * uv1 + b2 * uv2};
+
             p->SetSurface(this);
             p->SetPosition(position);
             p->SetNormal(Normalize(Cross(dp02, dp12)));
+            p->SetUV(uv);
 
             if(!normals_.empty())
             {
@@ -236,6 +240,17 @@ namespace Fc
             *tHit = t;
             return RaycastResult::Hit;
         }
+
+        virtual SampleResult Sample(Vector2 const& u, SurfacePoint* p, double* pdf_p) const override
+        {
+            return SampleResult::Fail;
+        }
+
+        virtual double PDF(SurfacePoint const& p) const override
+        {
+            return 0.0;
+        }
+
     private:
         std::shared_ptr<IMesh> mesh_{};
         Transform transform_{};
@@ -267,6 +282,23 @@ namespace Fc
                 normals_[indices_[i + 1]],
                 normals_[indices_[i + 2]]
             };
+        }
+
+        std::tuple<Vector2, Vector2, Vector2> GetUVs(std::uint32_t primitive) const
+        {
+            if(uvs_ != nullptr)
+            {
+                std::size_t i{static_cast<std::size_t>(primitive) * 3};
+                return {
+                    uvs_[indices_[i]],
+                    uvs_[indices_[i + 1]],
+                    uvs_[indices_[i + 2]]
+                };
+            }
+            else
+            {
+                return {{0.0, 0.0}, {1.0, 0.0}, {1.0, 1.0}};
+            }
         }
     };
 }

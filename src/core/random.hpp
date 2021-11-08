@@ -4,7 +4,7 @@
 namespace Fc
 {
     static constexpr float FLOAT_ONE_MINUS_EPSILON{0x1.fffffep-1f};
-
+    static constexpr double DOUBLE_ONE_MINUS_EPSILON{0x1.fffffffffffffp-1};
     class Random
     {
         static constexpr uint64_t DEFAULT_STATE{0x853c49e6748fea9b};

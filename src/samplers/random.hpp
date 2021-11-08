@@ -42,6 +42,11 @@ namespace Fc
             return {random_.UniformFloat(), random_.UniformFloat()};
         }
 
+        virtual std::uint64_t GetSampleIndex() const
+        {
+            return index_;
+        }
+
     private:
         Vector2i resolution_{};
         Random random_{};

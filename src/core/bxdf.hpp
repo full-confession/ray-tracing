@@ -1,6 +1,7 @@
 #pragma once
 #include "math.hpp"
 #include "common.hpp"
+#include "sampler.hpp"
 
 namespace Fc
 {
@@ -19,7 +20,8 @@ namespace Fc
         virtual ~IBxDF() = default;
 
         // weight = f(wi, wo) * |cos(wo)| / p(wo)
-        virtual SampleResult Sample(Vector3 const& wi, Vector2 const& u, Vector3* wo, Vector3* weight) const = 0;
+        virtual SampleResult Sample(Vector3 const& wi, ISampler& sampler, Vector3* wo, Vector3* weight, BxDFFlags* flags) const = 0;
+        virtual Vector3 Weight(Vector3 const& wi, Vector3 const& wo) const = 0;
         virtual double PDF(Vector3 const& wi, Vector3 const& wo) const = 0;
         virtual Vector3 Evaluate(Vector3 const& wi, Vector3 const& wo) const = 0;
         virtual BxDFFlags GetFlags() const = 0;
