@@ -11,8 +11,6 @@ namespace Fc
     public:
         virtual ~ICamera() = default;
 
-        virtual Bounds2i SampleBounds() const = 0;
-
         virtual SampleResult Sample(Vector2 const& u1, Vector2 const& u2,
             SurfacePoint* p, double* pdf_p, Vector3* w, double* pdf_w, Vector3* importance) const = 0;
 
@@ -20,8 +18,6 @@ namespace Fc
             SurfacePoint* p, double* pdf_p, Vector3* importance, double* pdf_w = nullptr) const = 0;
 
         virtual void AddSample(SurfacePoint const& p, Vector3 const& w, Vector3 const& value) = 0;
-
-        virtual void AddSample(Vector2i const& pixel, Vector3 const& value) = 0;
         virtual void AddSampleCount(std::uint64_t value) = 0;
     };
 

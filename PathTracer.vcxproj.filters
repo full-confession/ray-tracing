@@ -177,6 +177,12 @@
     <ClInclude Include="src\integrators\forwardmis.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\textures\checkertexture.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\bxdfs\normalmapbxdf.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\core\assets.cpp">

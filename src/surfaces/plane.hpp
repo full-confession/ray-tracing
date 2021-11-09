@@ -81,6 +81,9 @@ namespace Fc
             };
             p->SetUV(uv);
 
+            p->SetShadingTangent(transform_.TransformVector({1.0, 0.0, 0.0}));
+            p->SetShadingBitangent(transform_.TransformVector({0.0, 0.0, 1.0}));
+
             *tHit = t;
             return RaycastResult::Hit;
         }

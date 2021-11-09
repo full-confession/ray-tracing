@@ -5,33 +5,40 @@
 #include "../bxdfs/shadingnormal.hpp"
 #include "../bxdfs/shadingnormalclamp.hpp"
 #include "../bxdfs/lambertian.hpp"
-
+#include "../bxdfs/normalmapbxdf.hpp"
 namespace Fc
 {
     class DiffuseMaterial : public IMaterial
     {
     public:
-        explicit DiffuseMaterial(std::shared_ptr<ITextureRGB> reflectance)
-            : reflectance_{std::move(reflectance)}
+        explicit DiffuseMaterial(std::shared_ptr<ITextureRGB> reflectance, std::shared_ptr<ITextureRGB> normalMap)
+            : reflectance_{std::move(reflectance)}, normalMap_{std::move(normalMap)}
         { }
 
         virtual IBxDF const* Evaluate(SurfacePoint const& p, Allocator& allocator) const override
         {
-            IBxDF const* lambertian{allocator.Emplace<LambertianReflection>(reflectance_->Evaluate(p))};
-            //IBxDF const* frame{allocator.Emplace<FrameBxDF>(Frame{p.GetNormal()}, lambertian)};
+            IBxDF const* a{allocator.Emplace<LambertianReflection>(reflectance_->Evaluate(p))};
+            if(normalMap_)
+            {
+                Vector3 c{normalMap_->Evaluate(p)};
+                Vector3 n{c * 2.0 - 1.0};
+                n.x = -n.x;
+                std::swap(n.y, n.z);
+                n.x *= 0.5;
+                n.z *= 0.5;
+                IBxDF const* b{allocator.Emplace<NormalMapBxDF>(Normalize(n), a)};
+                a = b;
+            }
 
-            //Vector3 shadingNormal{Normalize(2.0 * (reflectance_->Evaluate(p) - 0.5))};
-            //std::swap(shadingNormal.y, shadingNormal.z);
-            //shadingNormal.z = -shadingNormal.z;
-
-            //IBxDF const* frame{allocator.Emplace<ShadingNormalBxDF>(Frame{p.GetNormal()}, shadingNormal, lambertian)};
-            
-            IBxDF const* frame{allocator.Emplace<ShadingNormalClampBxDF>(Frame{p.GetShadingNormal()}, p.GetNormal(), lambertian)};
+            IBxDF const* frame{allocator.Emplace<ShadingNormalClampBxDF>(
+                Frame{p.GetShadingTangent(), p.GetShadingNormal(), p.GetShadingBitangent()}, p.GetNormal(), a
+            )};
 
             return frame;
         }
 
     private:
-        std::shared_ptr<ITextureRGB> reflectance_;
+        std::shared_ptr<ITextureRGB> reflectance_{};
+        std::shared_ptr<ITextureRGB> normalMap_{};
     };
 }

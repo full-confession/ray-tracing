@@ -23,6 +23,7 @@
     <ClInclude Include="src\accelerationstructures\bvh.hpp" />
     <ClInclude Include="src\bxdfs\lambertian.hpp" />
     <ClInclude Include="src\bxdfs\mix.hpp" />
+    <ClInclude Include="src\bxdfs\normalmapbxdf.hpp" />
     <ClInclude Include="src\bxdfs\roughconductor.hpp" />
     <ClInclude Include="src\bxdfs\roughplastic.hpp" />
     <ClInclude Include="src\bxdfs\shadingnormal.hpp" />
@@ -70,6 +71,7 @@
     <ClInclude Include="src\surfaces\plane.hpp" />
     <ClInclude Include="src\surfaces\sphere.hpp" />
     <ClInclude Include="src\surfaces\mesh.hpp" />
+    <ClInclude Include="src\textures\checkertexture.hpp" />
     <ClInclude Include="src\textures\consttexture.hpp" />
     <ClInclude Include="src\textures\imagetexture.hpp" />
     <ClInclude Include="src\textures\uvtexture.hpp" />

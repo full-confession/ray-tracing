@@ -221,6 +221,11 @@ namespace Fc
 
             auto [uv0, uv1, uv2] {GetUVs(primitive)};
             Vector2 uv{b0 * uv0 + b1 * uv1 + b2 * uv2};
+            Vector2 duv02{uv0 - uv2};
+            Vector2 duv12{uv1 - uv2};
+
+            det = duv02.x * duv12.y - duv02.y * duv12.x;
+            Vector3 dpdu{(duv12.y * dp02 - duv02.y * dp12) / det};
 
             p->SetSurface(this);
             p->SetPosition(position);
@@ -236,6 +241,12 @@ namespace Fc
             {
                 p->SetShadingNormal(p->GetNormal());
             }
+
+            Vector3 tangent{Normalize(dpdu)};
+            Vector3 bitangent{Cross(tangent, p->GetShadingNormal())};
+            tangent = Cross(p->GetShadingNormal(), bitangent);
+            p->SetShadingTangent(tangent);
+            p->SetShadingBitangent(bitangent);
 
             *tHit = t;
             return RaycastResult::Hit;

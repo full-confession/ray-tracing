@@ -17,11 +17,6 @@ namespace Fc
             samplePlaneSize_.y = renderTarget_->GetResolution().y * pixelSize_;
         }
 
-        virtual Bounds2i SampleBounds() const override
-        {
-            return {{}, renderTarget_->GetResolution()};
-        }
-
         virtual SampleResult Sample(Vector2 const& u1, Vector2 const& u2,
             SurfacePoint* p, double* pdf_p, Vector3* w, double* pdf_w, Vector3* importance) const override
         {
@@ -62,6 +57,14 @@ namespace Fc
                 return SampleResult::Fail;
             }
 
+            //Vector2i resolution{renderTarget_->GetResolution()};
+            //int x = std::clamp(static_cast<int>((samplePlanePosition.x / samplePlaneSize_.x + 0.5) * resolution.x), 0, resolution.x - 1);
+            //int y = std::clamp(static_cast<int>((samplePlanePosition.y / samplePlaneSize_.y + 0.5) * resolution.y), 0, resolution.y - 1);
+           /* if(x == 93 && y == 511 - 450)
+            {
+                int z = 0;
+            }*/
+
             p->SetPosition(transform_.TransformPoint({}));
             p->SetNormal(transform_.TransformNormal({0.0, 0.0, 1.0}));
             p->SetCamera(this);
@@ -69,16 +72,11 @@ namespace Fc
 
             if(pdf_w != nullptr) *pdf_w = 1.0 / (samplePlaneSize_.x * samplePlaneSize_.y * w.z * w.z * w.z);
 
-            double x{1.0 / (pixelSize_ * pixelSize_ * w.z * w.z * w.z * w.z)};
-            *importance = {x, x, x};
+            double i{1.0 / (pixelSize_ * pixelSize_ * w.z * w.z * w.z * w.z)};
+            *importance = {i, i, i};
             return SampleResult::Success;
         }
 
-        virtual void AddSample(Vector2i const& pixel, Vector3 const& value) override
-        {
-            renderTarget_->AddSample(pixel, value);
-        }
-        
         virtual void AddSample(SurfacePoint const& p, Vector3 const& w, Vector3 const& value) override
         {
             if(p.GetCamera() != this) return;

@@ -42,6 +42,26 @@ namespace Fc
             return shadingNormal_;
         }
 
+        void SetShadingTangent(Vector3 const& shadingTangent)
+        {
+            shadingTangent_ = shadingTangent;
+        }
+
+        Vector3 const& GetShadingTangent() const
+        {
+            return shadingTangent_;
+        }
+
+        void SetShadingBitangent(Vector3 const& shadingBitangent)
+        {
+            shadingBitangent_ = shadingBitangent;
+        }
+
+        Vector3 const& GetShadingBitangent() const
+        {
+            return shadingBitangent_;
+        }
+
         void SetUV(Vector2 const& uv)
         {
             uv_ = uv;
@@ -96,6 +116,8 @@ namespace Fc
         Vector3 position_{};
         Vector3 normal_{};
         Vector3 shadingNormal_{};
+        Vector3 shadingTangent_{};
+        Vector3 shadingBitangent_{};
         Vector2 uv_{};
 
         ICamera const* camera_{};

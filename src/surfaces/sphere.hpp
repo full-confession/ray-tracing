@@ -112,6 +112,12 @@ namespace Fc
             p->SetNormal(transform_.TransformNormal(Normalize(position)));
             p->SetShadingNormal(p->GetNormal());
 
+            Vector3 tangent{};
+            Vector3 bitangent{};
+            CoordinateSystem(p->GetShadingNormal(), &tangent, &bitangent);
+            p->SetShadingTangent(tangent);
+            p->SetShadingBitangent(bitangent);
+
             *tHit = t;
 
             return RaycastResult::Hit;
