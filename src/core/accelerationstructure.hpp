@@ -19,6 +19,8 @@ namespace Fc
 
         virtual RaycastResult Raycast(Ray3 const& ray, double tMax, TPrimitive const** primitive, SurfacePoint* p) const = 0;
         virtual RaycastResult Raycast(Ray3 const& ray, double tMax) const = 0;
+
+        virtual Bounds3 GetRootBounds() const = 0;
     };
 
     template <typename TPrimitive>

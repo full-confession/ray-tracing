@@ -20,4 +20,13 @@ namespace Fc
         virtual Vector3 Evaluate(SurfacePoint const& p) const = 0;
     };
 
+    class ITexture2D
+    {
+    public:
+        virtual ~ITexture2D() = default;
+
+        virtual Vector3 Evaluate(Vector2 const& uv) const = 0;
+        virtual Vector3 Integrate(Vector2 const& a, Vector2 const& b) const = 0;
+    };
+
 }

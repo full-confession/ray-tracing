@@ -28,12 +28,14 @@ struct MeshDescription
 enum class Format
 {
     R_UINT8,
-    RGB_UINT8
+    RGB_UINT8,
+    RGB_FLOAT32
 };
 
 NLOHMANN_JSON_SERIALIZE_ENUM(Format, {
     {Format::R_UINT8, "r_uint8"},
-    {Format::RGB_UINT8, "rgb_uint8"}
+    {Format::RGB_UINT8, "rgb_uint8"},
+    {Format::RGB_FLOAT32, "rgb_float32"}
 });
 
 struct ImageDescription
@@ -217,6 +219,43 @@ private:
     std::array<std::uint8_t, 3> value_{};
 };
 
+struct RGB32Pixel
+{
+public:
+    RGB32Pixel() = default;
+    RGB32Pixel(float r, float g, float b)
+        : value_{r, g, b}
+    { }
+
+    double R() const
+    {
+        return value_[0];
+    }
+
+    double G() const
+    {
+        return value_[1];
+    }
+
+    double B() const
+    {
+        return value_[2];
+    }
+
+    double A() const
+    {
+        return {};
+    }
+
+    Vector3 RGB() const
+    {
+        return {value_[0], value_[1], value_[2]};
+    }
+private:
+    std::array<float, 3> value_{};
+};
+
+
 struct RPixel
 {
 public:
@@ -378,6 +417,10 @@ std::shared_ptr<IImage> Assets::LoadImage(std::string const& name)
     {
         expectedSize = static_cast<std::size_t>(description.width) * static_cast<std::size_t>(description.height) * sizeof(RPixel);
     }
+    else if(description.format == Format::RGB_FLOAT32)
+    {
+        expectedSize = static_cast<std::size_t>(description.width) * static_cast<std::size_t>(description.height) * sizeof(RGB32Pixel);
+    }
     else
     {
         throw;
@@ -416,6 +459,20 @@ std::shared_ptr<IImage> Assets::LoadImage(std::string const& name)
             pixels.resize(static_cast<std::size_t>(description.width) * static_cast<std::size_t>(description.height));
             imageFile.read(reinterpret_cast<char*>(pixels.data()), expectedSize);
             return std::make_shared<RawImage<RPixel>>(Vector2i{description.width, description.height}, std::move(pixels));
+        }
+    }
+    else if(description.format == Format::RGB_FLOAT32)
+    {
+        if(description.linear == false)
+        {
+            throw;
+        }
+        else
+        {
+            std::vector<RGB32Pixel> pixels{};
+            pixels.resize(static_cast<std::size_t>(description.width) * static_cast<std::size_t>(description.height));
+            imageFile.read(reinterpret_cast<char*>(pixels.data()), expectedSize);
+            return std::make_shared<RawImage<RGB32Pixel>>(Vector2i{description.width, description.height}, std::move(pixels));
         }
     }
     else

@@ -30,7 +30,7 @@
 namespace Fc
 {
     static constexpr int THREADS = 16;
-    static constexpr int SAMPLES_PER_PIXEL = 1000;
+    static constexpr int SAMPLES_PER_PIXEL = 100;
     static constexpr int SAMPLES_PER_THREAD = 10000;
 
     inline void Render(std::string const& name, Vector2i resolution, Scene const& scene, ICameraFactory const& cameraFactory)
@@ -67,7 +67,7 @@ namespace Fc
                     s->BeingSample(firstSampleIndex);
                     for(std::uint64_t i{}; i < count; ++i)
                     {
-                        BidirWalk::Sample(*c, scene, *s, *a, 9);
+                        ForwardWalk::Sample(*c, scene, *s, *a, 9);
                         s->NextSample();
                         a->Clear();
                     }
@@ -102,69 +102,69 @@ namespace Fc
         std::vector<Entity> entities{};
         entities.push_back(Entity{
             std::make_unique<SphereSurface>(Transform::Translation({0.0, 1.0, 0.0}), 1.0),
-            std::make_unique<DiffuseMaterial>(textureA, nullptr),
+            std::make_unique<DiffuseMaterial>(textureA),
             nullptr
         });
         entities.push_back(Entity{
             std::make_unique<SphereSurface>(Transform::Translation({3.16003, 1.0, -2.32747}), 1.0),
-            std::make_unique<DiffuseMaterial>(textureA, nullptr),
+            std::make_unique<DiffuseMaterial>(textureA),
             nullptr
         });
         entities.push_back(Entity{
             std::make_unique<SphereSurface>(Transform::Translation({-2.23849, 1.0, -3.68311}), 1.0),
-            std::make_unique<DiffuseMaterial>(textureA, nullptr),
+            std::make_unique<DiffuseMaterial>(textureA),
             nullptr
         });
         entities.push_back(Entity{
             std::make_unique<SphereSurface>(Transform::Translation({-7.87424, 1.0, -1.24736}), 1.0),
-            std::make_unique<DiffuseMaterial>(textureA, nullptr),
+            std::make_unique<DiffuseMaterial>(textureA),
             nullptr
         });
         entities.push_back(Entity{
             std::make_unique<SphereSurface>(Transform::Translation({-5.9499, 1.0, 2.40197}), 1.0),
-            std::make_unique<DiffuseMaterial>(textureA, nullptr),
+            std::make_unique<DiffuseMaterial>(textureA),
             nullptr
         });
         entities.push_back(Entity{
             std::make_unique<SphereSurface>(Transform::Translation({-0.341524, 1.0, 4.28785}), 1.0),
-            std::make_unique<DiffuseMaterial>(textureA, nullptr),
+            std::make_unique<DiffuseMaterial>(textureA),
             nullptr
         });
         entities.push_back(Entity{
             std::make_unique<SphereSurface>(Transform::Translation({2.99684, 1.0, 5.79599}), 1.0),
-            std::make_unique<DiffuseMaterial>(textureA, nullptr),
+            std::make_unique<DiffuseMaterial>(textureA),
             nullptr
         });
         entities.push_back(Entity{
             std::make_unique<PlaneSurface>(Transform{}, Vector2{50.0, 50.0}),
-            std::make_unique<DiffuseMaterial>(textureB, nullptr),
+            std::make_unique<DiffuseMaterial>(textureB),
             nullptr
         });
 
 
         entities.push_back(Entity{
             std::make_unique<SphereSurface>(Transform::Translation({-0.374679, 0.5, -2.60628}), 0.5),
-            std::make_unique<DiffuseMaterial>(textureB, nullptr),
+            std::make_unique<DiffuseMaterial>(textureB),
             std::make_unique<DiffuseEmission>(Vector3{1.0, 0.176762, 0.03322}, 5.0)
         });
         entities.push_back(Entity{
             std::make_unique<SphereSurface>(Transform::Translation({-4.03987, 0.5, 0.045641}), 0.5),
-            std::make_unique<DiffuseMaterial>(textureB, nullptr),
+            std::make_unique<DiffuseMaterial>(textureB),
             std::make_unique<DiffuseEmission>(Vector3{0.0, 1.0, 0.132231}, 5.0)
         });
         entities.push_back(Entity{
             std::make_unique<SphereSurface>(Transform::Translation({-3.09873, 0.5, 4.31356}), 0.5),
-            std::make_unique<DiffuseMaterial>(textureB, nullptr),
+            std::make_unique<DiffuseMaterial>(textureB),
             std::make_unique<DiffuseEmission>(Vector3{1.0, 0.0, 0.057055}, 5.0)
         });
         entities.push_back(Entity{
             std::make_unique<SphereSurface>(Transform::Translation({1.82126, 0.5, 0.928827}), 0.5),
-            std::make_unique<DiffuseMaterial>(textureB, nullptr),
+            std::make_unique<DiffuseMaterial>(textureB),
             std::make_unique<DiffuseEmission>(Vector3{0.0, 0.311272, 1.0}, 5.0)
         });
 
         BVHFactory<Primitive> factory{};
-        Scene scene{std::move(entities), factory};
+        Scene scene{std::move(entities), factory, nullptr};
 
         Render("test", {800, 450}, scene, cfactory);
     }
@@ -197,14 +197,17 @@ namespace Fc
             nullptr
         });
 
-        entities.push_back(Entity{
+        /*entities.push_back(Entity{
             std::make_unique<PlaneSurface>(Transform::TranslationRotationDeg({0.0, 3.0, 6.0}, {-90.0, 0.0, 0.0}), Vector2{2.0, 2.0}),
-            std::make_unique<DiffuseMaterial>(const08, nullptr),
+            std::make_unique<DiffuseMaterial>(const08),
             std::make_unique<DiffuseEmission>(Vector3{1.0, 1.0, 1.0}, 10.0)
-        });
+        });*/
+        
+        auto areaLight = std::make_unique<InfinityAreaLight>(Transform::RotationDeg({0.0, 0.0, 0.0}), assets.GetImage("env-loft-hall"));
+
 
         BVHFactory<Primitive> factory{};
-        Scene scene{std::move(entities), factory};
+        Scene scene{std::move(entities), factory, std::move(areaLight)};
 
         Render("mask", {600, 900}, scene, cfactory);
     }
@@ -213,11 +216,11 @@ namespace Fc
     {
         Assets assets{};
 
-        PerspectiveCameraFactory cfactory{Transform::TranslationRotationDeg({-4.0, 7.0, -4.0}, {45.0, 45.0, 0.0}), Math::DegToRad(45.0)};
+        PerspectiveCameraFactory cfactory{Transform::TranslationRotationDeg({-4.0, 2.0, -4.0}, {15.0, 45.0, 0.0}), Math::DegToRad(45.0)};
         auto const08 = std::make_shared<ConstTextureRGB>(Vector3{0.8, 0.8, 0.8});
         auto const1 = std::make_shared<ConstTextureRGB>(Vector3{1.0, 1.0, 1.0});
         auto constOrange = std::make_shared<ConstTextureRGB>(Vector3{0.8, 0.4, 0.2});
-        auto normalMap = std::make_shared<ImageTextureRGB>(assets.GetImage("wallpaper-normal"));
+       // auto normalMap = std::make_shared<ImageTextureRGB>(assets.GetImage("wallpaper-normal"));
         auto constA = std::make_shared<ConstTextureRGB>(Vector3{0.8, 0.0, 0.0});
         auto constB = std::make_shared<ConstTextureRGB>(Vector3{0.0, 0.8, 0.0});
         auto checker = std::make_shared<CheckerTextureRGB>(Vector3{0.8, 0.8, 0.8}, Vector3{0.2, 0.2, 0.2}, 10.0);
@@ -241,24 +244,27 @@ namespace Fc
         auto metalness = std::make_shared<ConstTextureR>(0.5);
 
         entities.push_back(Entity{
-            //std::make_unique<MeshSurface>(assets.GetMesh("sphere2"), Transform::Scale({2.0, 2.0, 2.0})),
             std::make_unique<PlaneSurface>(Transform{}, Vector2{10.0, 10.0}),
-            //std::make_unique<SphereSurface>(Transform{}, 2.0),
-            //std::make_unique<MetalMaterial>(eta, k, roughness),
-            //std::make_unique<RoughPlasticMaterial>(constOrange, const1, roughness),
-            std::make_unique<DiffuseMaterial>(const08, normalMap),
-            //std::make_unique<MetalPlasticMaterial>(constOrange, const1, eta, k, roughness, metalness),
+            std::make_unique<DiffuseMaterial>(checker),
             nullptr
-         });
-
-        entities.push_back(Entity{
-            std::make_unique<PlaneSurface>(Transform::TranslationRotationDeg({0.0, 8.0, 0.0}, {180.0, 0.0, 0.0}), Vector2{2.0, 2.0}),
-            std::make_unique<DiffuseMaterial>(const08, nullptr),
-            std::make_unique<DiffuseEmission>(Vector3{1.0, 1.0, 1.0}, 25.0)
         });
 
+        entities.push_back(Entity{
+            std::make_unique<SphereSurface>(Transform::Translation({0.0, 1.0, 0.0}), 1.0),
+            std::make_unique<DiffuseMaterial>(constOrange),
+            nullptr
+        });
+
+        /*entities.push_back(Entity{
+            std::make_unique<PlaneSurface>(Transform::TranslationRotationDeg({0.0, 8.0, 0.0}, {180.0, 0.0, 0.0}), Vector2{2.0, 2.0}),
+            std::make_unique<DiffuseMaterial>(const08),
+            std::make_unique<DiffuseEmission>(Vector3{1.0, 1.0, 1.0}, 25.0)
+        });*/
+
+        auto areaLight = std::make_unique<InfinityAreaLight>(Transform::RotationDeg({0.0, 0.0, 0.0}), assets.GetImage("env-loft-hall"));
+
         BVHFactory<Primitive> factory{};
-        Scene scene{std::move(entities), factory};
+        Scene scene{std::move(entities), factory, std::move(areaLight)};
 
         Render("normals", {512, 512}, scene, cfactory);
     }

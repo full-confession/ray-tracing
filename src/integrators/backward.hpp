@@ -19,22 +19,24 @@ namespace Fc
     private:
         static void RandomWalk(ICamera& camera, Scene const& scene, ISampler& sampler, Allocator& allocator, int maxLength)
         {
-            int lightCount{scene.GetLightCount()};
-            int lightIndex{std::min(static_cast<int>(sampler.Get1D() * lightCount), lightCount - 1)};
-            ILight const* light{scene.GetLight(lightIndex)};
+            //int lightCount{scene.GetLightCount()};
+            //int lightIndex{std::min(static_cast<int>(sampler.Get1D() * lightCount), lightCount - 1)};
+           // ILight const* light{scene.GetLight(lightIndex)};
+
+            if(scene.GetInfinityAreaLight() == nullptr) return;
 
             SurfacePoint p0{};
             double pdf_p0{};
             Vector3 w01{};
             double pdf_w01{};
             Vector3 r01{};
-            if(light->Sample(sampler.Get2D(), sampler.Get2D(), &p0, &pdf_p0, &w01, &pdf_w01, &r01) != SampleResult::Success) return;
-            Vector3 T{1.0 / (pdf_p0 / lightCount)};
+            if(scene.GetInfinityAreaLight()->Sample(sampler.Get2D(), sampler.Get2D(), &p0, &pdf_p0, &w01, &pdf_w01, &r01) != SampleResult::Success) return;
+            //Vector3 T{1.0 / pdf_p0};
 
 
             // path of length 1
             {
-                SurfacePoint pC{};
+                /*SurfacePoint pC{};
                 double pdf_pC{};
                 Vector3 iC0{};
                 if(camera.Sample(p0.GetPosition(), sampler.Get2D(), &pC, &pdf_pC, &iC0) == SampleResult::Success)
@@ -49,7 +51,7 @@ namespace Fc
                         Vector3 I{T * r0C * G0C * iC0 / pdf_pC};
                         camera.AddSample(pC, -w0C, I);
                     }
-                }
+                }*/
             }
 
 
@@ -58,7 +60,8 @@ namespace Fc
             if(maxLength == 1) return;
             SurfacePoint p1{};
             if(scene.Raycast(p0, w01, &p1) != RaycastResult::Hit) return;
-            T *= r01 * std::abs(Dot(p0.GetNormal(), w01)) / pdf_w01;
+            Vector3 T{r01 * std::abs(Dot(p0.GetNormal(), w01)) / (pdf_w01 * pdf_p0)};
+            //T *= r01 * std::abs(Dot(p0.GetNormal(), w01)) / pdf_w01;
             if(p1.GetMaterial() == nullptr) return;
             IBxDF const* b1{p1.GetMaterial()->Evaluate(p1, allocator)};
             if(b1 == nullptr) return;

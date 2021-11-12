@@ -26,11 +26,19 @@ namespace Fc
             double pdf_w01{};
             Vector3 i01{};
             if(camera.Sample(sampler.Get2D(), sampler.Get2D(), &p0, &pdf_p0, &w01, &pdf_w01, &i01) != SampleResult::Success) return;
+            Vector3 T{i01 * std::abs(Dot(p0.GetNormal(), w01)) / (pdf_p0 * pdf_w01)};
 
             SurfacePoint p1{};
-            if(scene.Raycast(p0, w01, &p1) != RaycastResult::Hit) return;
+            if(scene.Raycast(p0, w01, &p1) != RaycastResult::Hit)
+            {
+                if(scene.GetInfinityAreaLight() != nullptr)
+                {
+                    I += T * scene.GetInfinityAreaLight()->EmittedRadiance(w01);
+                    camera.AddSample(p0, w01, I);
+                }
+                return;
+            }
 
-            Vector3 T{i01 * std::abs(Dot(p0.GetNormal(), w01)) / (pdf_p0 * pdf_w01)};
             Vector3 w10{-w01};
             if(p1.GetLight() != nullptr)
                 I += T * p1.GetLight()->EmittedRadiance(p1, w10);
@@ -47,10 +55,19 @@ namespace Fc
                 BxDFFlags flags{};
                 if(b1->Sample(w10, sampler, TransportMode::Radiance, &w12, &pdf_w12, &value, &flags) != SampleResult::Success) break;
 
-                SurfacePoint p2{};
-                if(scene.Raycast(p1, w12, &p2) != RaycastResult::Hit) break;
-
                 T *= value * std::abs(Dot(p1.GetNormal(), w12)) / pdf_w12;
+
+                SurfacePoint p2{};
+                if(scene.Raycast(p1, w12, &p2) != RaycastResult::Hit)
+                {
+                    if(scene.GetInfinityAreaLight() != nullptr)
+                    {
+                        I += T * scene.GetInfinityAreaLight()->EmittedRadiance(w12);
+                    }
+
+                    break;
+                }
+
                 Vector3 w21{-w12};
                 if(p2.GetLight() != nullptr)
                     I += T * p2.GetLight()->EmittedRadiance(p2, w21);

@@ -2,6 +2,7 @@
 #include "surface.hpp"
 #include "material.hpp"
 #include "emission.hpp"
+#include "infinityarealight.hpp"
 #include "accelerationstructure.hpp"
 #include "arealight.hpp"
 #include <vector>
@@ -83,7 +84,8 @@ namespace Fc
     class Scene
     {
     public:
-        Scene(std::vector<Entity> entities, IAccelerationStructureFactory<Primitive> const& asf)
+        Scene(std::vector<Entity> entities, IAccelerationStructureFactory<Primitive> const& asf, std::unique_ptr<InfinityAreaLight> infinityAreaLight)
+            : infinityAreaLight_{std::move(infinityAreaLight)}
         {
             std::uint64_t primitiveCount{};
             for(auto& entity : entities)
@@ -111,6 +113,12 @@ namespace Fc
 
             entities_ = std::move(entities);
             accelerationStructure_ = asf.Create(std::move(primitives));
+
+            if(infinityAreaLight_)
+            {
+                auto [center, radius]{accelerationStructure_->GetRootBounds().BoundingSphere()};
+                infinityAreaLight_->SetScene(center, radius);
+            }
         }
 
         RaycastResult Raycast(SurfacePoint const& p0, Vector3 const& w01, SurfacePoint* p1) const
@@ -182,9 +190,15 @@ namespace Fc
             return lights_[index].get();
         }
 
+        InfinityAreaLight const* GetInfinityAreaLight() const
+        {
+            return infinityAreaLight_.get();
+        }
+
     private:
         std::vector<Entity> entities_{};
         std::vector<std::unique_ptr<ILight>> lights_{};
+        std::unique_ptr<InfinityAreaLight> infinityAreaLight_{};
         std::unique_ptr<IAccelerationStructure<Primitive>> accelerationStructure_{};
         double epsilon_{0.000001};
     };

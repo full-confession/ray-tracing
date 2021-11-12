@@ -123,6 +123,11 @@ namespace Fc
             return RaycastResult::Miss;
         }
 
+        virtual Bounds3 GetRootBounds() const override
+        {
+            return Bounds3{nodes_[0].GetBounds()};
+        }
+
     private:
         std::vector<TPrimitive> primitives_{};
 

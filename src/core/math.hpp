@@ -319,6 +319,13 @@ namespace Fc
         TVector2(TVector2<K> const& v)
             : v{T(v.x), T(v.y)}
         { }
+
+        TVector2& operator-=(TVector2 const& other)
+        {
+            x -= other.x;
+            y -= other.y;
+            return *this;
+        }
     };
 
     template <typename T>
@@ -593,6 +600,12 @@ namespace Fc
         {
             auto d{Diagonal()};
             return T(2.0) * (d.x * d.y + d.x * d.z + d.y * d.z);
+        }
+
+        std::pair<TVector3<T>, double> BoundingSphere() const
+        {
+            TVector3<T> center{Centroid()};
+            return {center, Length(center - p_[1])};
         }
 
         TBounds3& Union(TBounds3 const& b)
