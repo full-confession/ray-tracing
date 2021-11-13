@@ -17,6 +17,9 @@ namespace Fc
         virtual SampleResult Sample(Vector3 const& viewPosition, Vector2 const& u,
             SurfacePoint* p, double* pdf_p, Vector3* importance, double* pdf_w = nullptr) const = 0;
 
+        virtual SampleResult SampleW(Vector3 const& w, Vector2 const& u,
+            SurfacePoint* p, double* pdf_p, Vector3* importance) const = 0;
+
         virtual void AddSample(SurfacePoint const& p, Vector3 const& w, Vector3 const& value) = 0;
         virtual void AddSampleCount(std::uint64_t value) = 0;
     };

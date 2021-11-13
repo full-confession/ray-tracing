@@ -124,7 +124,7 @@ namespace Fc
             return *this;
         }
 
-        operator bool() const
+        explicit operator bool() const
         {
             return x != 0.0 || y != 0.0 || z != 0.0;
         }

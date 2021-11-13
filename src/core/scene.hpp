@@ -146,6 +146,21 @@ namespace Fc
             }
         }
 
+        VisibilityResult Visibility(SurfacePoint const& p, Vector3 const& w) const
+        {
+            Ray3 ray{p.GetPosition(), w};
+            if(Dot(p.GetNormal(), w) > 0.0)
+            {
+                ray.origin += p.GetNormal() * epsilon_;
+            }
+            else
+            {
+                ray.origin -= p.GetNormal() * epsilon_;
+            }
+
+            return accelerationStructure_->Raycast(ray, std::numeric_limits<double>::infinity()) == RaycastResult::Hit ? VisibilityResult::Occluded : VisibilityResult::Visible;
+        }
+
         VisibilityResult Visibility(SurfacePoint const& p0, SurfacePoint const& p1) const
         {
             Vector3 position0{p0.GetPosition()};

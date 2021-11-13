@@ -8,6 +8,7 @@ namespace Fc
 {
     void ExportPPM(std::string const& filename, RenderTarget const& renderTarget);
     void ExportPPM(std::string const& filename, std::vector<std::shared_ptr<RenderTarget>> const& renderTargets);
+    void ExportRaw(std::string const& filename, std::vector<std::shared_ptr<RenderTarget>> const& renderTargets);
 
     inline std::uint8_t RGBToSRGB(double value)
     {

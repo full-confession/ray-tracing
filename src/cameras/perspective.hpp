@@ -57,14 +57,6 @@ namespace Fc
                 return SampleResult::Fail;
             }
 
-            //Vector2i resolution{renderTarget_->GetResolution()};
-            //int x = std::clamp(static_cast<int>((samplePlanePosition.x / samplePlaneSize_.x + 0.5) * resolution.x), 0, resolution.x - 1);
-            //int y = std::clamp(static_cast<int>((samplePlanePosition.y / samplePlaneSize_.y + 0.5) * resolution.y), 0, resolution.y - 1);
-           /* if(x == 93 && y == 511 - 450)
-            {
-                int z = 0;
-            }*/
-
             p->SetPosition(transform_.TransformPoint({}));
             p->SetNormal(transform_.TransformNormal({0.0, 0.0, 1.0}));
             p->SetCamera(this);
@@ -73,6 +65,32 @@ namespace Fc
             if(pdf_w != nullptr) *pdf_w = 1.0 / (samplePlaneSize_.x * samplePlaneSize_.y * w.z * w.z * w.z);
 
             double i{1.0 / (pixelSize_ * pixelSize_ * w.z * w.z * w.z * w.z)};
+            *importance = {i, i, i};
+            return SampleResult::Success;
+        }
+
+
+        virtual SampleResult SampleW(Vector3 const& w, Vector2 const& u,
+            SurfacePoint* p, double* pdf_p, Vector3* importance) const override
+        {
+            Vector3 lw{transform_.InverseTransformVector(w)};
+            if(lw.z <= 0.0) return SampleResult::Fail;
+
+            double t{1.0 / lw.z};
+            Vector3 samplePlanePosition{lw * t};
+
+            if(samplePlanePosition.x < samplePlaneSize_.x / -2.0 || samplePlanePosition.x > samplePlaneSize_.x / 2.0
+                || samplePlanePosition.y > samplePlaneSize_.y / 2.0 || samplePlanePosition.y < samplePlaneSize_.y / -2.0)
+            {
+                return SampleResult::Fail;
+            }
+
+            p->SetPosition(transform_.TransformPoint({}));
+            p->SetNormal(transform_.TransformNormal({0.0, 0.0, 1.0}));
+            p->SetCamera(this);
+            *pdf_p = 1.0;
+
+            double i{1.0 / (pixelSize_ * pixelSize_ * lw.z * lw.z * lw.z * lw.z)};
             *importance = {i, i, i};
             return SampleResult::Success;
         }

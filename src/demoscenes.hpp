@@ -30,11 +30,30 @@
 namespace Fc
 {
     static constexpr int THREADS = 16;
-    static constexpr int SAMPLES_PER_PIXEL = 100;
+    static constexpr int SAMPLES_PER_PIXEL = 1000;
     static constexpr int SAMPLES_PER_THREAD = 10000;
 
     inline void Render(std::string const& name, Vector2i resolution, Scene const& scene, ICameraFactory const& cameraFactory)
     {
+        auto y{
+            [](Vector3 const& rgb)
+            {
+                return 0.212671 * rgb.x + 0.715160 * rgb.y + 0.072169 * rgb.z;
+            }
+        };
+
+        std::vector<double> lightPowers{};
+        for(int i{}; i < scene.GetLightCount(); ++i)
+        {
+            lightPowers.push_back(y(scene.GetLight(i)->Power()));
+        }
+        if(scene.GetInfinityAreaLight() != nullptr)
+        {
+            lightPowers.push_back(y(scene.GetInfinityAreaLight()->Power()));
+        }
+
+        Distribution1D powerdist{std::move(lightPowers)};
+
         std::vector<std::shared_ptr<RenderTarget>> renderTargets{};
         std::vector<std::shared_ptr<ICamera>> cameras{};
         std::vector<std::shared_ptr<RandomSampler>> samplers{};
@@ -67,7 +86,7 @@ namespace Fc
                     s->BeingSample(firstSampleIndex);
                     for(std::uint64_t i{}; i < count; ++i)
                     {
-                        ForwardWalk::Sample(*c, scene, *s, *a, 9);
+                        ForwardMISIntegrator::Sample(*c, scene, *s, *a, 9, powerdist);
                         s->NextSample();
                         a->Clear();
                     }
@@ -89,7 +108,7 @@ namespace Fc
             threads[i].join();
         }
 
-        ExportPPM(name, renderTargets);
+        ExportRaw(name, renderTargets);
     }
 
     inline void MoreBalls()
@@ -203,7 +222,9 @@ namespace Fc
             std::make_unique<DiffuseEmission>(Vector3{1.0, 1.0, 1.0}, 10.0)
         });*/
         
-        auto areaLight = std::make_unique<InfinityAreaLight>(Transform::RotationDeg({0.0, 0.0, 0.0}), assets.GetImage("env-loft-hall"));
+        auto image = assets.GetImage("dikhololo_night");
+        auto texture = std::shared_ptr<ImageTexture>(new ImageTexture{image, ReconstructionFilter::Bilinear, 2});
+        auto areaLight = std::make_unique<InfinityAreaLight>(Transform::RotationDeg({0.0, 0.0, 0.0}), texture, image->GetResolution());
 
 
         BVHFactory<Primitive> factory{};
@@ -217,6 +238,7 @@ namespace Fc
         Assets assets{};
 
         PerspectiveCameraFactory cfactory{Transform::TranslationRotationDeg({-4.0, 2.0, -4.0}, {15.0, 45.0, 0.0}), Math::DegToRad(45.0)};
+       // PerspectiveCameraFactory cfactory{Transform::RotationDeg({0.0, 0.0, 0.0}), Math::DegToRad(45.0)};
         auto const08 = std::make_shared<ConstTextureRGB>(Vector3{0.8, 0.8, 0.8});
         auto const1 = std::make_shared<ConstTextureRGB>(Vector3{1.0, 1.0, 1.0});
         auto constOrange = std::make_shared<ConstTextureRGB>(Vector3{0.8, 0.4, 0.2});
@@ -255,13 +277,21 @@ namespace Fc
             nullptr
         });
 
+        entities.push_back(Entity{
+            std::make_unique<SphereSurface>(Transform::Translation({0.0, 0.5, -2.0}), 0.2),
+            std::make_unique<DiffuseMaterial>(const1),
+            std::make_unique<DiffuseEmission>(Vector3{1.0, 1.0, 1.0}, 5.0)
+         });
+
         /*entities.push_back(Entity{
             std::make_unique<PlaneSurface>(Transform::TranslationRotationDeg({0.0, 8.0, 0.0}, {180.0, 0.0, 0.0}), Vector2{2.0, 2.0}),
             std::make_unique<DiffuseMaterial>(const08),
             std::make_unique<DiffuseEmission>(Vector3{1.0, 1.0, 1.0}, 25.0)
         });*/
 
-        auto areaLight = std::make_unique<InfinityAreaLight>(Transform::RotationDeg({0.0, 0.0, 0.0}), assets.GetImage("env-loft-hall"));
+        auto image = assets.GetImage("dikhololo_night");
+        auto texture = std::shared_ptr<ImageTexture>(new ImageTexture{image, ReconstructionFilter::Bilinear, 2});
+        auto areaLight = std::make_unique<InfinityAreaLight>(Transform::RotationDeg({0.0, 0.0, 0.0}), texture, image->GetResolution());
 
         BVHFactory<Primitive> factory{};
         Scene scene{std::move(entities), factory, std::move(areaLight)};

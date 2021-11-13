@@ -1,19 +1,18 @@
 #pragma once
 #include "transform.hpp"
-#include "image.hpp"
 #include "sampling.hpp"
 #include <memory>
+#include "texture.hpp"
 namespace Fc
 {
     class InfinityAreaLight
     {
     public:
-        InfinityAreaLight(Transform const& transform, std::shared_ptr<IImage> environmentMap)
+        InfinityAreaLight(Transform const& transform, std::shared_ptr<ITexture2D> environmentMap, Vector2i const& distributionResolution)
             : transform_{transform}, environmentMap_{std::move(environmentMap)}
         {
-            auto res{environmentMap_->GetResolution()};
             std::vector<std::vector<double>> func{};
-            func.reserve(res.y);
+            func.reserve(distributionResolution.y);
 
             auto y{
                 [](Vector3 const& rgb)
@@ -22,16 +21,23 @@ namespace Fc
                 }
             };
 
-            for(int i{}; i < res.y; ++i)
+            double rU{static_cast<double>(distributionResolution.x)};
+            double rV{static_cast<double>(distributionResolution.y)};
+
+            double delta{2.0 * Math::Pi * Math::Pi};
+            for(int i{}; i < distributionResolution.y; ++i)
             {
                 auto& row{func.emplace_back()};
-                double sinTheta{std::sin(Math::Pi * (i + 0.5) / res.y)};
-                row.reserve(res.x);
-                for(int j{}; j < res.x; ++j)
+                double sinTheta{std::sin(Math::Pi * (i + 0.5) / distributionResolution.y)};
+                row.reserve(distributionResolution.x);
+                for(int j{}; j < distributionResolution.x; ++j)
                 {
-                    row.push_back(y(environmentMap_->RGB({j, i})) * sinTheta);
+                    Vector3 integral{environmentMap_->Integrate({j / rU, i / rV}, {(j + 1) / rU, (i + 1) / rV})};
+                    unitSpherePower_ += integral * (sinTheta * delta);
+                    row.push_back(y(integral) * sinTheta);
                 }
             }
+
             dist_.reset(new Distribution2D{std::move(func)});
         }
 
@@ -50,19 +56,60 @@ namespace Fc
             double p{std::atan2(lw.z, lw.x)};
             double phi{p < 0.0 ? p + 2.0 * Math::Pi : p};
 
-            theta /= Math::Pi;
-            phi /= 2.0 * Math::Pi;
+            double v{theta / Math::Pi};
+            double u{1.0 - phi / (2.0 * Math::Pi)};
 
-            Vector2i resolution{environmentMap_->GetResolution()};
-            int x = std::min(static_cast<int>(phi * resolution.x), resolution.x - 1);
-            int y = std::min(static_cast<int>(theta * resolution.y), resolution.y - 1);
-            return environmentMap_->RGB({x, y});
+            return environmentMap_->Evaluate({u, v});
+        }
+
+        SampleResult Sample(Vector2 const& u, Vector3* w, double* pdf_w, Vector3* radiance) const
+        {
+            double uvPdf{};
+            Vector2 uv{dist_->Sample(u, &uvPdf)};
+            if(uvPdf == 0.0) return SampleResult::Fail;
+            //uv.x = 1.0 - uv.x;
+
+            double theta{uv.y * Math::Pi};
+            double phi{(1.0 - uv.x) * 2.0 * Math::Pi};
+
+            double cosTheta{std::cos(theta)};
+            double sinTheta{std::sin(theta)};
+            double cosPhi{std::cos(phi)};
+            double sinPhi{std::sin(phi)};
+
+            if(sinTheta == 0.0) return SampleResult::Fail;
+
+            Vector3 lw{sinTheta * cosPhi, cosTheta, sinTheta * sinPhi};
+            *w = transform_.TransformVector(lw);
+            *pdf_w = uvPdf / (2.0 * Math::Pi * Math::Pi * sinTheta);
+            *radiance = environmentMap_->Evaluate(uv);
+
+            //*w = transform_.TransformVector(SampleSphereUniform(u));
+            //*pdf_w = SampleSphereUniformPDF();
+            //*radiance = EmittedRadiance(*w);
+            return SampleResult::Success;
+        }
+
+        double PDF(Vector3 const& w) const
+        {
+            Vector3 lw{transform_.InverseTransformVector(w)};
+            double theta{std::acos(std::clamp(lw.y, -1.0, 1.0))};
+            double p{std::atan2(lw.z, lw.x)};
+            double phi{p < 0.0 ? p + 2.0 * Math::Pi : p};
+            double sinTheta{std::sin(theta)};
+            if(sinTheta == 0.0) return 0.0;
+
+            double v{theta / Math::Pi};
+            double u{1.0 - phi / (2.0 * Math::Pi)};
+
+            return dist_->PDF({u, v}) / (2.0 * Math::Pi * Math::Pi * sinTheta);
         }
 
         SampleResult Sample(Vector2 const& u1, Vector2 const& u2, SurfacePoint* p, double* pdf_p, Vector3* w, double* pdf_w, Vector3* radiance) const
         {
+            return {};
             //Vector2 uv{}
-            double uvPdf{};
+            /*double uvPdf{};
             Vector2 uv{dist_->Sample(u1, &uvPdf)};
             if(uvPdf == 0.0) return SampleResult::Fail;
 
@@ -101,15 +148,21 @@ namespace Fc
             *radiance = environmentMap_->RGB({xx, yy});
             *pdf_p = 1.0 / (Math::Pi * sceneRadius_ * sceneRadius_);
 
-            return SampleResult::Success;
+            return SampleResult::Success;*/
+        }
+
+        Vector3 Power() const
+        {
+            return unitSpherePower_ * (sceneRadius_ * sceneRadius_);
         }
 
     private:
         Transform transform_{};
-        std::shared_ptr<IImage> environmentMap_{};
+        std::shared_ptr<ITexture2D> environmentMap_{};
         std::unique_ptr<Distribution2D> dist_{};
 
         Vector3 sceneCenter_{};
         double sceneRadius_{};
+        Vector3 unitSpherePower_{};
     };
 }

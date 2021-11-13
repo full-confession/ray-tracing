@@ -87,7 +87,7 @@ namespace Fc
             return functionIntegral_;
         }
 
-        double Sample(double u, double* pdf = nullptr, std::size_t* offset = nullptr) const
+        double SampleContinuous(double u, double* pdf = nullptr, std::size_t* offset = nullptr) const
         {
             u = std::clamp(u, 0.0, DOUBLE_ONE_MINUS_EPSILON);
             auto it{std::upper_bound(cdf_.begin(), cdf_.end(), u)};
@@ -100,6 +100,29 @@ namespace Fc
             if(pdf) *pdf = function_[lowerIndex] / functionIntegral_;
             if(offset) *offset = lowerIndex;
             return (static_cast<double>(lowerIndex) + du) / static_cast<double>(function_.size());
+        }
+
+        double PDFContinuous(double x, std::size_t* offset = nullptr) const
+        {
+            std::size_t lowerIndex{std::clamp(static_cast<std::size_t>(x * static_cast<double>(function_.size())), std::size_t{0}, function_.size() - 1)};
+            if(offset != nullptr) *offset = lowerIndex;
+            return function_[lowerIndex] / functionIntegral_;
+        }
+
+        std::size_t SampleDiscrete(double u, double* pdf = nullptr) const
+        {
+            u = std::clamp(u, 0.0, DOUBLE_ONE_MINUS_EPSILON);
+            auto it{std::upper_bound(cdf_.begin(), cdf_.end(), u)};
+            std::size_t upperIndex{static_cast<std::size_t>(it - cdf_.begin())};
+            std::size_t lowerIndex{upperIndex - 1};
+
+            if(pdf) *pdf = function_[lowerIndex] / (functionIntegral_ * static_cast<double>(function_.size()));
+            return lowerIndex;
+        }
+
+        double PDFDiscrete(std::size_t index) const
+        {
+            return function_[index] / (functionIntegral_ * static_cast<double>(function_.size()));
         }
 
     private:
@@ -134,12 +157,21 @@ namespace Fc
             double pdf_y{};
             double pdf_x{};
             std::size_t x{};
-            double sy{yDistribution_->Sample(u.y, &pdf_y, &x)};
-            double sx{xDistributions_[x]->Sample(u.x, &pdf_x, nullptr)};
+            double sy{yDistribution_->SampleContinuous(u.y, &pdf_y, &x)};
+            double sx{xDistributions_[x]->SampleContinuous(u.x, &pdf_x, nullptr)};
 
 
             if(pdf) *pdf = pdf_y * pdf_x;
             return {sx, sy};
+        }
+
+        double PDF(Vector2 const& xy) const
+        {
+            std::size_t x{};
+            double pdf_y{yDistribution_->PDFContinuous(xy.y, &x)};
+            double pdf_x{xDistributions_[x]->PDFContinuous(xy.x)};
+
+            return pdf_x * pdf_y;
         }
 
     private:

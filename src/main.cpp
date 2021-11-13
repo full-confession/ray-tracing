@@ -58,53 +58,58 @@ int main()
     //ExportPPM("sample", rt);
 
 
-    Assets assets{};
-    auto image{assets.GetImage("env-loft-hall")};
+    //Assets assets{};
+    //auto image{assets.GetImage("env-loft-hall")};
 
-    std::shared_ptr<ImageTexture> texture{new ImageTexture{image, ReconstructionFilter::Bilinear, 4}};
+    ////std::shared_ptr<ImageTexture> texture{new ImageTexture{image, ReconstructionFilter::Bilinear, 4}};
+    //std::shared_ptr<ConstTexture>texture{new ConstTexture{{1.0, 1.0, 1.0}}};
 
-    Vector2i res{image->GetResolution()};
-    Vector2i resDist{4, 2};
-    std::vector<std::vector<double>> func{};
-    func.reserve(resDist.y);
-    double xx{static_cast<double>(resDist.x)};
-    double yy{static_cast<double>(resDist.y)};
-    for(int i{}; i < resDist.y; ++i)
-    {
-        auto& row{func.emplace_back()};
-        //double sinTheta{std::sin(Math::Pi * (i + 0.5) / resDist.y)};
-        row.reserve(resDist.x);
-        for(int j{}; j < resDist.x; ++j)
-        {
-            Vector3 integral{texture->Integrate({j / xx, i / yy}, {(j + 1) / xx, (i + 1) / yy})};
-            row.push_back(y(integral)/* * sinTheta*/);
-            //row.push_back(1.0);
-        }
-    }
-
-    Distribution2D dist{std::move(func)};
-
-    RenderTarget rt{res};
-
-    Random rand{0};
-
-    for(int i{}; i < 100'000; ++i)
-    {
-        Vector2 u{rand.UniformFloat(), rand.UniformFloat()};
-        Vector2 uv{dist.Sample(u)};
+    //Vector2i res{image->GetResolution()};
+    //Vector2i resDist{1024, 512};
+    //std::vector<std::vector<double>> func{};
+    //func.reserve(resDist.y);
+    //double xx{static_cast<double>(resDist.x)};
+    //double yy{static_cast<double>(resDist.y)};
 
 
-        int x = std::min(static_cast<int>(uv.x * res.x), res.x - 1);
-        int y = std::min(static_cast<int>(uv.y * res.y), res.y - 1);
+    //Vector3 sum{};
+    //for(int i{}; i < resDist.y; ++i)
+    //{
+    //    auto& row{func.emplace_back()};
+    //    double sinTheta{std::sin(Math::Pi * (i + 0.5) / resDist.y)};
+    //    row.reserve(resDist.x);
+    //    for(int j{}; j < resDist.x; ++j)
+    //    {
+    //        Vector3 integral{texture->Integrate({j / xx, i / yy}, {(j + 1) / xx, (i + 1) / yy})};
+    //        sum += integral * (sinTheta * Math::Pi * Math::Pi * 2.0);
+    //        row.push_back(y(integral)/* * sinTheta*/);
+    //        //row.push_back(1.0);
+    //    }
+    //}
 
-        rt.AddSample({x, y}, Vector3{1.0, 1.0, 1.0});
-    }
-    rt.AddSampleCount(1);
+    //Distribution2D dist{std::move(func)};
 
-    ExportPPM("sample", rt);
+    //RenderTarget rt{res};
+
+    //Random rand{0};
+
+    //for(int i{}; i < 100'000; ++i)
+    //{
+    //    Vector2 u{rand.UniformFloat(), rand.UniformFloat()};
+    //    Vector2 uv{dist.Sample(u)};
 
 
-    //Mask();
+    //    int x = std::min(static_cast<int>(uv.x * res.x), res.x - 1);
+    //    int y = std::min(static_cast<int>(uv.y * res.y), res.y - 1);
+
+    //    rt.AddSample({x, y}, Vector3{1.0, 1.0, 1.0});
+    //}
+    //rt.AddSampleCount(1);
+
+    //ExportPPM("sample", rt);
+
+
+    Normals();
 
     return 0;
 }

@@ -62,6 +62,11 @@ namespace Fc
             return cos * Math::InvPi;
         }
 
+        virtual Vector3 Power() const override
+        {
+            return surface_->GetArea() * Math::Pi * emission_->EmittedRadiance({}, {});
+        }
+
     private:
         ISurface const* surface_{};
         IEmission const* emission_{};

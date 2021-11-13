@@ -51,3 +51,30 @@ void Fc::ExportPPM(std::string const& filename, std::vector<std::shared_ptr<Rend
         }
     }
 }
+
+void Fc::ExportRaw(std::string const& filename, std::vector<std::shared_ptr<RenderTarget>> const& renderTargets)
+{
+    std::fstream fout{filename + ".raw", std::ios::trunc | std::ios::binary | std::ios::out};
+    double sampleCount{};
+    for(int i{}; i < renderTargets.size(); ++i)
+    {
+        sampleCount += static_cast<double>(renderTargets[i]->GetSampleCount());
+    }
+
+    for(int i{renderTargets[0]->GetResolution().y - 1}; i >= 0; --i)
+    {
+        for(int j{}; j < renderTargets[0]->GetResolution().x; ++j)
+        {
+            Vector3 c{};
+            for(int k{}; k < renderTargets.size(); ++k)
+            {
+                c += renderTargets[k]->GetPixelSampleSum({j, i});
+            }
+
+            c /= sampleCount;
+            Vector3f color{static_cast<float>(c.x), static_cast<float>(c.y), static_cast<float>(c.z)};
+            static_assert(sizeof(color) == 12);
+            fout.write(reinterpret_cast<char const*>(&color), sizeof(color));
+        }
+    }
+}

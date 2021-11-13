@@ -25,6 +25,27 @@ namespace Fc
 
             if(scene.GetInfinityAreaLight() == nullptr) return;
 
+
+            {
+                Vector3 wCL{};
+                Vector3 rCL{};
+                double pdf_wCL{};
+                if(scene.GetInfinityAreaLight()->Sample(sampler.Get2D(), &wCL, &pdf_wCL, &rCL) == SampleResult::Success)
+                {
+                    Vector3 iCL{};
+                    SurfacePoint pC{};
+                    double pdf_pC{};
+
+                    if(camera.SampleW(wCL, sampler.Get2D(), &pC, &pdf_pC, &iCL) == SampleResult::Success)
+                    {
+                        pdf_wCL = scene.GetInfinityAreaLight()->PDF(wCL);
+                        camera.AddSample(pC, wCL, iCL * std::abs(Dot(pC.GetNormal(), wCL)) * rCL / (pdf_pC * pdf_wCL));
+                    }
+                }
+                return;
+            }
+
+
             SurfacePoint p0{};
             double pdf_p0{};
             Vector3 w01{};

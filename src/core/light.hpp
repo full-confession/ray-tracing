@@ -18,5 +18,7 @@ namespace Fc
 
         virtual double PDF(SurfacePoint const& p) const = 0;
         virtual double PDF(SurfacePoint const& p, Vector3 const& w) const = 0;
+
+        virtual Vector3 Power() const = 0;
     };
 }
