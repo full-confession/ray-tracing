@@ -23,6 +23,7 @@
 #include "integrators/forwardmis.hpp"
 #include "core/export.hpp"
 #include "core/assets.hpp"
+#include "core/lightdistribution.hpp"
 
 #include <thread>
 #include <atomic>
@@ -30,30 +31,11 @@
 namespace Fc
 {
     static constexpr int THREADS = 16;
-    static constexpr int SAMPLES_PER_PIXEL = 1000;
+    static constexpr int SAMPLES_PER_PIXEL = 32;
     static constexpr int SAMPLES_PER_THREAD = 10000;
 
     inline void Render(std::string const& name, Vector2i resolution, Scene const& scene, ICameraFactory const& cameraFactory)
     {
-        auto y{
-            [](Vector3 const& rgb)
-            {
-                return 0.212671 * rgb.x + 0.715160 * rgb.y + 0.072169 * rgb.z;
-            }
-        };
-
-        std::vector<double> lightPowers{};
-        for(int i{}; i < scene.GetLightCount(); ++i)
-        {
-            lightPowers.push_back(y(scene.GetLight(i)->Power()));
-        }
-        if(scene.GetInfinityAreaLight() != nullptr)
-        {
-            lightPowers.push_back(y(scene.GetInfinityAreaLight()->Power()));
-        }
-
-        Distribution1D powerdist{std::move(lightPowers)};
-
         std::vector<std::shared_ptr<RenderTarget>> renderTargets{};
         std::vector<std::shared_ptr<ICamera>> cameras{};
         std::vector<std::shared_ptr<RandomSampler>> samplers{};
@@ -86,7 +68,7 @@ namespace Fc
                     s->BeingSample(firstSampleIndex);
                     for(std::uint64_t i{}; i < count; ++i)
                     {
-                        ForwardMISIntegrator::Sample(*c, scene, *s, *a, 9, powerdist);
+                        ForwardMISIntegrator::Sample(*c, scene, *s, *a, 9);
                         s->NextSample();
                         a->Clear();
                     }
@@ -277,11 +259,23 @@ namespace Fc
             nullptr
         });
 
-        entities.push_back(Entity{
+        for(int i{}; i <= 10; ++i)
+        {
+            for(int j{}; j <= 10; ++j)
+            {
+                entities.push_back(Entity{
+                    std::make_unique<SphereSurface>(Transform::Translation({i - 5.0, 0.5, j - 5.0}), 0.1),
+                    std::make_unique<DiffuseMaterial>(const1),
+                    std::make_unique<DiffuseEmission>(Vector3{1.0, 1.0, 1.0}, 4.0)
+                });
+            }
+        }
+
+        /*entities.push_back(Entity{
             std::make_unique<SphereSurface>(Transform::Translation({0.0, 0.5, -2.0}), 0.2),
             std::make_unique<DiffuseMaterial>(const1),
             std::make_unique<DiffuseEmission>(Vector3{1.0, 1.0, 1.0}, 5.0)
-         });
+         });*/
 
         /*entities.push_back(Entity{
             std::make_unique<PlaneSurface>(Transform::TranslationRotationDeg({0.0, 8.0, 0.0}, {180.0, 0.0, 0.0}), Vector2{2.0, 2.0}),
@@ -289,12 +283,12 @@ namespace Fc
             std::make_unique<DiffuseEmission>(Vector3{1.0, 1.0, 1.0}, 25.0)
         });*/
 
-        auto image = assets.GetImage("dikhololo_night");
-        auto texture = std::shared_ptr<ImageTexture>(new ImageTexture{image, ReconstructionFilter::Bilinear, 2});
-        auto areaLight = std::make_unique<InfinityAreaLight>(Transform::RotationDeg({0.0, 0.0, 0.0}), texture, image->GetResolution());
+        //auto image = assets.GetImage("dikhololo_night");
+        //auto texture = std::shared_ptr<ImageTexture>(new ImageTexture{image, ReconstructionFilter::Bilinear, 2});
+        //auto areaLight = std::make_unique<InfinityAreaLight>(Transform::RotationDeg({0.0, 0.0, 0.0}), texture, image->GetResolution());
 
         BVHFactory<Primitive> factory{};
-        Scene scene{std::move(entities), factory, std::move(areaLight)};
+        Scene scene{std::move(entities), factory, nullptr};
 
         Render("normals", {512, 512}, scene, cfactory);
     }

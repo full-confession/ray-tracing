@@ -3,9 +3,10 @@
 #include "sampling.hpp"
 #include <memory>
 #include "texture.hpp"
+#include "light.hpp"
 namespace Fc
 {
-    class InfinityAreaLight
+    class InfinityAreaLight : public ILight
     {
     public:
         InfinityAreaLight(Transform const& transform, std::shared_ptr<ITexture2D> environmentMap, Vector2i const& distributionResolution)
@@ -13,13 +14,6 @@ namespace Fc
         {
             std::vector<std::vector<double>> func{};
             func.reserve(distributionResolution.y);
-
-            auto y{
-                [](Vector3 const& rgb)
-                {
-                    return 0.212671 * rgb.x + 0.715160 * rgb.y + 0.072169 * rgb.z;
-                }
-            };
 
             double rU{static_cast<double>(distributionResolution.x)};
             double rV{static_cast<double>(distributionResolution.y)};
@@ -34,21 +28,25 @@ namespace Fc
                 {
                     Vector3 integral{environmentMap_->Integrate({j / rU, i / rV}, {(j + 1) / rU, (i + 1) / rV})};
                     unitSpherePower_ += integral * (sinTheta * delta);
-                    row.push_back(y(integral) * sinTheta);
+                    row.push_back(Luminance(integral) * sinTheta);
                 }
             }
 
             dist_.reset(new Distribution2D{std::move(func)});
         }
 
-
-        void SetScene(Vector3 const& center, double radius)
+        virtual void Preprocess(Vector3 const& center, double radius) override
         {
             sceneCenter_ = center;
             sceneRadius_ = radius;
         }
 
-        Vector3 EmittedRadiance(Vector3 const& w) const
+        virtual bool IsInfinityAreaLight() const override
+        {
+            return true;
+        }
+
+        virtual Vector3 EmittedRadiance(Vector3 const& w) const override
         {
             Vector3 lw{transform_.InverseTransformVector(w)};
 
@@ -62,7 +60,7 @@ namespace Fc
             return environmentMap_->Evaluate({u, v});
         }
 
-        SampleResult Sample(Vector2 const& u, Vector3* w, double* pdf_w, Vector3* radiance) const
+        virtual SampleResult Sample(Vector2 const& u, Vector3* w, double* pdf_w, Vector3* radiance) const override
         {
             double uvPdf{};
             Vector2 uv{dist_->Sample(u, &uvPdf)};
@@ -90,7 +88,7 @@ namespace Fc
             return SampleResult::Success;
         }
 
-        double PDF(Vector3 const& w) const
+        virtual double PDF(Vector3 const& w) const override
         {
             Vector3 lw{transform_.InverseTransformVector(w)};
             double theta{std::acos(std::clamp(lw.y, -1.0, 1.0))};
@@ -105,9 +103,9 @@ namespace Fc
             return dist_->PDF({u, v}) / (2.0 * Math::Pi * Math::Pi * sinTheta);
         }
 
-        SampleResult Sample(Vector2 const& u1, Vector2 const& u2, SurfacePoint* p, double* pdf_p, Vector3* w, double* pdf_w, Vector3* radiance) const
+        virtual SampleResult Sample(Vector2 const& u1, Vector2 const& u2, SurfacePoint* p, double* pdf_p, Vector3* w, double* pdf_w, Vector3* radiance) const override
         {
-            return {};
+            return SampleResult::Fail;
             //Vector2 uv{}
             /*double uvPdf{};
             Vector2 uv{dist_->Sample(u1, &uvPdf)};
@@ -151,7 +149,7 @@ namespace Fc
             return SampleResult::Success;*/
         }
 
-        Vector3 Power() const
+        virtual Vector3 Power() const override
         {
             return unitSpherePower_ * (sceneRadius_ * sceneRadius_);
         }

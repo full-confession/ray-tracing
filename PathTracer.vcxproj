@@ -43,6 +43,7 @@
     <ClInclude Include="src\core\infinityarealight.hpp" />
     <ClInclude Include="src\core\integrator.hpp" />
     <ClInclude Include="src\core\light.hpp" />
+    <ClInclude Include="src\core\lightdistribution.hpp" />
     <ClInclude Include="src\core\material.hpp" />
     <ClInclude Include="src\core\mesh.hpp" />
     <ClInclude Include="src\core\random.hpp" />

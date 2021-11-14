@@ -747,6 +747,7 @@ namespace Fc
 
     using Vector3 = TVector3<double>;
     using Vector3f = TVector3<float>;
+    using Vector3i = TVector3<int>;
 
     using Vector2 = TVector2<double>;
     using Vector2f = TVector2<float>;

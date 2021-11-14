@@ -5,6 +5,7 @@
 #include "infinityarealight.hpp"
 #include "accelerationstructure.hpp"
 #include "arealight.hpp"
+#include "lightdistribution.hpp"
 #include <vector>
 #include <memory>
 
@@ -85,7 +86,6 @@ namespace Fc
     {
     public:
         Scene(std::vector<Entity> entities, IAccelerationStructureFactory<Primitive> const& asf, std::unique_ptr<InfinityAreaLight> infinityAreaLight)
-            : infinityAreaLight_{std::move(infinityAreaLight)}
         {
             std::uint64_t primitiveCount{};
             for(auto& entity : entities)
@@ -114,11 +114,26 @@ namespace Fc
             entities_ = std::move(entities);
             accelerationStructure_ = asf.Create(std::move(primitives));
 
-            if(infinityAreaLight_)
+
+            if(infinityAreaLight)
             {
-                auto [center, radius]{accelerationStructure_->GetRootBounds().BoundingSphere()};
-                infinityAreaLight_->SetScene(center, radius);
+                auto [center, radius] {accelerationStructure_->GetRootBounds().BoundingSphere()};
+                infinityAreaLight->Preprocess(center, radius);
+                infinityAreaLight_ = infinityAreaLight.get();
+                lights_.emplace_back(infinityAreaLight.release());
             }
+
+
+            std::vector<ILight const*> lights{};
+            lights.reserve(lights_.size());
+            for(auto const& light : lights_)
+            {
+                lights.push_back(light.get());
+            }
+
+            lightDistribution_.reset(new PowerLightDistribution{lights});
+            //spatialLightDistribution_.reset(new UniformLightDistribution{lights});
+            spatialLightDistribution_.reset(new VoxelLightDistribution(lights, accelerationStructure_->GetRootBounds(), {16, 16, 16}, 64));
         }
 
         RaycastResult Raycast(SurfacePoint const& p0, Vector3 const& w01, SurfacePoint* p1) const
@@ -205,16 +220,32 @@ namespace Fc
             return lights_[index].get();
         }
 
-        InfinityAreaLight const* GetInfinityAreaLight() const
+        ILight const* GetInfinityAreaLight() const
         {
-            return infinityAreaLight_.get();
+            return infinityAreaLight_;
+        }
+
+        ILightDistribution const* GetLightDistribution() const
+        {
+            return lightDistribution_.get();
+        }
+
+        ISpatialLightDistribution const* GetSpatialLightDistribution() const
+        {
+            return spatialLightDistribution_.get();
         }
 
     private:
         std::vector<Entity> entities_{};
         std::vector<std::unique_ptr<ILight>> lights_{};
-        std::unique_ptr<InfinityAreaLight> infinityAreaLight_{};
+
+        ILight const* infinityAreaLight_{};
+
         std::unique_ptr<IAccelerationStructure<Primitive>> accelerationStructure_{};
+
+        std::shared_ptr<ILightDistribution> lightDistribution_{};
+        std::shared_ptr<ISpatialLightDistribution> spatialLightDistribution_{};
+
         double epsilon_{0.000001};
     };
 }

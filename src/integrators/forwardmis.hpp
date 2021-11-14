@@ -3,14 +3,14 @@
 #include "../core/scene.hpp"
 #include "../core/sampler.hpp"
 #include "../core/allocator.hpp"
-
+#include "../core/lightdistribution.hpp"
 
 namespace Fc
 {
     class ForwardMISIntegrator
     {
     public:
-        static void Sample(ICamera& camera, Scene const& scene, ISampler& sampler, Allocator& allocator, int maxLength, Distribution1D const& ligthDistribution)
+        static void Sample(ICamera& camera, Scene const& scene, ISampler& sampler, Allocator& allocator, int maxLength)
         {
 
             camera.AddSampleCount(1);
@@ -46,27 +46,26 @@ namespace Fc
                 // Light strategy
                 {
                     // choose light
-                    double dist_pdf{};
-                    int lightIndex{static_cast<int>(ligthDistribution.SampleDiscrete(sampler.Get1D(), &dist_pdf))};
-                    //int lightIndex{std::min(static_cast<int>(sampler.Get1D() * lightCount), lightCount - 1)};
-                    if(lightIndex == lightCount - 1 && scene.GetInfinityAreaLight() != nullptr)
+                    double light_pdf{};
+                    ILight const* light{scene.GetSpatialLightDistribution()->GetLightDistribution(p1.GetPosition())->Sample(sampler.Get1D(), &light_pdf)};
+
+                    if(light->IsInfinityAreaLight())
                     {
-                        // infinity area light
                         Vector3 w1L{};
-                        double light_pdf{};
+                        double w1L_pdf{};
                         Vector3 r1L{};
-                        if(scene.GetInfinityAreaLight()->Sample(sampler.Get2D(), &w1L, &light_pdf, &r1L) == SampleResult::Success)
+                        if(light->Sample(sampler.Get2D(), &w1L, &w1L_pdf, &r1L) == SampleResult::Success)
                         {
-                            light_pdf *= dist_pdf;
+                            w1L_pdf *= light_pdf;
                             if(r1L)
                             {
                                 Vector3 fL10{b1->Evaluate(w1L, -w01)};
                                 if(fL10 && scene.Visibility(p1, w1L) == VisibilityResult::Visible)
                                 {
                                     double bsdf_pdf{b1->PDF(-w01, w1L)};
-                                    double x{bsdf_pdf / light_pdf};
+                                    double x{bsdf_pdf / w1L_pdf};
                                     double weight{1.0 / (1.0 + x * x)};
-                                    I += weight * T * fL10 * std::abs(Dot(p1.GetNormal(), w1L)) * r1L / light_pdf;
+                                    I += weight * T * fL10 * std::abs(Dot(p1.GetNormal(), w1L)) * r1L / w1L_pdf;
                                 }
                             }
                         }
@@ -74,13 +73,12 @@ namespace Fc
                     else
                     {
                         // area light
-                        ILight const* light{scene.GetLight(lightIndex)};
                         SurfacePoint pL{};
                         double pdf_pL{};
                         Vector3 rL1{};
                         if(light->Sample(p1.GetPosition(), sampler.Get2D(), &pL, &pdf_pL, &rL1) == SampleResult::Success)
                         {
-                            pdf_pL /= lightCount;
+                            pdf_pL *= light_pdf;
                             if(rL1)
                             {
                                 Vector3 d1L{pL.GetPosition() - p1.GetPosition()};
@@ -113,21 +111,26 @@ namespace Fc
                 SurfacePoint p2{};
                 if(scene.Raycast(p1, w12, &p2) != RaycastResult::Hit)
                 {
-                    double light_pdf{scene.GetInfinityAreaLight()->PDF(w12)};
-                    double dist_pdf{ligthDistribution.PDFDiscrete(static_cast<std::size_t>(lightCount) - 1)};
-                    light_pdf *= dist_pdf;
-                    double x{light_pdf / pdf_w12};
-                    double weight{1.0 / (1.0 + x * x)};
-                    I += weight * T2 * scene.GetInfinityAreaLight()->EmittedRadiance(w12);
-
+                    if(scene.GetInfinityAreaLight() != nullptr)
+                    {
+                        double light_pdf{scene.GetSpatialLightDistribution()->GetLightDistribution(p1.GetPosition())->PDF(scene.GetInfinityAreaLight())};
+                        double pdf_light_w12{scene.GetInfinityAreaLight()->PDF(w12)};
+                        pdf_light_w12 *= light_pdf;
+                        double x{pdf_light_w12 / pdf_w12};
+                        double weight{1.0 / (1.0 + x * x)};
+                        I += weight * T2 * scene.GetInfinityAreaLight()->EmittedRadiance(w12);
+                    }
                     break;
                 }
 
                 if(p2.GetLight() != nullptr)
                 {
-                    double light_pdf{p2.GetLight()->PDF(p2)};
+                    double light_pdf{scene.GetSpatialLightDistribution()->GetLightDistribution(p1.GetPosition())->PDF(p2.GetLight())};
+                    double pdf_light_p2{p2.GetLight()->PDF(p2)};
+                    pdf_light_p2 *= light_pdf;
+
                     double pdf_p2{pdf_w12 * std::abs(Dot(p2.GetNormal(), w12)) / LengthSqr(p2.GetPosition() - p1.GetPosition())};
-                    double x{light_pdf / pdf_p2};
+                    double x{pdf_light_p2 / pdf_p2};
                     double weight{1.0 / (1.0 + x * x)};
 
                     I += weight * T2 * p2.GetLight()->EmittedRadiance(p2, -w12);
