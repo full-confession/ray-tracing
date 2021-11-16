@@ -11,25 +11,25 @@ namespace Fc
             : alphaX_{alphaX}, alphaY_{alphaY}, etaI_{etaI}, etaT_{etaT}, rD_{rD}, rS_{rS}
         { }
 
-        virtual SampleResult Sample(Vector3 const& wi, ISampler& sampler, TransportMode mode, Vector3* wo, double* pdf, Vector3* value, BxDFFlags* flags) const override
+        virtual bool Sample(Vector3 const& wi, Vector2 const& pickSample, Vector2 const& directionSample, TransportMode mode, Vector3* wo, double* pdf, Vector3* value, BxDFFlags* flags) const override
         {
-            if(wi.y == 0.0) return SampleResult::Fail;
+            if(wi.y == 0.0) return false;
 
             Vector3 wh{};
-            if(sampler.Get1D() < 0.5)
+            if(pickSample.x < 0.5)
             {
                 // sample diffuse
-                *wo = SampleHemisphereCosineWeighted(sampler.Get2D());
+                *wo = SampleHemisphereCosineWeighted(directionSample);
                 if(wi.y < 0.0) wo->y = -wo->y;
                 wh = Normalize(wi + *wo);
             }
             else
             {
                 // sample specular
-                wh = SampleWh(wi, sampler.Get2D(), alphaX_, alphaY_);
-                if(Dot(wi, wh) < 0.0) return SampleResult::Fail;
+                wh = SampleWh(wi, directionSample, alphaX_, alphaY_);
+                if(Dot(wi, wh) < 0.0) return false;
                 *wo = Reflect(wi, wh);
-                if(wo->y * wi.y <= 0.0) return SampleResult::Fail;
+                if(wo->y * wi.y <= 0.0) return false;
             }
 
             double d{D(wh, alphaX_, alphaY_)};
@@ -46,7 +46,7 @@ namespace Fc
             *pdf = 0.5 * (pdfDiffuse + pdfSpecular);
             *flags = BxDFFlags::Diffuse | BxDFFlags::Reflection;
 
-            return SampleResult::Success;
+            return true;
         }
 
         virtual double PDF(Vector3 const& wi, Vector3 const& wo) const override

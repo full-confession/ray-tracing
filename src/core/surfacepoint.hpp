@@ -9,6 +9,7 @@ namespace Fc
     class ISurface;
     class IMaterial;
     class InfinityAreaLight;
+    class standard_light;
     class SurfacePoint
     {
     public:
@@ -100,6 +101,11 @@ namespace Fc
         ILight const* GetLight() const
         {
             return light_;
+        }
+
+        standard_light const* get_light() const
+        {
+            return nullptr;
         }
 
         void SetInfinityAreaLight(InfinityAreaLight const* infinityAreaLight)

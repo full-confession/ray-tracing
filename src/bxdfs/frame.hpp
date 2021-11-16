@@ -11,16 +11,16 @@ namespace Fc
             : frame_{frame}, bxdf_{bxdf}
         { }
 
-        virtual SampleResult Sample(Vector3 const& wi, ISampler& sampler, TransportMode mode, Vector3* wo, double* pdf, Vector3* value, BxDFFlags* flags) const override
+        virtual bool Sample(Vector3 const& wi, Vector2 const& pickSample, Vector2 const& directionSample, TransportMode mode, Vector3* wo, double* pdf, Vector3* value, BxDFFlags* flags) const override
         {
-            if(bxdf_->Sample(frame_.WorldToLocal(wi), sampler, mode, wo, pdf, value, flags) == SampleResult::Success)
+            if(bxdf_->Sample(frame_.WorldToLocal(wi), pickSample, directionSample, mode, wo, pdf, value, flags))
             {
                 *wo = frame_.LocalToWorld(*wo);
-                return SampleResult::Success;
+                return true;
             }
             else
             {
-                return SampleResult::Fail;
+                return false;
             }
         }
 

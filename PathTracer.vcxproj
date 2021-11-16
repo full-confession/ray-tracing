@@ -45,8 +45,10 @@
     <ClInclude Include="src\core\light.hpp" />
     <ClInclude Include="src\core\lightdistribution.hpp" />
     <ClInclude Include="src\core\material.hpp" />
+    <ClInclude Include="src\core\measurement.hpp" />
     <ClInclude Include="src\core\mesh.hpp" />
     <ClInclude Include="src\core\random.hpp" />
+    <ClInclude Include="src\core\renderer.hpp" />
     <ClInclude Include="src\core\rendertarget.hpp" />
     <ClInclude Include="src\core\math.hpp" />
     <ClInclude Include="src\core\sampler.hpp" />

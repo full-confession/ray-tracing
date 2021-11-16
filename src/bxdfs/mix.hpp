@@ -12,23 +12,22 @@ namespace Fc
             : a_{a}, b_{b}, fractionA_{fractionA}
         { }
 
-        virtual SampleResult Sample(Vector3 const& wi, ISampler& sampler, TransportMode mode, Vector3* wo, double* pdf, Vector3* value, BxDFFlags* flags) const override
+        virtual bool Sample(Vector3 const& wi, Vector2 const& pickSample, Vector2 const& directionSample, TransportMode mode, Vector3* wo, double* pdf, Vector3* value, BxDFFlags* flags) const override
         {
-            double sample{sampler.Get1D()};
             if(fractionA_ == 1.0)
             {
-                return a_->Sample(wi, sampler, mode, wo, pdf, value, flags);
+                return a_->Sample(wi, pickSample, directionSample, mode, wo, pdf, value, flags);
             }
             else if(fractionA_ == 0.0)
             {
-                return b_->Sample(wi, sampler, mode, wo, pdf, value, flags);
+                return b_->Sample(wi, pickSample, directionSample, mode, wo, pdf, value, flags);
             }
             else
             {
-                if(sample < fractionA_)
+                if(pickSample.y < fractionA_)
                 {
                     // sample a
-                    if(a_->Sample(wi, sampler, mode, wo, pdf, value, flags) == SampleResult::Fail) return SampleResult::Fail;
+                    if(!a_->Sample(wi, pickSample, directionSample, mode, wo, pdf, value, flags)) return false;
                     *value *= fractionA_;
                     *value += (1.0 - fractionA_) * b_->Evaluate(wi, *wo);
                     *pdf *= fractionA_;
@@ -38,7 +37,7 @@ namespace Fc
                 else
                 {
                     // sample b
-                    if(b_->Sample(wi, sampler, mode, wo, pdf, value, flags) == SampleResult::Fail) return SampleResult::Fail;
+                    if(!b_->Sample(wi, pickSample, directionSample, mode, wo, pdf, value, flags)) return false;
                     *value *= (1.0 - fractionA_);
                     *value += fractionA_ * a_->Evaluate(wi, *wo);
                     *pdf *= (1.0 - fractionA_);
@@ -46,7 +45,7 @@ namespace Fc
                     *flags = *flags | a_->GetFlags();
                 }
 
-                return SampleResult::Success;
+                return true;
             }
         }
 

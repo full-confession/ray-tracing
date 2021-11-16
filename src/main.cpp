@@ -1,46 +1,39 @@
 
 #include "demoscenes.hpp"
 #include "core/assets.hpp"
+#include "core/renderer.hpp"
+#include "core/scene.hpp"
 using namespace Fc;
-
-
-
-#include <array>
-static constexpr std::array<double, 3> YWeight{0.212671, 0.715160, 0.072169};
-
-double y(Vector3 const& rgb)
-{
-    return YWeight[0] * rgb.x + YWeight[1] * rgb.y + YWeight[2] * rgb.z;
-}
-
-class X : public IImage
-{
-public:
-    virtual Vector2i GetResolution() const override
-    {
-        return {2, 2};
-    }
-
-    virtual double R(Vector2i const& pixel) const override { return 0.0; }
-    virtual double G(Vector2i const& pixel) const override { return 0.0; }
-    virtual double B(Vector2i const& pixel) const override { return 0.0; }
-    virtual double A(Vector2i const& pixel) const override { return 0.0; }
-
-    virtual Vector3 RGB(Vector2i const& pixel) const
-    {
-        if(pixel.x == 0)
-        {
-            return pixel.y == 0 ? Vector3{1.0, 0.0, 0.0} : Vector3{0.0, 1.0, 0.0};
-        }
-        else
-        {
-            return pixel.y == 0 ? Vector3{0.0, 0.0, 1.0} : Vector3{1.0, 1.0, 1.0};
-        }
-    }
-};
 
 int main()
 {
+    Assets assets{};
+    std::vector<Entity> entities{};
+    entities.push_back(Entity{
+        std::make_unique<PlaneSurface>(Transform{}, Vector2{10.0, 10.0}),
+        std::make_unique<DiffuseMaterial>(std::shared_ptr<ITextureRGB>{new CheckerTextureRGB{{0.8, 0.8, 0.8}, {0.2, 0.2, 0.2}, 10.0}}),
+        nullptr
+    });
+    entities.push_back(Entity{
+        std::make_unique<SphereSurface>(Transform::Translation({0.0, 1.0, 0.0}), 1.0),
+        std::make_unique<DiffuseMaterial>(std::shared_ptr<ITextureRGB>{new ConstTextureRGB{{0.2, 0.4, 0.8}}}),
+        nullptr
+    });
+
+    BVHFactory<Primitive> factory{};
+
+    auto image = assets.GetImage("env-loft-hall");
+    //auto image = assets.GetImage("dikhololo_night");
+    auto texture = std::shared_ptr<ImageTexture>(new ImageTexture{image, ReconstructionFilter::Bilinear, 2});
+    auto areaLight = std::make_unique<InfinityAreaLight>(Transform{}, texture, image->GetResolution());
+    std::shared_ptr<IScene> scene{new Scene{std::move(entities), factory, std::move(areaLight)}};
+
+
+    PerspectiveCameraFactory cameraFactory{Transform::TranslationRotationDeg({-4.0, 2.0, -4.0}, {15.0, 45.0, 0.0}), Math::DegToRad(45.0)};
+    std::shared_ptr<IIntegrator2> integrator{new ForwardMISIntegrator{10}};
+    ImageRenderer renderer{{512, 512}, &cameraFactory, integrator, scene, 16};
+    renderer.Run(512);
+    renderer.Export("normals");
 
     //std::shared_ptr<X> x{new X{}};
     //ImageTexture it{x, ReconstructionFilter::Bilinear, 4};
@@ -109,7 +102,7 @@ int main()
     //ExportPPM("sample", rt);
 
 
-    Normals();
+    //Normals();
 
     return 0;
 }

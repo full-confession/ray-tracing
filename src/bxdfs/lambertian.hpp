@@ -11,17 +11,16 @@ namespace Fc
             : reflectance_{reflectance}
         { }
 
-        virtual SampleResult Sample(Vector3 const& wi, ISampler& sampler, TransportMode mode, Vector3* wo, double* pdf, Vector3* value, BxDFFlags* flags) const override
+        virtual bool Sample(Vector3 const& wi, Vector2 const& pickSample, Vector2 const& directionSample, TransportMode mode, Vector3* wo, double* pdf, Vector3* value, BxDFFlags* flags) const override
         {
-            Vector2 sample{sampler.Get2D()};
-            if(wi.y == 0.0) return SampleResult::Fail;
-            *wo = SampleHemisphereCosineWeighted(sample);
+            if(wi.y == 0.0) return false;
+            *wo = SampleHemisphereCosineWeighted(directionSample);
             if(wi.y < 0.0) wo->y = -wo->y;
 
             *pdf = std::abs(wo->y) * Math::InvPi;
             *value = reflectance_ * Math::InvPi;
             *flags = BxDFFlags::Diffuse | BxDFFlags::Reflection;
-            return SampleResult::Success;
+            return true;
         }
 
         virtual double PDF(Vector3 const& wi, Vector3 const& wo) const override

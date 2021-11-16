@@ -4,6 +4,8 @@
 
 namespace Fc
 {
+
+
     class ISampler
     {
     public:
@@ -18,11 +20,5 @@ namespace Fc
 
         virtual std::uint64_t GetSampleIndex() const = 0;
     };
-
-    class ISamplerFactory
-    {
-    public:
-        virtual ~ISamplerFactory() = default;
-        virtual std::unique_ptr<ISampler> Create(Vector2i const& resolution, std::uint64_t seed) const = 0;
-    };
+   
 }

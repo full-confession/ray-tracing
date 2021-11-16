@@ -17,36 +17,36 @@ namespace Fc
             samplePlaneSize_.y = renderTarget_->GetResolution().y * pixelSize_;
         }
 
-        virtual SampleResult Sample(Vector2 const& u1, Vector2 const& u2,
-            SurfacePoint* p, double* pdf_p, Vector3* w, double* pdf_w, Vector3* importance) const override
+        virtual bool SamplePointAndDirection(Vector2 const& pointSample, Vector2 const& directionSample,
+            SurfacePoint* point, double* probabilityPoint, Vector3* direction, double* probabilityDirection, Vector3* importance) const override
         {
             Vector3 samplePlanePosition{
-                (u1.x - 0.5) * samplePlaneSize_.x,
-                (u1.y - 0.5) * samplePlaneSize_.y,
+                (directionSample.x - 0.5) * samplePlaneSize_.x,
+                (directionSample.y - 0.5) * samplePlaneSize_.y,
                 1.0
             };
 
-            p->SetPosition(transform_.TransformPoint({}));
-            p->SetNormal(transform_.TransformNormal({0.0, 0.0, 1.0}));
-            p->SetCamera(this);
-            *pdf_p = 1.0;
+            point->SetPosition(transform_.TransformPoint({}));
+            point->SetNormal(transform_.TransformNormal({0.0, 0.0, 1.0}));
+            point->SetCamera(this);
+            *probabilityPoint = 1.0;
 
             Vector3 w01{Normalize(samplePlanePosition)};
             double cos{w01.z};
-            *w = transform_.TransformVector(w01);
-            *pdf_w = 1.0 / (samplePlaneSize_.x * samplePlaneSize_.y * cos * cos * cos);
+            *direction = transform_.TransformVector(w01);
+            *probabilityDirection = 1.0 / (samplePlaneSize_.x * samplePlaneSize_.y * cos * cos * cos);
 
             double x{1.0 / (pixelSize_ * pixelSize_ * cos * cos * cos * cos)};
             *importance = {x, x, x};
 
-            return SampleResult::Success;
+            return true;
         }
 
-        virtual SampleResult Sample(Vector3 const& viewPosition, Vector2 const& u,
-            SurfacePoint* p, double* pdf_p, Vector3* importance, double* pdf_w) const override
+        virtual bool SamplePointUsingPosition(Vector3 const& position, Vector2 const& pointSample,
+            SurfacePoint* point, double* probabilityPoint, Vector3* importance, double* probabilityDirection) const override
         {
-            Vector3 w{Normalize(transform_.InverseTransformPoint(viewPosition))};
-            if(w.z <= 0.0) return SampleResult::Fail;
+            Vector3 w{Normalize(transform_.InverseTransformPoint(position))};
+            if(w.z <= 0.0) return false;
 
             double t{1.0 / w.z};
             Vector3 samplePlanePosition{w * t};
@@ -54,27 +54,27 @@ namespace Fc
             if(samplePlanePosition.x < samplePlaneSize_.x / -2.0 || samplePlanePosition.x > samplePlaneSize_.x / 2.0
                 || samplePlanePosition.y > samplePlaneSize_.y / 2.0 || samplePlanePosition.y < samplePlaneSize_.y / -2.0)
             {
-                return SampleResult::Fail;
+                return false;
             }
 
-            p->SetPosition(transform_.TransformPoint({}));
-            p->SetNormal(transform_.TransformNormal({0.0, 0.0, 1.0}));
-            p->SetCamera(this);
-            *pdf_p = 1.0;
+            point->SetPosition(transform_.TransformPoint({}));
+            point->SetNormal(transform_.TransformNormal({0.0, 0.0, 1.0}));
+            point->SetCamera(this);
+            *probabilityPoint = 1.0;
 
-            if(pdf_w != nullptr) *pdf_w = 1.0 / (samplePlaneSize_.x * samplePlaneSize_.y * w.z * w.z * w.z);
+            if(probabilityDirection != nullptr) *probabilityDirection = 1.0 / (samplePlaneSize_.x * samplePlaneSize_.y * w.z * w.z * w.z);
 
             double i{1.0 / (pixelSize_ * pixelSize_ * w.z * w.z * w.z * w.z)};
             *importance = {i, i, i};
-            return SampleResult::Success;
+            return true;
         }
 
 
-        virtual SampleResult SampleW(Vector3 const& w, Vector2 const& u,
-            SurfacePoint* p, double* pdf_p, Vector3* importance) const override
+        virtual bool SamplePointUsingDirection(Vector3 const& direction, Vector2 const& pointSample,
+            SurfacePoint* point, double* probabilityPoint, Vector3* importance, double* probabilityDirection = nullptr) const override
         {
-            Vector3 lw{transform_.InverseTransformVector(w)};
-            if(lw.z <= 0.0) return SampleResult::Fail;
+            Vector3 lw{transform_.InverseTransformVector(direction)};
+            if(lw.z <= 0.0) return false;
 
             double t{1.0 / lw.z};
             Vector3 samplePlanePosition{lw * t};
@@ -82,17 +82,19 @@ namespace Fc
             if(samplePlanePosition.x < samplePlaneSize_.x / -2.0 || samplePlanePosition.x > samplePlaneSize_.x / 2.0
                 || samplePlanePosition.y > samplePlaneSize_.y / 2.0 || samplePlanePosition.y < samplePlaneSize_.y / -2.0)
             {
-                return SampleResult::Fail;
+                return true;
             }
 
-            p->SetPosition(transform_.TransformPoint({}));
-            p->SetNormal(transform_.TransformNormal({0.0, 0.0, 1.0}));
-            p->SetCamera(this);
-            *pdf_p = 1.0;
+            point->SetPosition(transform_.TransformPoint({}));
+            point->SetNormal(transform_.TransformNormal({0.0, 0.0, 1.0}));
+            point->SetCamera(this);
+            *probabilityPoint = 1.0;
+
+            if(probabilityDirection != nullptr) *probabilityDirection = 1.0 / (samplePlaneSize_.x * samplePlaneSize_.y * lw.z * lw.z * lw.z);
 
             double i{1.0 / (pixelSize_ * pixelSize_ * lw.z * lw.z * lw.z * lw.z)};
             *importance = {i, i, i};
-            return SampleResult::Success;
+            return true;
         }
 
         virtual void AddSample(SurfacePoint const& p, Vector3 const& w, Vector3 const& value) override
@@ -117,9 +119,14 @@ namespace Fc
             renderTarget_->AddSample({x, y}, value);
         }
 
-        virtual void AddSampleCount(std::uint64_t value) override
+        virtual void AddSampleCount(int value) override
         {
             renderTarget_->AddSampleCount(value);
+        }
+
+        virtual Vector2i GetImagePlaneResolution() const override
+        {
+            return renderTarget_->GetResolution();
         }
 
     private:

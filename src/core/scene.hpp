@@ -82,7 +82,23 @@ namespace Fc
         std::uint32_t primitive_{};
     };
 
-    class Scene
+    class IScene
+    {
+    public:
+        virtual ~IScene() = default;
+
+        virtual bool Raycast(SurfacePoint const& point, Vector3 const& direction, SurfacePoint* intesectionPoint) const = 0;
+        virtual bool Visibility(SurfacePoint const& pointA, SurfacePoint const& pointB) const = 0;
+        virtual bool Visibility(SurfacePoint const& point, Vector3 const& direction) const = 0;
+
+        virtual ILight const* GetInfinityAreaLight() const = 0;
+
+        virtual ISpatialLightDistribution const* GetSpatialLightDistribution() const = 0;
+
+        virtual infinity_area_light const* get_infinity_area_light() const = 0;
+    };
+
+    class Scene : public IScene
     {
     public:
         Scene(std::vector<Entity> entities, IAccelerationStructureFactory<Primitive> const& asf, std::unique_ptr<InfinityAreaLight> infinityAreaLight)
@@ -132,82 +148,81 @@ namespace Fc
             }
 
             lightDistribution_.reset(new PowerLightDistribution{lights});
-            //spatialLightDistribution_.reset(new UniformLightDistribution{lights});
             spatialLightDistribution_.reset(new VoxelLightDistribution(lights, accelerationStructure_->GetRootBounds(), {16, 16, 16}, 64));
         }
 
-        RaycastResult Raycast(SurfacePoint const& p0, Vector3 const& w01, SurfacePoint* p1) const
+        virtual bool Raycast(SurfacePoint const& point, Vector3 const& direction, SurfacePoint* intesectionPoint) const override
         {
-            Ray3 ray{p0.GetPosition(), w01};
-            if(Dot(p0.GetNormal(), w01) > 0.0)
+            Ray3 ray{point.GetPosition(), direction};
+            if(Dot(point.GetNormal(), direction) > 0.0)
             {
-                ray.origin += p0.GetNormal() * epsilon_;
+                ray.origin += point.GetNormal() * epsilon_;
             }
             else
             {
-                ray.origin -= p0.GetNormal() * epsilon_;
+                ray.origin -= point.GetNormal() * epsilon_;
             }
 
             Primitive const* primitive{};
-            if(accelerationStructure_->Raycast(ray, std::numeric_limits<double>::infinity(), &primitive, p1) == RaycastResult::Hit)
+            if(accelerationStructure_->Raycast(ray, std::numeric_limits<double>::infinity(), &primitive, intesectionPoint) == RaycastResult::Hit)
             {
-                p1->SetMaterial(primitive->GetEntity()->GetMaterial());
-                p1->SetLight(primitive->GetEntity()->GetAreaLight());
-                return RaycastResult::Hit;
+                intesectionPoint->SetMaterial(primitive->GetEntity()->GetMaterial());
+                intesectionPoint->SetLight(primitive->GetEntity()->GetAreaLight());
+                return true;
             }
             else
             {
-                return RaycastResult::Miss;
+                return false;
             }
         }
 
-        VisibilityResult Visibility(SurfacePoint const& p, Vector3 const& w) const
+        virtual bool Visibility(SurfacePoint const& point, Vector3 const& direction) const override
         {
-            Ray3 ray{p.GetPosition(), w};
-            if(Dot(p.GetNormal(), w) > 0.0)
+            Ray3 ray{point.GetPosition(), direction};
+            if(Dot(point.GetNormal(), direction) > 0.0)
             {
-                ray.origin += p.GetNormal() * epsilon_;
+                ray.origin += point.GetNormal() * epsilon_;
             }
             else
             {
-                ray.origin -= p.GetNormal() * epsilon_;
+                ray.origin -= point.GetNormal() * epsilon_;
             }
 
-            return accelerationStructure_->Raycast(ray, std::numeric_limits<double>::infinity()) == RaycastResult::Hit ? VisibilityResult::Occluded : VisibilityResult::Visible;
+            return accelerationStructure_->Raycast(ray, std::numeric_limits<double>::infinity()) == RaycastResult::Hit ? false : true;
         }
 
-        VisibilityResult Visibility(SurfacePoint const& p0, SurfacePoint const& p1) const
+        virtual bool Visibility(SurfacePoint const& pointA, SurfacePoint const& pointB) const override
         {
-            Vector3 position0{p0.GetPosition()};
-            Vector3 position1{p1.GetPosition()};
-            Vector3 normal0{p0.GetNormal()};
-            Vector3 normal1{p1.GetNormal()};
+            Vector3 positionA{pointA.GetPosition()};
+            Vector3 positionB{pointB.GetPosition()};
+            Vector3 normalA{pointA.GetNormal()};
+            Vector3 normalB{pointB.GetNormal()};
 
-            Vector3 to1{position1 - position0};
-            if(Dot(to1, normal0) > 0.0)
+            Vector3 toB{positionB - positionA};
+            if(Dot(toB, normalA) > 0.0)
             {
-                position0 += normal0 * epsilon_;
+                positionA += normalA * epsilon_;
             }
             else
             {
-                position0 -= normal0 * epsilon_;
+                positionA -= normalA * epsilon_;
             }
 
-            if(Dot(to1, normal1) < 0.0)
+            if(Dot(toB, normalB) < 0.0)
             {
-                position1 += normal1 * epsilon_;
+                positionB += normalB * epsilon_;
             }
             else
             {
-                position1 -= normal1 * epsilon_;
+                positionB -= normalB * epsilon_;
             }
 
-            to1 = position1 - position0;
-            double length{Length(to1)};
-            Vector3 direction{to1 / length};
-            Ray3 ray{position0, direction};
+            toB = positionB - positionA;
+            double length{Length(toB)};
+            Vector3 direction{toB / length};
+            Ray3 ray{positionA, direction};
 
-            return accelerationStructure_->Raycast(ray, length) == RaycastResult::Hit ? VisibilityResult::Occluded : VisibilityResult::Visible;
+            return accelerationStructure_->Raycast(ray, length) == RaycastResult::Hit ? false : true;
         }
 
         int GetLightCount() const
@@ -220,7 +235,7 @@ namespace Fc
             return lights_[index].get();
         }
 
-        ILight const* GetInfinityAreaLight() const
+        virtual ILight const* GetInfinityAreaLight() const override
         {
             return infinityAreaLight_;
         }
@@ -230,7 +245,7 @@ namespace Fc
             return lightDistribution_.get();
         }
 
-        ISpatialLightDistribution const* GetSpatialLightDistribution() const
+        virtual ISpatialLightDistribution const* GetSpatialLightDistribution() const override
         {
             return spatialLightDistribution_.get();
         }

@@ -11,15 +11,14 @@ namespace Fc
             : alphaX_{alphaX}, alphaY_{alphaY}, etaI_{etaI}, etaT_{etaT}, k_{k}
         { }
 
-        virtual SampleResult Sample(Vector3 const& wi, ISampler& sampler, TransportMode mode, Vector3* wo, double* pdf, Vector3* value, BxDFFlags* flags) const override
+        virtual bool Sample(Vector3 const& wi, Vector2 const& pickSample, Vector2 const& directionSample, TransportMode mode, Vector3* wo, double* pdf, Vector3* value, BxDFFlags* flags) const override
         {
-            Vector2 sample{sampler.Get2D()};
-            if(wi.y == 0.0) return SampleResult::Fail;
-            Vector3 wh{SampleWh(wi, sample, alphaX_, alphaY_)};
-            if(Dot(wi, wh) < 0.0) return SampleResult::Fail;
+            if(wi.y == 0.0) return false;
+            Vector3 wh{SampleWh(wi, directionSample, alphaX_, alphaY_)};
+            if(Dot(wi, wh) < 0.0) return false;
 
             *wo = Reflect(wi, wh);
-            if(wi.y * wo->y <= 0.0) return SampleResult::Fail;
+            if(wi.y * wo->y <= 0.0) return false;
 
             double d{D(wh, alphaX_, alphaY_)};
             Vector3 f{FrConductor(Dot(wi, wh), etaI_, etaT_, k_)};
@@ -29,7 +28,7 @@ namespace Fc
             *value = (d * g / (4.0 * std::abs(wi.y) * std::abs(wo->y))) * f;
             *flags = BxDFFlags::Diffuse | BxDFFlags::Reflection;
 
-            return SampleResult::Success;
+            return true;
         }
 
         virtual double PDF(Vector3 const& wi, Vector3 const& wo) const override

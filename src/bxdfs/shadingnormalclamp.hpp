@@ -12,18 +12,18 @@ namespace Fc
             : shadingFrame_{shadingFrame}, geometryNormal_{geometryNormal}, bxdf_{bxdf}
         { }
 
-        virtual SampleResult Sample(Vector3 const& wi, ISampler& sampler, TransportMode mode, Vector3* wo, double* pdf, Vector3* value, BxDFFlags* flags) const override
+        virtual bool Sample(Vector3 const& wi, Vector2 const& pickSample, Vector2 const& directionSample, TransportMode mode, Vector3* wo, double* pdf, Vector3* value, BxDFFlags* flags) const override
         {
             double wi_wg{Dot(wi, geometryNormal_)};
             double wi_ws{Dot(wi, shadingFrame_.GetNormal())};
-            if(wi_wg * wi_ws <= 0.0) return SampleResult::Fail;
+            if(wi_wg * wi_ws <= 0.0) return false;
 
-            if(bxdf_->Sample(shadingFrame_.WorldToLocal(wi), sampler, mode, wo, pdf, value, flags) == SampleResult::Fail) return SampleResult::Fail;
+            if(!bxdf_->Sample(shadingFrame_.WorldToLocal(wi), pickSample, directionSample, mode, wo, pdf, value, flags)) return false;
             *wo = shadingFrame_.LocalToWorld(*wo);
 
             double wo_wg{Dot(*wo, geometryNormal_)};
             double wo_ws{Dot(*wo, shadingFrame_.GetNormal())};
-            if(wo_wg * wo_ws <= 0.0) return SampleResult::Fail;
+            if(wo_wg * wo_ws <= 0.0) return false;
 
             if(mode == TransportMode::Radiance)
             {
@@ -34,7 +34,7 @@ namespace Fc
                 *value *= wi_ws / wi_wg;
             }
 
-            return SampleResult::Success;
+            return true;
         }
 
         virtual double PDF(Vector3 const& wi, Vector3 const& wo) const override
