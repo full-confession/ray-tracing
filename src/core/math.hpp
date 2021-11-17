@@ -4,26 +4,23 @@
 #include <limits>
 #include <algorithm>
 
-namespace Fc
+namespace fc
 {
 
     template <typename T>
     struct TMath
     {
-        static constexpr T Pi{T(3.141592653589793)};
-        static constexpr T InvPi{T(1.0) / Pi};
+        static constexpr T pi{T(3.141592653589793)};
+        static constexpr T inv_pi{T(1.0) / pi};
 
-        static constexpr T PiOver2{Pi / T(2.0)};
-        static constexpr T PiOver4{Pi / T(4.0)};
-
-        static constexpr T DegToRad(T value)
+        static constexpr T deg_to_rad(T value)
         {
-            return value / T(180) * Pi;
+            return value / T(180) * pi;
         }
 
-        static constexpr T RadToDeg(T value)
+        static constexpr T rad_to_deg(T value)
         {
-            return value / Pi * T(180);
+            return value / pi * T(180);
         }
     };
 
@@ -42,7 +39,7 @@ namespace Fc
         };
 
         TVector3() = default;
-        TVector3(T v)
+        explicit TVector3(T v)
             : x{v}, y{v}, z{v}
         { }
         TVector3(T x, T y, T z)
@@ -209,14 +206,14 @@ namespace Fc
     }
 
     template <typename T>
-    TVector3<T> Normalize(TVector3<T> const& v)
+    TVector3<T> normalize(TVector3<T> const& v)
     {
         T length{std::sqrt(v.x * v.x + v.y * v.y + v.z * v.z)};
         return {v.x / length, v.y / length, v.z / length};
     }
 
     template <typename T>
-    T Dot(TVector3<T> const& a, TVector3<T> const& b)
+    T dot(TVector3<T> const& a, TVector3<T> const& b)
     {
         return {a.x * b.x + a.y * b.y + a.z * b.z};
     }
@@ -277,7 +274,7 @@ namespace Fc
     }
 
     template <typename T>
-    void CoordinateSystem(TVector3<T> const& v1, TVector3<T>* v2, TVector3<T>* v3)
+    void coordinate_system(TVector3<T> const& v1, TVector3<T>* v2, TVector3<T>* v3)
     {
         if(std::abs(v1.x) > std::abs(v1.y))
         {
@@ -389,7 +386,7 @@ namespace Fc
     }
 
     template <typename T>
-    TVector2<T> Normalize(TVector2<T> const& v)
+    TVector2<T> normalize(TVector2<T> const& v)
     {
         T length{std::sqrt(v.x * v.x + v.y * v.y)};
         return {v.x / length, v.y / length};
@@ -432,7 +429,7 @@ namespace Fc
         { }
 
 
-        static TMatrix4x4 Identity()
+        static TMatrix4x4 identity()
         {
             return {
                 T(1.0), T(0.0), T(0.0), T(0.0),
@@ -442,7 +439,7 @@ namespace Fc
             };
         }
 
-        static TMatrix4x4 Translate(TVector3<T> const& translation)
+        static TMatrix4x4 translate(TVector3<T> const& translation)
         {
             return {
                 T(1.0), T(0.0), T(0.0), translation.x,
@@ -452,7 +449,7 @@ namespace Fc
             };
         }
 
-        static TMatrix4x4 Scale(TVector3<T> const& scaling)
+        static TMatrix4x4 scale(TVector3<T> const& scaling)
         {
             return {
                 scaling.x, T(0.0), T(0.0), T(0.0),
@@ -462,7 +459,7 @@ namespace Fc
             };
         }
 
-        static TMatrix4x4 RotateX(T theta)
+        static TMatrix4x4 rotate_x(T theta)
         {
             T sinTheta{std::sin(theta)};
             T cosTheta{std::cos(theta)};
@@ -475,7 +472,7 @@ namespace Fc
             };
         }
 
-        static TMatrix4x4 RotateY(T theta)
+        static TMatrix4x4 rotate_y(T theta)
         {
             T sinTheta{std::sin(theta)};
             T cosTheta{std::cos(theta)};
@@ -488,7 +485,7 @@ namespace Fc
             };
         }
 
-        static TMatrix4x4 RotateZ(T theta)
+        static TMatrix4x4 rotate_z(T theta)
         {
             T sinTheta{std::sin(theta)};
             T cosTheta{std::cos(theta)};
@@ -569,7 +566,7 @@ namespace Fc
             return {(*this)[corner & 1].x, (*this)[corner & 4 ? 1 : 0].y, (*this)[corner & 2 ? 1 : 0].z};
         }
 
-        TVector3<T> Centroid() const
+        TVector3<T> centroid() const
         {
             return p_[0] * T(0.5) + p_[1] * T(0.5);
         }
@@ -602,9 +599,9 @@ namespace Fc
             return T(2.0) * (d.x * d.y + d.x * d.z + d.y * d.z);
         }
 
-        std::pair<TVector3<T>, double> BoundingSphere() const
+        std::pair<TVector3<T>, double> bounding_sphere() const
         {
-            TVector3<T> center{Centroid()};
+            TVector3<T> center{centroid()};
             return {center, Length(center - p_[1])};
         }
 
@@ -742,26 +739,26 @@ namespace Fc
         };
     };
 
-    using Math = TMath<double>;
-    using Mathf = TMath<float>;
+    using math = TMath<double>;
+    using mathf = TMath<float>;
 
-    using Vector3 = TVector3<double>;
-    using Vector3f = TVector3<float>;
-    using Vector3i = TVector3<int>;
+    using vector3 = TVector3<double>;
+    using vector3f = TVector3<float>;
+    using vector3i = TVector3<int>;
 
-    using Vector2 = TVector2<double>;
-    using Vector2f = TVector2<float>;
-    using Vector2i = TVector2<int>;
+    using vector2 = TVector2<double>;
+    using vector2f = TVector2<float>;
+    using vector2i = TVector2<int>;
 
-    using Ray3 = TRay3<double>;
-    using Ray3f = TRay3<float>;
+    using ray3 = TRay3<double>;
+    using ray3f = TRay3<float>;
 
-    using Bounds3 = TBounds3<double>;
-    using Bounds3f = TBounds3<float>;
+    using bounds3 = TBounds3<double>;
+    using bounds3f = TBounds3<float>;
 
-    using Bounds2 = TBounds2<double>;
-    using Bounds2i = TBounds2<int>;
+    using bounds2 = TBounds2<double>;
+    using bounds2i = TBounds2<int>;
 
-    using Matrix4x4 = TMatrix4x4<double>;
-    using Matrix4x4f = TMatrix4x4<float>;
+    using matrix4x4 = TMatrix4x4<double>;
+    using matrix4x4f = TMatrix4x4<float>;
 }

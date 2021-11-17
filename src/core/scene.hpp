@@ -1,265 +1,182 @@
 #pragma once
+#include "surface_point.hpp"
+#include "allocator.hpp"
+#include "light.hpp"
+#include "light_distribution.hpp"
 #include "surface.hpp"
 #include "material.hpp"
-#include "emission.hpp"
-#include "infinityarealight.hpp"
-#include "accelerationstructure.hpp"
-#include "arealight.hpp"
-#include "lightdistribution.hpp"
+#include "acceleration_structure.hpp"
+
+#include <optional>
 #include <vector>
-#include <memory>
 
-namespace Fc
+namespace fc
 {
-    class Entity
+    class scene
     {
     public:
-        Entity(std::unique_ptr<ISurface> surface, std::unique_ptr<IMaterial> material, std::unique_ptr<IEmission> emission)
-            : surface_{std::move(surface)}, material_{std::move(material)}, emission_{std::move(emission)}
-        { }
+        virtual ~scene() = default;
 
-        ISurface const* GetSurface() const
-        {
-            return surface_.get();
-        }
+        virtual bounds3 get_bounds() const = 0;
 
-        IMaterial const* GetMaterial() const
-        {
-            return material_.get();
-        }
-
-        IEmission const* GetEmission() const
-        {
-            return emission_.get();
-        }
-
-        void SetAreaLight(AreaLight const* areaLight)
-        {
-            areaLight_ = areaLight;
-        }
-
-        AreaLight const* GetAreaLight() const
-        {
-            return areaLight_;
-        }
-
-    private:
-        std::unique_ptr<ISurface> surface_{};
-        std::unique_ptr<IMaterial> material_{};
-        std::unique_ptr<IEmission> emission_{};
-        AreaLight const* areaLight_{};
-    };
-
-    class Primitive
-    {
-    public:
-        Primitive(Entity const* entity, std::uint32_t primitive)
-            : entity_{entity}, primitive_{primitive}
-        { }
-
-        Entity const* GetEntity() const
-        {
-            return entity_;
-        }
-
-        Bounds3f GetBounds() const
-        {
-            return entity_->GetSurface()->GetBounds(primitive_);
-        }
-
-        RaycastResult Raycast(Ray3 const& ray, double tMax, double* tHit) const
-        {
-            return entity_->GetSurface()->Raycast(primitive_, ray, tMax, tHit);
-        }
-
-        RaycastResult Raycast(Ray3 const& ray, double tMax, double* tHit, SurfacePoint* p) const
-        {
-            return entity_->GetSurface()->Raycast(primitive_, ray, tMax, tHit, p);
-        }
-
-    private:
-        Entity const* entity_{};
-        std::uint32_t primitive_{};
-    };
-
-    class IScene
-    {
-    public:
-        virtual ~IScene() = default;
-
-        virtual bool Raycast(SurfacePoint const& point, Vector3 const& direction, SurfacePoint* intesectionPoint) const = 0;
-        virtual bool Visibility(SurfacePoint const& pointA, SurfacePoint const& pointB) const = 0;
-        virtual bool Visibility(SurfacePoint const& point, Vector3 const& direction) const = 0;
-
-        virtual ILight const* GetInfinityAreaLight() const = 0;
-
-        virtual ISpatialLightDistribution const* GetSpatialLightDistribution() const = 0;
+        virtual std::optional<surface_point*> raycast(surface_point const& p, vector3 const& w, allocator_wrapper& allocator) const = 0;
+        virtual bool visibility(surface_point const& p0, surface_point const& p1) const = 0;
+        virtual bool visibility(surface_point const& p, vector3 const& w) const = 0;
 
         virtual infinity_area_light const* get_infinity_area_light() const = 0;
+        virtual light_distribution const* get_light_distribution() const = 0;
+        virtual spatial_light_distribution const* get_spatial_light_distribution() const = 0;
     };
 
-    class Scene : public IScene
+
+    class entity_scene : public scene
     {
     public:
-        Scene(std::vector<Entity> entities, IAccelerationStructureFactory<Primitive> const& asf, std::unique_ptr<InfinityAreaLight> infinityAreaLight)
+        entity_scene(std::vector<entity> entities, std::shared_ptr<infinity_area_light> infinity_area_light,
+            acceleration_structure_factory const& acceleration_structure_factory, light_distribution_factory const& light_distribution_factory, spatial_light_distribution_factory const& spatial_light_distribution_factory)
+            : entities_{std::move(entities)}, infinity_area_light_{std::move(infinity_area_light)}
         {
-            std::uint64_t primitiveCount{};
-            for(auto& entity : entities)
+            std::uint64_t total_primitive_count{};
+            for(auto const& entity : entities_)
             {
-                primitiveCount += entity.GetSurface()->GetPrimitiveCount();
+                total_primitive_count += entity.surface->get_primitive_count();
+            }
 
-                if(entity.GetEmission() != nullptr)
+            std::vector<light const*> lights{};
+            std::vector<entity_primitive> entity_primitives{};
+            entity_primitives.reserve(total_primitive_count);
+
+            for(auto const& entity : entities_)
+            {
+                std::uint32_t surface_primtive_count{entity.surface->get_primitive_count()};
+                for(std::uint32_t i{}; i < surface_primtive_count; ++i)
                 {
-                    auto areaLight{std::make_unique<AreaLight>(entity.GetSurface(), entity.GetEmission())};
-                    entity.SetAreaLight(areaLight.get());
-                    lights_.push_back(std::move(areaLight));
+                    entity_primitives.push_back({&entity, i});
+                }
+
+                if(entity.area_light != nullptr)
+                {
+                    entity.surface->prepare_for_sampling();
+                    lights.push_back(entity.area_light.get());
                 }
             }
 
-            std::vector<Primitive> primitives{};
-            primitives.reserve(primitiveCount);
-            for(auto const& entity : entities)
+            acceleration_structure_ = acceleration_structure_factory.create(std::move(entity_primitives));
+
+            if(infinity_area_light_ != nullptr)
             {
-                std::uint32_t surfacePrimitiveCount{entity.GetSurface()->GetPrimitiveCount()};
-                for(std::uint32_t i{}; i < surfacePrimitiveCount; ++i)
-                {
-                    primitives.emplace_back(&entity, i);
-                }
+                lights.push_back(infinity_area_light_.get());
+                infinity_area_light_->set_scene_bounds(acceleration_structure_->get_bounds());
             }
 
-            entities_ = std::move(entities);
-            accelerationStructure_ = asf.Create(std::move(primitives));
-
-
-            if(infinityAreaLight)
-            {
-                auto [center, radius] {accelerationStructure_->GetRootBounds().BoundingSphere()};
-                infinityAreaLight->Preprocess(center, radius);
-                infinityAreaLight_ = infinityAreaLight.get();
-                lights_.emplace_back(infinityAreaLight.release());
-            }
-
-
-            std::vector<ILight const*> lights{};
-            lights.reserve(lights_.size());
-            for(auto const& light : lights_)
-            {
-                lights.push_back(light.get());
-            }
-
-            lightDistribution_.reset(new PowerLightDistribution{lights});
-            spatialLightDistribution_.reset(new VoxelLightDistribution(lights, accelerationStructure_->GetRootBounds(), {16, 16, 16}, 64));
+            light_distribution_ = light_distribution_factory.create(lights);
+            spatial_light_distribution_ = spatial_light_distribution_factory.create(std::move(lights));
         }
 
-        virtual bool Raycast(SurfacePoint const& point, Vector3 const& direction, SurfacePoint* intesectionPoint) const override
+        virtual bounds3 get_bounds() const override
         {
-            Ray3 ray{point.GetPosition(), direction};
-            if(Dot(point.GetNormal(), direction) > 0.0)
+            return acceleration_structure_->get_bounds();
+        }
+
+        virtual std::optional<surface_point*> raycast(surface_point const& p, vector3 const& w, allocator_wrapper& allocator) const override
+        {
+            std::optional<surface_point*> result{};
+
+            ray3 ray{p.get_position(), w};
+            if(dot(p.get_normal(), w) > 0.0)
             {
-                ray.origin += point.GetNormal() * epsilon_;
+                ray.origin += p.get_normal() * epsilon_;
             }
             else
             {
-                ray.origin -= point.GetNormal() * epsilon_;
+                ray.origin -= p.get_normal() * epsilon_;
             }
 
-            Primitive const* primitive{};
-            if(accelerationStructure_->Raycast(ray, std::numeric_limits<double>::infinity(), &primitive, intesectionPoint) == RaycastResult::Hit)
+            auto raycast_surface_point_result{acceleration_structure_->raycast_surface_point(ray, std::numeric_limits<double>::infinity(), allocator)};
+            if(raycast_surface_point_result)
             {
-                intesectionPoint->SetMaterial(primitive->GetEntity()->GetMaterial());
-                intesectionPoint->SetLight(primitive->GetEntity()->GetAreaLight());
-                return true;
+                surface_point* p{raycast_surface_point_result->p};
+                entity const* e{raycast_surface_point_result->entity_primitive.entity};
+
+                p->set_light(e->area_light.get());
+                p->set_material(e->material.get());
+
+                result = raycast_surface_point_result->p;
+            }
+            return result;
+        }
+
+        virtual bool visibility(surface_point const& p0, surface_point const& p1) const override
+        {
+            vector3 position0{p0.get_position()};
+            vector3 position1{p1.get_position()};
+            vector3 normal0{p0.get_normal()};
+            vector3 normal1{p1.get_normal()};
+
+            vector3 to1{position1 - position0};
+            if(dot(to1, normal0) > 0.0)
+            {
+                position0 += normal0 * epsilon_;
             }
             else
             {
-                return false;
+                position0 -= normal0 * epsilon_;
             }
-        }
 
-        virtual bool Visibility(SurfacePoint const& point, Vector3 const& direction) const override
-        {
-            Ray3 ray{point.GetPosition(), direction};
-            if(Dot(point.GetNormal(), direction) > 0.0)
+            if(dot(to1, normal1) < 0.0)
             {
-                ray.origin += point.GetNormal() * epsilon_;
+                position1 += normal1 * epsilon_;
             }
             else
             {
-                ray.origin -= point.GetNormal() * epsilon_;
+                position1 -= normal1 * epsilon_;
             }
 
-            return accelerationStructure_->Raycast(ray, std::numeric_limits<double>::infinity()) == RaycastResult::Hit ? false : true;
+            to1 = position1 - position0;
+            double length{Length(to1)};
+            vector3 w01{to1 / length};
+            ray3 ray{position0, w01};
+
+            return !acceleration_structure_->raycast(ray, length);
         }
 
-        virtual bool Visibility(SurfacePoint const& pointA, SurfacePoint const& pointB) const override
+        virtual bool visibility(surface_point const& p, vector3 const& w) const override
         {
-            Vector3 positionA{pointA.GetPosition()};
-            Vector3 positionB{pointB.GetPosition()};
-            Vector3 normalA{pointA.GetNormal()};
-            Vector3 normalB{pointB.GetNormal()};
-
-            Vector3 toB{positionB - positionA};
-            if(Dot(toB, normalA) > 0.0)
+            ray3 ray{p.get_position(), w};
+            if(dot(p.get_normal(), w) > 0.0)
             {
-                positionA += normalA * epsilon_;
+                ray.origin += p.get_normal() * epsilon_;
             }
             else
             {
-                positionA -= normalA * epsilon_;
+                ray.origin -= p.get_normal() * epsilon_;
             }
 
-            if(Dot(toB, normalB) < 0.0)
-            {
-                positionB += normalB * epsilon_;
-            }
-            else
-            {
-                positionB -= normalB * epsilon_;
-            }
-
-            toB = positionB - positionA;
-            double length{Length(toB)};
-            Vector3 direction{toB / length};
-            Ray3 ray{positionA, direction};
-
-            return accelerationStructure_->Raycast(ray, length) == RaycastResult::Hit ? false : true;
+            return !acceleration_structure_->raycast(ray, std::numeric_limits<double>::infinity());
         }
 
-        int GetLightCount() const
+        virtual infinity_area_light const* get_infinity_area_light() const override
         {
-            return static_cast<int>(lights_.size());
+            return infinity_area_light_.get();
         }
 
-        ILight const* GetLight(int index) const
+        virtual light_distribution const* get_light_distribution() const override
         {
-            return lights_[index].get();
+            return light_distribution_.get();
         }
 
-        virtual ILight const* GetInfinityAreaLight() const override
+        virtual spatial_light_distribution const* get_spatial_light_distribution() const override
         {
-            return infinityAreaLight_;
-        }
-
-        ILightDistribution const* GetLightDistribution() const
-        {
-            return lightDistribution_.get();
-        }
-
-        virtual ISpatialLightDistribution const* GetSpatialLightDistribution() const override
-        {
-            return spatialLightDistribution_.get();
+            return spatial_light_distribution_.get();
         }
 
     private:
-        std::vector<Entity> entities_{};
-        std::vector<std::unique_ptr<ILight>> lights_{};
+        std::vector<entity> entities_{};
+        std::shared_ptr<infinity_area_light> infinity_area_light_{};
+        std::unique_ptr<acceleration_structure> acceleration_structure_{};
 
-        ILight const* infinityAreaLight_{};
-
-        std::unique_ptr<IAccelerationStructure<Primitive>> accelerationStructure_{};
-
-        std::shared_ptr<ILightDistribution> lightDistribution_{};
-        std::shared_ptr<ISpatialLightDistribution> spatialLightDistribution_{};
+        std::unique_ptr<light_distribution> light_distribution_{};
+        std::unique_ptr<spatial_light_distribution> spatial_light_distribution_{};
 
         double epsilon_{0.000001};
     };

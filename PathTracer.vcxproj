@@ -21,68 +21,63 @@
   <ItemGroup>
     <ClInclude Include="src\accelerationstructures\bruteforce.hpp" />
     <ClInclude Include="src\accelerationstructures\bvh.hpp" />
-    <ClInclude Include="src\bxdfs\lambertian.hpp" />
-    <ClInclude Include="src\bxdfs\mix.hpp" />
-    <ClInclude Include="src\bxdfs\normalmapbxdf.hpp" />
-    <ClInclude Include="src\bxdfs\roughconductor.hpp" />
-    <ClInclude Include="src\bxdfs\roughplastic.hpp" />
-    <ClInclude Include="src\bxdfs\shadingnormal.hpp" />
-    <ClInclude Include="src\bxdfs\shadingnormalclamp.hpp" />
-    <ClInclude Include="src\cameras\perspective.hpp" />
-    <ClInclude Include="src\core\accelerationstructure.hpp" />
+    <ClInclude Include="src\acceleration_structures\brute_force_acceleration_structure.hpp" />
+    <ClInclude Include="src\allocators\fixed_size_allocator.hpp" />
+    <ClInclude Include="src\allocators\paged_allocator.hpp" />
+    <ClInclude Include="src\bsdfs\frame_bsdf.hpp" />
+    <ClInclude Include="src\bsdfs\lambertian_reflection_bsdf.hpp" />
+    <ClInclude Include="src\bsdfs\mirror_bsdf.hpp" />
+    <ClInclude Include="src\core\acceleration_structure.hpp" />
     <ClInclude Include="src\core\allocator.hpp" />
-    <ClInclude Include="src\core\arealight.hpp" />
     <ClInclude Include="src\core\assets.hpp" />
-    <ClInclude Include="src\core\bxdf.hpp" />
-    <ClInclude Include="src\core\camera.hpp" />
-    <ClInclude Include="src\core\common.hpp" />
-    <ClInclude Include="src\core\emission.hpp" />
-    <ClInclude Include="src\core\export.hpp" />
+    <ClInclude Include="src\core\bsdf.hpp" />
+    <ClInclude Include="src\core\color.hpp" />
+    <ClInclude Include="src\core\distribution.hpp" />
     <ClInclude Include="src\core\frame.hpp" />
     <ClInclude Include="src\core\image.hpp" />
-    <ClInclude Include="src\core\infinityarealight.hpp" />
     <ClInclude Include="src\core\integrator.hpp" />
     <ClInclude Include="src\core\light.hpp" />
-    <ClInclude Include="src\core\lightdistribution.hpp" />
+    <ClInclude Include="src\core\light_distribution.hpp" />
     <ClInclude Include="src\core\material.hpp" />
     <ClInclude Include="src\core\measurement.hpp" />
-    <ClInclude Include="src\core\mesh.hpp" />
-    <ClInclude Include="src\core\random.hpp" />
-    <ClInclude Include="src\core\renderer.hpp" />
-    <ClInclude Include="src\core\rendertarget.hpp" />
     <ClInclude Include="src\core\math.hpp" />
-    <ClInclude Include="src\core\sampler.hpp" />
     <ClInclude Include="src\core\sampling.hpp" />
-    <ClInclude Include="src\core\scene.hpp" />
     <ClInclude Include="src\core\surface.hpp" />
-    <ClInclude Include="src\core\surfacepoint.hpp" />
     <ClInclude Include="src\core\texture.hpp" />
     <ClInclude Include="src\core\transform.hpp" />
-    <ClInclude Include="src\demoscenes.hpp" />
-    <ClInclude Include="src\integrators\backward.hpp" />
-    <ClInclude Include="src\integrators\bidir.hpp" />
-    <ClInclude Include="src\integrators\forward.hpp" />
-    <ClInclude Include="src\integrators\forwardlight.hpp" />
-    <ClInclude Include="src\integrators\forwardmis.hpp" />
+    <ClInclude Include="src\images\raw_image.hpp" />
+    <ClInclude Include="src\images\rgb32_image.hpp" />
+    <ClInclude Include="src\images\rgb8_image.hpp" />
+    <ClInclude Include="src\images\srgb8_image.hpp" />
+    <ClInclude Include="src\lib\pcg_extras.hpp" />
+    <ClInclude Include="src\lib\pcg_random.hpp" />
+    <ClInclude Include="src\lib\pcg_uint128.hpp" />
+    <ClInclude Include="src\lights\const_infinity_area_light.hpp" />
+    <ClInclude Include="src\lights\const_diffuse_area_light.hpp" />
+    <ClInclude Include="src\lights\texture_infinity_area_light.hpp" />
+    <ClInclude Include="src\light_distributions\uniform_light_distribution.hpp" />
+    <ClInclude Include="src\materials\diffuse_material.hpp" />
+    <ClInclude Include="src\materials\mirror_material.hpp" />
+    <ClInclude Include="src\renderer\camera.hpp" />
+    <ClInclude Include="src\renderer\cameras\perspective_camera.hpp" />
+    <ClInclude Include="src\renderer\renderer.hpp" />
+    <ClInclude Include="src\core\sampler.hpp" />
+    <ClInclude Include="src\core\scene.hpp" />
+    <ClInclude Include="src\core\surface_point.hpp" />
+    <ClInclude Include="src\integrators\forward_bsdf_integrator.hpp" />
+    <ClInclude Include="src\integrators\forward_mis_integrator.hpp" />
     <ClInclude Include="src\lib\json.hpp" />
-    <ClInclude Include="src\lights\diffuseemission.hpp" />
-    <ClInclude Include="src\materials\diffuse.hpp" />
-    <ClInclude Include="src\bxdfs\frame.hpp" />
-    <ClInclude Include="src\materials\metal.hpp" />
-    <ClInclude Include="src\materials\metalplastic.hpp" />
-    <ClInclude Include="src\materials\roughplastic.hpp" />
-    <ClInclude Include="src\samplers\random.hpp" />
-    <ClInclude Include="src\surfaces\plane.hpp" />
-    <ClInclude Include="src\surfaces\sphere.hpp" />
-    <ClInclude Include="src\surfaces\mesh.hpp" />
-    <ClInclude Include="src\textures\checkertexture.hpp" />
-    <ClInclude Include="src\textures\consttexture.hpp" />
-    <ClInclude Include="src\textures\imagetexture.hpp" />
-    <ClInclude Include="src\textures\uvtexture.hpp" />
+    <ClInclude Include="src\renderer\renderer_sampler.hpp" />
+    <ClInclude Include="src\renderer\render_target.hpp" />
+    <ClInclude Include="src\samplers\random_sampler.hpp" />
+    <ClInclude Include="src\samplers\stratified_sampler.hpp" />
+    <ClInclude Include="src\surfaces\plane_surface.hpp" />
+    <ClInclude Include="src\surfaces\sphere_surface.hpp" />
+    <ClInclude Include="src\textures\const_texture.hpp" />
+    <ClInclude Include="src\textures\image_texture.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\core\assets.cpp" />
-    <ClCompile Include="src\core\export.cpp" />
     <ClCompile Include="src\main.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -100,26 +95,26 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>

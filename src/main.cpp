@@ -1,108 +1,53 @@
-
-#include "demoscenes.hpp"
+#include "renderer/renderer.hpp"
+#include "renderer/cameras/perspective_camera.hpp"
+#include "integrators/forward_mis_integrator.hpp"
+#include "integrators/forward_bsdf_integrator.hpp"
+#include "surfaces/sphere_surface.hpp"
+#include "surfaces/plane_surface.hpp"
+#include "materials/diffuse_material.hpp"
+#include "materials/mirror_material.hpp"
+#include "acceleration_structures/brute_force_acceleration_structure.hpp"
+#include "light_distributions/uniform_light_distribution.hpp"
+#include "lights/const_diffuse_area_light.hpp"
+#include "lights/const_infinity_area_light.hpp"
+#include "lights/texture_infinity_area_light.hpp"
+#include "textures/image_texture.hpp"
 #include "core/assets.hpp"
-#include "core/renderer.hpp"
-#include "core/scene.hpp"
-using namespace Fc;
-
+#include "samplers/stratified_sampler.hpp"
+#include "allocators/fixed_size_allocator.hpp"
 int main()
 {
-    Assets assets{};
-    std::vector<Entity> entities{};
-    entities.push_back(Entity{
-        std::make_unique<PlaneSurface>(Transform{}, Vector2{10.0, 10.0}),
-        std::make_unique<DiffuseMaterial>(std::shared_ptr<ITextureRGB>{new CheckerTextureRGB{{0.8, 0.8, 0.8}, {0.2, 0.2, 0.2}, 10.0}}),
-        nullptr
-    });
-    entities.push_back(Entity{
-        std::make_unique<SphereSurface>(Transform::Translation({0.0, 1.0, 0.0}), 1.0),
-        std::make_unique<DiffuseMaterial>(std::shared_ptr<ITextureRGB>{new ConstTextureRGB{{0.2, 0.4, 0.8}}}),
-        nullptr
-    });
+    std::shared_ptr<fc::sphere_surface> surface{new fc::sphere_surface{{{0.0, 1.0, 0.0}}, 1.0}};
+    std::shared_ptr<fc::diffuse_material> diffuse_material{new fc::diffuse_material{}};
+    std::shared_ptr<fc::mirror_material> mirror_material{new fc::mirror_material{}};
+    //std::shared_ptr<fc::area_light> area_light{new fc::const_diffuse_area_light{surface.get(), {1.0, 1.0, 1.0}, 1.0}};
 
-    BVHFactory<Primitive> factory{};
+    std::shared_ptr<fc::plane_surface> surface2{new fc::plane_surface{{}, {10.0, 10.0}}};
 
-    auto image = assets.GetImage("env-loft-hall");
-    //auto image = assets.GetImage("dikhololo_night");
-    auto texture = std::shared_ptr<ImageTexture>(new ImageTexture{image, ReconstructionFilter::Bilinear, 2});
-    auto areaLight = std::make_unique<InfinityAreaLight>(Transform{}, texture, image->GetResolution());
-    std::shared_ptr<IScene> scene{new Scene{std::move(entities), factory, std::move(areaLight)}};
+    std::vector<fc::entity> entities{};
+    entities.push_back({surface, mirror_material, nullptr});
+    entities.push_back({surface2, diffuse_material, nullptr});
 
+    fc::brute_force_acceleration_structure_factory bfasf{};
+    fc::uniform_light_distribution_factory uldf{};
+    fc::uniform_spatial_light_distribution_factory usldf{};
 
-    PerspectiveCameraFactory cameraFactory{Transform::TranslationRotationDeg({-4.0, 2.0, -4.0}, {15.0, 45.0, 0.0}), Math::DegToRad(45.0)};
-    std::shared_ptr<IIntegrator2> integrator{new ForwardMISIntegrator{10}};
-    ImageRenderer renderer{{512, 512}, &cameraFactory, integrator, scene, 16};
-    renderer.Run(512);
-    renderer.Export("normals");
+    fc::assets assets{};
+    auto image{assets.get_image("dikhololo_night")};
+    std::shared_ptr<fc::image_texture_2d_rgb> texture{new fc::image_texture_2d_rgb{image, fc::reconstruction_filter::bilinear, 4}};
+    std::shared_ptr<fc::texture_infinity_area_light> infinity_area_light{new fc::texture_infinity_area_light{{}, texture, 1.0, image->get_resolution()}};
 
-    //std::shared_ptr<X> x{new X{}};
-    //ImageTexture it{x, ReconstructionFilter::Bilinear, 4};
+    //std::shared_ptr<fc::const_infinity_area_light> infinity_area_light{new fc::const_infinity_area_light{{0.5, 0.5, 0.5}, 0.3}};
 
-    //RenderTarget rt{{2, 2}};
-    //for(int i{}; i < 2; ++i)
-    //{
-    //    for(int j{}; j < 2; ++j)
-    //    {
-    //        rt.AddSample({j, i}, it.BoxFilter({j / 2.0, i / 2.0}, {(j + 1) / 2.0, (i + 1) / 2.0}));
-    //    }
-    //}
-    //rt.AddSampleCount(1);
-
-    //ExportPPM("sample", rt);
+    std::shared_ptr<fc::entity_scene> scene{new fc::entity_scene{std::move(entities), infinity_area_light, bfasf, uldf, usldf}};
 
 
-    //Assets assets{};
-    //auto image{assets.GetImage("env-loft-hall")};
-
-    ////std::shared_ptr<ImageTexture> texture{new ImageTexture{image, ReconstructionFilter::Bilinear, 4}};
-    //std::shared_ptr<ConstTexture>texture{new ConstTexture{{1.0, 1.0, 1.0}}};
-
-    //Vector2i res{image->GetResolution()};
-    //Vector2i resDist{1024, 512};
-    //std::vector<std::vector<double>> func{};
-    //func.reserve(resDist.y);
-    //double xx{static_cast<double>(resDist.x)};
-    //double yy{static_cast<double>(resDist.y)};
-
-
-    //Vector3 sum{};
-    //for(int i{}; i < resDist.y; ++i)
-    //{
-    //    auto& row{func.emplace_back()};
-    //    double sinTheta{std::sin(Math::Pi * (i + 0.5) / resDist.y)};
-    //    row.reserve(resDist.x);
-    //    for(int j{}; j < resDist.x; ++j)
-    //    {
-    //        Vector3 integral{texture->Integrate({j / xx, i / yy}, {(j + 1) / xx, (i + 1) / yy})};
-    //        sum += integral * (sinTheta * Math::Pi * Math::Pi * 2.0);
-    //        row.push_back(y(integral)/* * sinTheta*/);
-    //        //row.push_back(1.0);
-    //    }
-    //}
-
-    //Distribution2D dist{std::move(func)};
-
-    //RenderTarget rt{res};
-
-    //Random rand{0};
-
-    //for(int i{}; i < 100'000; ++i)
-    //{
-    //    Vector2 u{rand.UniformFloat(), rand.UniformFloat()};
-    //    Vector2 uv{dist.Sample(u)};
-
-
-    //    int x = std::min(static_cast<int>(uv.x * res.x), res.x - 1);
-    //    int y = std::min(static_cast<int>(uv.y * res.y), res.y - 1);
-
-    //    rt.AddSample({x, y}, Vector3{1.0, 1.0, 1.0});
-    //}
-    //rt.AddSampleCount(1);
-
-    //ExportPPM("sample", rt);
-
-
-    //Normals();
+    fc::perspective_camera_factory camera_factory{{{-4.0, 2.0, -4.0}, {fc::math::deg_to_rad(15.0), fc::math::deg_to_rad(45.0), 0.0}}, fc::math::deg_to_rad(45.0)};
+    std::shared_ptr<fc::forward_mis_integrator> integrator{new fc::forward_mis_integrator{10}};
+    //std::shared_ptr<fc::forward_bsdf_integrator> integrator{new fc::forward_bsdf_integrator{10}};
+    fc::renderer renderer{{512, 512}, camera_factory, integrator, scene, 16, 0};
+    renderer.run(4096);
+    renderer.export_image("normals");
 
     return 0;
 }

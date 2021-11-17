@@ -1,181 +1,54 @@
 #pragma once
 #include "math.hpp"
-#include "random.hpp"
 
-namespace Fc
+namespace fc
 {
-    inline Vector2 SampleDiskConcentric(Vector2 const& u)
+    inline vector2 sample_disk_concentric(vector2 const& u)
     {
-        Vector2 uOffset{u * 2.0 - Vector2{1.0, 1.0}};
-        if(uOffset.x == 0.0 && uOffset.y == 0.0)
+        vector2 u_offset{u * 2.0 - vector2{1.0, 1.0}};
+        if(u_offset.x == 0.0 && u_offset.y == 0.0)
         {
             return {0.0, 0.0};
         }
 
         double theta;
         double r;
-        if(std::abs(uOffset.x) > std::abs(uOffset.y))
+
+        if(std::abs(u_offset.x) > std::abs(u_offset.y))
         {
-            r = uOffset.x;
-            theta = Math::PiOver4 * (uOffset.y / uOffset.x);
+            r = u_offset.x;
+            theta = math::pi * u_offset.y / (4.0 * u_offset.x);
         }
         else
         {
-            r = uOffset.y;
-            theta = Math::PiOver2 - Math::PiOver4 * (uOffset.x / uOffset.y);
+            r = u_offset.y;
+            theta = math::pi / 2.0 - math::pi * u_offset.x / (4.0 * u_offset.y);
         }
 
-        return r * Vector2{std::cos(theta), std::sin(theta)};
+        return r * vector2{std::cos(theta), std::sin(theta)};
     }
 
-    inline Vector3 SampleHemisphereCosineWeighted(Vector2 const& u)
+    inline vector3 sample_hemisphere_cosine_weighted(vector2 const& u)
     {
-        Vector2 d{SampleDiskConcentric(u)};
-        double z{std::sqrt(std::max(0.0, 1.0 - d.x * d.x - d.y * d.y))};
-        return {d.x, z, d.y};
+        vector2 d{sample_disk_concentric(u)};
+        return {d.x, std::sqrt(std::max(0.0, 1.0 - d.x * d.x - d.y * d.y)), d.y};
     }
 
-    inline Vector3 SampleSphereUniform(Vector2 const& u)
+    inline double pdf_hemisphere_cosine_weighted(vector3 const& w)
+    {
+        return w.y * math::inv_pi;
+    }
+
+    inline vector3 sample_sphere_uniform(vector2 const& u)
     {
         double z{1.0 - 2.0 * u.x};
         double r{std::sqrt(std::max(0.0, 1.0 - z * z))};
-        double phi{2.0 * Math::Pi * u.y};
-
+        double phi{2.0 * math::pi * u.y};
         return {r * std::cos(phi), z, r * std::sin(phi)};
     }
 
-    inline double SampleSphereUniformPDF()
+    inline double pdf_sphere_uniform()
     {
-        return 1.0 / (4.0 * Math::Pi);
+        return 1.0 / (4.0 * math::pi);
     }
-
-    class Distribution1D
-    {
-    public:
-        explicit Distribution1D(std::vector<double> function)
-            : function_{std::move(function)}
-        {
-            std::size_t n{function_.size()};
-            cdf_.resize(n + 1);
-            for(std::size_t i{1}; i <= n; ++i)
-            {
-                cdf_[i] = cdf_[i - 1] + function_[i - 1];
-            }
-
-            functionIntegral_ = cdf_[n] / static_cast<double>(n);
-
-            if(functionIntegral_ != 0.0)
-            {
-                for(std::size_t i{1}; i <= n; ++i)
-                {
-                    cdf_[i] /= static_cast<double>(n) * functionIntegral_;
-                }
-            }
-            else
-            {
-                functionIntegral_ = 1.0;
-                for(std::size_t i{1}; i <= n; ++i)
-                {
-                    function_[i - 1] = 1.0;
-                    cdf_[i] = static_cast<double>(i) / static_cast<double>(n);
-                }
-            }
-        }
-
-        double GetFunctionIntegral() const
-        {
-            return functionIntegral_;
-        }
-
-        double SampleContinuous(double u, double* pdf = nullptr, std::size_t* offset = nullptr) const
-        {
-            u = std::clamp(u, 0.0, DOUBLE_ONE_MINUS_EPSILON);
-            auto it{std::upper_bound(cdf_.begin(), cdf_.end(), u)};
-
-            std::size_t upperIndex{static_cast<std::size_t>(it - cdf_.begin())};
-            std::size_t lowerIndex{upperIndex - 1};
-
-            double du{(u - cdf_[lowerIndex]) / (cdf_[upperIndex] - cdf_[lowerIndex])};
-
-            if(pdf) *pdf = function_[lowerIndex] / functionIntegral_;
-            if(offset) *offset = lowerIndex;
-            return (static_cast<double>(lowerIndex) + du) / static_cast<double>(function_.size());
-        }
-
-        double PDFContinuous(double x, std::size_t* offset = nullptr) const
-        {
-            std::size_t lowerIndex{std::clamp(static_cast<std::size_t>(x * static_cast<double>(function_.size())), std::size_t{0}, function_.size() - 1)};
-            if(offset != nullptr) *offset = lowerIndex;
-            return function_[lowerIndex] / functionIntegral_;
-        }
-
-        std::size_t SampleDiscrete(double u, double* pdf = nullptr) const
-        {
-            u = std::clamp(u, 0.0, DOUBLE_ONE_MINUS_EPSILON);
-            auto it{std::upper_bound(cdf_.begin(), cdf_.end(), u)};
-            std::size_t upperIndex{static_cast<std::size_t>(it - cdf_.begin())};
-            std::size_t lowerIndex{upperIndex - 1};
-
-            if(pdf) *pdf = function_[lowerIndex] / (functionIntegral_ * static_cast<double>(function_.size()));
-            return lowerIndex;
-        }
-
-        double PDFDiscrete(std::size_t index) const
-        {
-            return function_[index] / (functionIntegral_ * static_cast<double>(function_.size()));
-        }
-
-    private:
-        std::vector<double> function_{};
-        std::vector<double> cdf_{};
-        double functionIntegral_{};
-    };
-
-    class Distribution2D
-    {
-    public:
-        explicit Distribution2D(std::vector<std::vector<double>> function)
-        {
-            xDistributions_.reserve(function.size());
-            for(std::size_t i{}; i < function.size(); ++i)
-            {
-                xDistributions_.emplace_back(new Distribution1D{std::move(function[i])});
-            }
-
-            std::vector<double> yFunc{};
-            yFunc.reserve(function.size());
-            for(std::size_t i{}; i < function.size(); ++i)
-            {
-                yFunc.push_back(xDistributions_[i]->GetFunctionIntegral());
-            }
-            yDistribution_.reset(new Distribution1D{std::move(yFunc)});
-        }
-
-
-        Vector2 Sample(Vector2 const& u, double* pdf = nullptr) const
-        {
-            double pdf_y{};
-            double pdf_x{};
-            std::size_t x{};
-            double sy{yDistribution_->SampleContinuous(u.y, &pdf_y, &x)};
-            double sx{xDistributions_[x]->SampleContinuous(u.x, &pdf_x, nullptr)};
-
-
-            if(pdf) *pdf = pdf_y * pdf_x;
-            return {sx, sy};
-        }
-
-        double PDF(Vector2 const& xy) const
-        {
-            std::size_t x{};
-            double pdf_y{yDistribution_->PDFContinuous(xy.y, &x)};
-            double pdf_x{xDistributions_[x]->PDFContinuous(xy.x)};
-
-            return pdf_x * pdf_y;
-        }
-
-    private:
-        std::vector<std::unique_ptr<Distribution1D>> xDistributions_{};
-        std::unique_ptr<Distribution1D> yDistribution_{};
-    };
 }

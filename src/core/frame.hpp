@@ -1,27 +1,28 @@
 #pragma once
 #include "math.hpp"
 
-namespace Fc
+
+namespace fc
 {
-    class Frame
+    class frame
     {
     public:
-        Frame(Vector3 const& normal)
+        explicit frame(vector3 const& normal)
             : normal_{normal}
         {
-            CoordinateSystem(normal_, &tangent_, &bitangent_);
+            coordinate_system(normal, &tangent_, &bitangent_);
         }
 
-        Frame(Vector3 const& tangent, Vector3 const& normal, Vector3 const& bitangent)
+        explicit frame(vector3 const& tangent, vector3 const& normal, vector3 const& bitangent)
             : tangent_{tangent}, normal_{normal}, bitangent_{bitangent}
         { }
 
-        Vector3 WorldToLocal(Vector3 const& w) const
+        vector3 world_to_local(vector3 const& w) const
         {
-            return {Dot(w, tangent_), Dot(w, normal_), Dot(w, bitangent_)};
+            return {dot(w, tangent_), dot(w, normal_), dot(w, bitangent_)};
         }
 
-        Vector3 LocalToWorld(Vector3 const& w) const
+        vector3 local_to_world(vector3 const& w) const
         {
             return {
                 tangent_.x * w.x + normal_.x * w.y + bitangent_.x * w.z,
@@ -30,24 +31,24 @@ namespace Fc
             };
         }
 
-        Vector3 const& GetTangent() const
+        vector3 const& get_tangent() const
         {
             return tangent_;
         }
 
-        Vector3 const& GetNormal() const
+        vector3 const& get_normal() const
         {
             return normal_;
         }
 
-        Vector3 const& GetBitangent() const
+        vector3 const& get_bitangent() const
         {
             return bitangent_;
         }
 
     private:
-        Vector3 tangent_{};
-        Vector3 normal_{};
-        Vector3 bitangent_{};
+        vector3 tangent_{};
+        vector3 normal_{};
+        vector3 bitangent_{};
     };
 }

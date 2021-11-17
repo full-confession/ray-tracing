@@ -1,14 +1,15 @@
 #pragma once
-#include "bxdf.hpp"
-#include "surfacepoint.hpp"
+#include "bsdf.hpp"
+#include "surface_point.hpp"
 #include "allocator.hpp"
-namespace Fc
+
+namespace fc
 {
-    class IMaterial
+    class material
     {
     public:
-        virtual ~IMaterial() = default;
+        virtual ~material() = default;
 
-        virtual IBxDF const* Evaluate(SurfacePoint const& p, Allocator& allocator) const = 0;
+        virtual bsdf const* evaluate(surface_point const& p, allocator_wrapper& allocator) const = 0;
     };
 }
