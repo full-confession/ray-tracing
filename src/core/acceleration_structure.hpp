@@ -32,7 +32,7 @@ namespace fc
     public:
         virtual ~acceleration_structure() = default;
 
-        virtual bounds3 const& get_bounds() const = 0;
+        virtual bounds3 get_bounds() const = 0;
         virtual std::optional<acceleration_structure_raycast_surface_point_result> raycast_surface_point(ray3 const& ray, double t_max, allocator_wrapper& allocator) const = 0;
         virtual bool raycast(ray3 const& ray, double t_max) const = 0;
     };

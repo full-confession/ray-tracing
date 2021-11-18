@@ -22,11 +22,13 @@
     <ClInclude Include="src\accelerationstructures\bruteforce.hpp" />
     <ClInclude Include="src\accelerationstructures\bvh.hpp" />
     <ClInclude Include="src\acceleration_structures\brute_force_acceleration_structure.hpp" />
+    <ClInclude Include="src\acceleration_structures\bvh_acceleration_structure.hpp" />
     <ClInclude Include="src\allocators\fixed_size_allocator.hpp" />
     <ClInclude Include="src\allocators\paged_allocator.hpp" />
-    <ClInclude Include="src\bsdfs\frame_bsdf.hpp" />
+    <ClInclude Include="src\bsdfs\shading_normal_bsdf.hpp" />
     <ClInclude Include="src\bsdfs\lambertian_reflection_bsdf.hpp" />
     <ClInclude Include="src\bsdfs\mirror_bsdf.hpp" />
+    <ClInclude Include="src\bsdfs\frame_bsdf.hpp" />
     <ClInclude Include="src\core\acceleration_structure.hpp" />
     <ClInclude Include="src\core\allocator.hpp" />
     <ClInclude Include="src\core\assets.hpp" />
@@ -41,6 +43,7 @@
     <ClInclude Include="src\core\material.hpp" />
     <ClInclude Include="src\core\measurement.hpp" />
     <ClInclude Include="src\core\math.hpp" />
+    <ClInclude Include="src\core\mesh.hpp" />
     <ClInclude Include="src\core\sampling.hpp" />
     <ClInclude Include="src\core\surface.hpp" />
     <ClInclude Include="src\core\texture.hpp" />
@@ -72,6 +75,7 @@
     <ClInclude Include="src\renderer\render_target.hpp" />
     <ClInclude Include="src\samplers\random_sampler.hpp" />
     <ClInclude Include="src\samplers\stratified_sampler.hpp" />
+    <ClInclude Include="src\surfaces\mesh_surface.hpp" />
     <ClInclude Include="src\surfaces\plane_surface.hpp" />
     <ClInclude Include="src\surfaces\sphere_surface.hpp" />
     <ClInclude Include="src\textures\const_texture.hpp" />

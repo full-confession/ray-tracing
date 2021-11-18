@@ -38,8 +38,8 @@ NLOHMANN_JSON_SERIALIZE_ENUM(image_format, {
 
 struct mesh_description
 {
-    std::uint32_t vertexCount{};
-    std::uint32_t indexCount{};
+    std::uint32_t vertex_count{};
+    std::uint32_t index_count{};
     bool normals{};
     bool uvs{};
 };
@@ -53,8 +53,8 @@ struct image_description
 
 static void from_json(nlohmann::json const& json, mesh_description& v)
 {
-    json.at("vertexCount").get_to(v.vertexCount);
-    json.at("indexCount").get_to(v.indexCount);
+    json.at("vertex_count").get_to(v.vertex_count);
+    json.at("index_count").get_to(v.index_count);
     json.at("normals").get_to(v.normals);
     json.at("uvs").get_to(v.uvs);
 }
@@ -83,6 +83,57 @@ static void from_json(nlohmann::json const& json, std::variant<mesh_description,
         json.get_to(desc);
         v = desc;
     }
+}
+
+std::shared_ptr<mesh> assets::load_mesh(std::string const& name)
+{
+    // read metadata
+    std::filesystem::path metadata_path{std::filesystem::current_path() / "assets" / "meshes" / (name + ".metadata")};
+    if(!std::filesystem::exists(metadata_path)) throw;
+    std::ifstream metadata_file{metadata_path, std::ios::in};
+    if(!metadata_file) throw;
+    nlohmann::json metadata_json{nlohmann::json::parse(metadata_file)};
+    std::variant<mesh_description, image_description> metadata{};
+    metadata_json.get_to(metadata);
+    if(!std::holds_alternative<mesh_description>(metadata)) throw;
+    mesh_description const& description{std::get<mesh_description>(metadata)};
+
+    // read mesh
+    std::filesystem::path mesh_path{std::filesystem::current_path() / "assets" / "meshes" / (name + ".asset")};
+    if(!std::filesystem::exists(mesh_path)) throw;
+
+    std::size_t expected_size{description.vertex_count * sizeof(vector3f) + description.index_count * sizeof(std::uint32_t)};
+    if(description.normals) expected_size += description.vertex_count * sizeof(vector3f);
+    if(description.uvs) expected_size += description.vertex_count * sizeof(vector2f);
+    if(std::filesystem::file_size(mesh_path) != expected_size) throw;
+
+    std::ifstream mesh_file{mesh_path, std::ios::in | std::ios::binary};
+    if(!mesh_file) throw;
+
+    std::vector<vector3f> positions{};
+    std::vector<vector3f> normals{};
+    std::vector<vector2f> uvs{};
+    std::vector<std::uint32_t> indices{};
+
+    positions.resize(description.vertex_count);
+    mesh_file.read(reinterpret_cast<char*>(positions.data()), positions.size() * sizeof(vector3f));
+
+    if(description.normals)
+    {
+        normals.resize(description.vertex_count);
+        mesh_file.read(reinterpret_cast<char*>(normals.data()), normals.size() * sizeof(vector3f));
+    }
+
+    if(description.uvs)
+    {
+        uvs.resize(description.vertex_count);
+        mesh_file.read(reinterpret_cast<char*>(uvs.data()), uvs.size() * sizeof(vector2f));
+    }
+
+    indices.resize(description.index_count);
+    mesh_file.read(reinterpret_cast<char*>(indices.data()), indices.size() * sizeof(std::uint32_t));
+
+    return std::shared_ptr<mesh>{new default_mesh{std::move(positions), std::move(normals), std::move(uvs), std::move(indices)}};
 }
 
 std::shared_ptr<image> assets::load_image(std::string const& name)

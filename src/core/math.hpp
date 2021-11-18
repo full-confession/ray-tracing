@@ -102,7 +102,7 @@ namespace fc
             return v[i];
         }
 
-        TVector3& Abs()
+        TVector3& abs()
         {
             x = std::abs(x);
             y = std::abs(y);
@@ -110,7 +110,7 @@ namespace fc
             return *this;
         }
 
-        TVector3& Permute(int x, int y, int z)
+        TVector3& permute(int x, int y, int z)
         {
             T tx{this->operator[](x)};
             T ty{this->operator[](y)};
@@ -194,7 +194,7 @@ namespace fc
     }
 
     template <typename T>
-    T Length(TVector3<T> const& v)
+    T length(TVector3<T> const& v)
     {
         return std::sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
     }
@@ -219,7 +219,7 @@ namespace fc
     }
 
     template <typename T>
-    TVector3<T> Cross(TVector3<T> const& a, TVector3<T> const& b)
+    TVector3<T> cross(TVector3<T> const& a, TVector3<T> const& b)
     {
         return {
             a.y * b.z - a.z * b.y,
@@ -239,7 +239,7 @@ namespace fc
     }
 
     template <typename T>
-    int MaxDimension(TVector3<T> const& v)
+    int max_dimension(TVector3<T> const& v)
     {
         if(v.x > v.y && v.x > v.z)
         {
@@ -256,13 +256,13 @@ namespace fc
     }
 
     template <typename T>
-    TVector3<T> Permute(TVector3<T> const& v, int x, int y, int z)
+    TVector3<T> permute(TVector3<T> const& v, int x, int y, int z)
     {
         return {v[x], v[y], v[z]};
     }
 
     template <typename T>
-    TVector3<T> Abs(TVector3<T> const& v)
+    TVector3<T> abs(TVector3<T> const& v)
     {
         return {std::abs(v.x), std::abs(v.y), std::abs(v.z)};
     }
@@ -284,7 +284,7 @@ namespace fc
         {
             *v2 = TVector3<T>{T(0.0), v1.z, -v1.y} / std::sqrt(v1.y * v1.y + v1.z * v1.z);
         }
-        *v3 = Cross(v1, *v2);
+        *v3 = cross(v1, *v2);
     }
 
     template <typename T>
@@ -571,14 +571,14 @@ namespace fc
             return p_[0] * T(0.5) + p_[1] * T(0.5);
         }
 
-        TVector3<T> Diagonal() const
+        TVector3<T> diagonal() const
         {
             return p_[1] - p_[0];
         }
 
-        int MaximumExtent() const
+        int maximum_extent() const
         {
-            auto d{Diagonal()};
+            auto d{diagonal()};
             if(d.x > d.y && d.x > d.z)
             {
                 return 0;
@@ -593,16 +593,16 @@ namespace fc
             }
         }
 
-        T Area() const
+        T area() const
         {
-            auto d{Diagonal()};
+            auto d{diagonal()};
             return T(2.0) * (d.x * d.y + d.x * d.z + d.y * d.z);
         }
 
         std::pair<TVector3<T>, double> bounding_sphere() const
         {
             TVector3<T> center{centroid()};
-            return {center, Length(center - p_[1])};
+            return {center, length(center - p_[1])};
         }
 
         TBounds3& Union(TBounds3 const& b)
@@ -727,7 +727,7 @@ namespace fc
             return p_[i];
         }
 
-        TVector2<T> Diagonal() const
+        TVector2<T> diagonal() const
         {
             return p_[1] - p_[0];
         }

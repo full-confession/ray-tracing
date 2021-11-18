@@ -133,11 +133,11 @@ namespace fc
             }
 
             to1 = position1 - position0;
-            double length{Length(to1)};
-            vector3 w01{to1 / length};
+            double len{length(to1)};
+            vector3 w01{to1 / len};
             ray3 ray{position0, w01};
 
-            return !acceleration_structure_->raycast(ray, length);
+            return !acceleration_structure_->raycast(ray, len);
         }
 
         virtual bool visibility(surface_point const& p, vector3 const& w) const override

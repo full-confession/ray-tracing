@@ -17,7 +17,7 @@ namespace fc
             bounds_ = bounds3{bounds};
         }
 
-        virtual bounds3 const& get_bounds() const override
+        virtual bounds3 get_bounds() const override
         {
             return bounds_;
         }
