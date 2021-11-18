@@ -64,6 +64,7 @@ namespace fc
                 {
                     bsdf const* bsdf_p1{p1->get_material()->evaluate(*p1, allocator)};
                     auto bsdf_sample{bsdf_p1->sample_wi(w10, sampler_2d.get(stream_bsdf_picking), sampler_2d.get(stream_bsdf_direction_sampling))};
+                    if(!bsdf_sample) break;
 
                     beta *= bsdf_sample->f * (std::abs(dot(p1->get_normal(), bsdf_sample->wi)) / bsdf_sample->pdf_wi);
 

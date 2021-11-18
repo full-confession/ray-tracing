@@ -229,10 +229,10 @@ namespace fc
             {
                 auto [n0, n1, n2] {get_normals(primitive)};
                 p->set_shading_normal(normalize(b0 * n0 + b1 * n1 + b2 * n2));
-                if(dot(p->get_shading_normal(), p->get_normal()) < 0.0)
+                /*if(dot(p->get_shading_normal(), p->get_normal()) < 0.0)
                 {
                     p->set_normal(-p->get_normal());
-                }
+                }*/
             }
             else
             {

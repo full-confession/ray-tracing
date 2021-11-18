@@ -62,10 +62,10 @@ int main()
     
     
     //std::shared_ptr<fc::forward_mis_integrator> integrator{new fc::forward_mis_integrator{10}};
-    std::shared_ptr<fc::forward_bsdf_integrator> integrator{new fc::forward_bsdf_integrator{10}};
-    //std::shared_ptr<fc::backward_integrator> integrator{new fc::backward_integrator{10}};
+    //std::shared_ptr<fc::forward_bsdf_integrator> integrator{new fc::forward_bsdf_integrator{10}};
+    std::shared_ptr<fc::backward_integrator> integrator{new fc::backward_integrator{10}};
     fc::renderer renderer{{600, 900}, camera_factory, integrator, scene, 16, random_sampler_1d_factory, random_sampler_2d_factory, 0};
-    renderer.run(512);
+    renderer.run(1024);
     renderer.export_image("normals");
 
     return 0;

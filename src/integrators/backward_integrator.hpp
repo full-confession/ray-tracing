@@ -130,6 +130,11 @@ namespace fc
                         }
                     }
                 }
+                else
+                {
+                    // discard unused samples
+                    sampler_2d.get(stream_measurement_point_sampling);
+                }
 
 
                 if(path_length >= max_path_length_) break;
