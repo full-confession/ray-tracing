@@ -33,11 +33,34 @@ namespace fc
         virtual std::optional<infinity_area_light_sample_wi_result> sample_wi(vector2 const& sample_direction) const override
         {
             std::optional<infinity_area_light_sample_wi_result> result{};
+            if(!color_ || strength_ == 0.0) return result;
 
             result.emplace();
             result->wi = sample_sphere_uniform(sample_direction);
             result->pdf_wi = pdf_sphere_uniform();
             result->Li = color_ * strength_;
+
+            return result;
+        }
+
+        virtual std::optional<infinity_area_light_sample_wi_and_o_result> sample_wi_and_o(vector2 const& sample_direction, vector2 const& sample_origin) const override
+        {
+            std::optional<infinity_area_light_sample_wi_and_o_result> result{};
+            if(!color_ || strength_ == 0.0) return result;
+
+            result.emplace();
+            result->wi = sample_sphere_uniform(sample_direction);
+            result->pdf_wi = pdf_sphere_uniform();
+            result->Li = color_ * strength_;
+
+
+            vector2 disk_sample{sample_disk_concentric(sample_origin)};
+            vector3 x{};
+            vector3 z{};
+            coordinate_system(result->wi, &x, &z);
+
+            result->o = scene_center_ + scene_radius_ * (disk_sample.x * x + disk_sample.y * z + result->wi);
+            result->pdf_o = 1.0 / (math::pi * scene_radius_ * scene_radius_);
 
             return result;
         }

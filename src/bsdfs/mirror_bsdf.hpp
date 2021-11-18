@@ -34,6 +34,19 @@ namespace fc
             return result;
         }
 
+        virtual std::optional<bsdf_sample_wo_result> sample_wo(vector3 const& wi, vector2 const& sample_pick, vector2 const& sample_direction) const override
+        {
+            std::optional<bsdf_sample_wo_result> result{};
+            if(wi.y == 0.0) return result;
+
+            result.emplace();
+            result->wo = {-wi.x, wi.y, -wi.z};
+            result->pdf_wo = 1.0;
+            result->f = reflectance_ / std::abs(result->wo.y);
+
+            return result;
+        }
+
         virtual double pdf_wi(vector3 const&, vector3 const&) const override
         {
             return {};

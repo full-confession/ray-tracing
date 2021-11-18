@@ -40,6 +40,28 @@ namespace fc
             return result;
         }
 
+        virtual std::optional<standard_light_sample_p_and_wo_result> sample_p_and_wo(vector2 const& sample_point, vector2 const& sample_direction, allocator_wrapper& allocator) const override
+        {
+            std::optional<standard_light_sample_p_and_wo_result> result{};
+            if(!color_ || strength_ == 0.0) return result;
+
+            auto surface_sample{surface_->sample_p(sample_point, allocator)};
+            if(!surface_sample) return result;
+
+            surface_sample->p->set_light(this);
+
+            result->p = surface_sample->p;
+            result->pdf_p = surface_sample->pdf_p;
+
+            frame frame_around_normal{result->p->get_normal()};
+            vector3 w{sample_hemisphere_cosine_weighted(sample_direction)};
+            result->wo = frame_around_normal.local_to_world(w);
+            result->pdf_wo = w.y * math::inv_pi;
+
+            result->Lo = color_ * strength_;
+            return result;
+        }
+
         virtual double pdf_p(surface_point const& p) const override
         {
             if(p.get_light() != this) return {};

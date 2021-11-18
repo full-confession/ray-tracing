@@ -49,6 +49,7 @@
     <ClInclude Include="src\images\rgb32_image.hpp" />
     <ClInclude Include="src\images\rgb8_image.hpp" />
     <ClInclude Include="src\images\srgb8_image.hpp" />
+    <ClInclude Include="src\integrators\backward_integrator.hpp" />
     <ClInclude Include="src\lib\pcg_extras.hpp" />
     <ClInclude Include="src\lib\pcg_random.hpp" />
     <ClInclude Include="src\lib\pcg_uint128.hpp" />

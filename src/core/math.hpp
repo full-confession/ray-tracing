@@ -200,7 +200,7 @@ namespace fc
     }
 
     template <typename T>
-    T LengthSqr(TVector3<T> const& v)
+    T sqr_length(TVector3<T> const& v)
     {
         return v.x * v.x + v.y * v.y + v.z * v.z;
     }

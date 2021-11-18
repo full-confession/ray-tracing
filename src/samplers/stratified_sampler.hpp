@@ -16,6 +16,7 @@ namespace fc
             : jitter_{jitter}, generator_{seed, stream}, distribution_{0.0, 1.0}
         { }
 
+        virtual int round_up_sample_count(int sample_count) const override { return sample_count; }
         virtual std::size_t get_required_memory(int sample_count, int dimension_count) const override
         {
             return sizeof(float) * sample_count * dimension_count;
@@ -25,6 +26,7 @@ namespace fc
         {
             data_ = reinterpret_cast<float*>(allocator.allocate(sizeof(float) * sample_count * dimension_count));
             sample_count_ = sample_count;
+            dimension_count_ = dimension_count;
             sample_index_ = 0;
             dimension_index_ = 0;
 
@@ -56,9 +58,16 @@ namespace fc
 
         virtual double get()
         {
-            double sample{data_[sample_index_ + dimension_index_ * sample_count_]};
-            dimension_index_ += 1;
-            return sample;
+            if(dimension_index_ >= dimension_count_)
+            {
+                return distribution_(generator_);
+            }
+            else
+            {
+                double sample{data_[sample_index_ + dimension_index_ * sample_count_]};
+                dimension_index_ += 1;
+                return sample;
+            }
         }
 
     private:
@@ -70,6 +79,23 @@ namespace fc
         int sample_index_{};
         int dimension_index_{};
         int sample_count_{};
+        int dimension_count_{};
+    };
+
+    class stratified_sampler_1d_factory : public sample_generator_1d_factory
+    {
+    public:
+        explicit stratified_sampler_1d_factory(bool jitter)
+            : jitter_{jitter}
+        { }
+
+        virtual std::unique_ptr<sample_generator_1d> create(std::uint64_t seed, std::uint64_t stream) const override
+        {
+            return std::unique_ptr<sample_generator_1d>{new stratified_sampler_1d{jitter_, seed, stream}};
+        }
+
+    private:
+        bool jitter_{};
     };
 
     class stratified_sampler_2d : public sample_generator_2d
@@ -82,6 +108,12 @@ namespace fc
             : jitter_{jitter}, generator_{seed, stream}, distribution_{0.0, 1.0}
         { }
 
+        virtual int round_up_sample_count(int sample_count) const override
+        {
+            int x{static_cast<int>(std::ceil(std::sqrt(sample_count)))};
+            return x * x;
+        }
+
         virtual std::size_t get_required_memory(int sample_count, int dimension_count) const override
         {
             return sizeof(vector2f) * sample_count * dimension_count;
@@ -91,6 +123,7 @@ namespace fc
         {
             data_ = reinterpret_cast<vector2f*>(allocator.allocate(sizeof(vector2f) * sample_count * dimension_count));
             sample_count_ = sample_count;
+            dimension_count_ = dimension_count;
             sample_index_ = 0;
             dimension_index_ = 0;
 
@@ -135,9 +168,16 @@ namespace fc
 
         virtual vector2 get()
         {
-            vector2f sample{data_[sample_index_ + dimension_index_ * sample_count_]};
-            dimension_index_ += 1;
-            return sample;
+            if(dimension_index_ >= dimension_count_)
+            {
+                return {distribution_(generator_), distribution_(generator_)};
+            }
+            else
+            {
+                vector2f sample{data_[sample_index_ + dimension_index_ * sample_count_]};
+                dimension_index_ += 1;
+                return sample;
+            }
         }
 
     private:
@@ -149,5 +189,22 @@ namespace fc
         int sample_index_{};
         int dimension_index_{};
         int sample_count_{};
+        int dimension_count_{};
+    };
+
+    class stratified_sampler_2d_factory : public sample_generator_2d_factory
+    {
+    public:
+        explicit stratified_sampler_2d_factory(bool jitter)
+            : jitter_{jitter}
+        { }
+
+        virtual std::unique_ptr<sample_generator_2d> create(std::uint64_t seed, std::uint64_t stream) const override
+        {
+            return std::unique_ptr<sample_generator_2d>{new stratified_sampler_2d{jitter_, seed, stream}};
+        }
+
+    private:
+        bool jitter_{};
     };
 }

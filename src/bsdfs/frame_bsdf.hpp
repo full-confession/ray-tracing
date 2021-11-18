@@ -21,10 +21,18 @@ namespace fc
             return bsdf_->evaluate(frame_.world_to_local(wo), frame_.world_to_local(wi));
         }
 
-        virtual std::optional<bsdf_sample_wi_result> sample_wi(vector3 const& wo, vector2 const& sample_pick, vector2 const& sample_direction) const
+        virtual std::optional<bsdf_sample_wi_result> sample_wi(vector3 const& wo, vector2 const& sample_pick, vector2 const& sample_direction) const override
         {
             auto result{bsdf_->sample_wi(frame_.world_to_local(wo), sample_pick, sample_direction)};
             if(result) result->wi = frame_.local_to_world(result->wi);
+
+            return result;
+        }
+
+        virtual std::optional<bsdf_sample_wo_result> sample_wo(vector3 const& wi, vector2 const& sample_pick, vector2 const& sample_direction) const override
+        {
+            auto result{bsdf_->sample_wo(frame_.world_to_local(wi), sample_pick, sample_direction)};
+            if(result) result->wo = frame_.local_to_world(result->wo);
 
             return result;
         }

@@ -14,6 +14,15 @@ namespace fc
             sample_streams_.push_back({description, std::move(sample_generator)});
         }
 
+        int round_up_sample_count(int sample_count) const
+        {
+            for(auto const& sample_stream : sample_streams_)
+            {
+                sample_count = sample_stream.sample_generator->round_up_sample_count(sample_count);
+            }
+            return sample_count;
+        }
+
         void begin(int sample_count, allocator_wrapper& allocator)
         {
             for(auto const& sample_stream : sample_streams_)
@@ -55,6 +64,15 @@ namespace fc
         void add_sample_stream(sample_stream_2d_description const& description, std::unique_ptr<sample_generator_2d> sample_generator)
         {
             sample_streams_.push_back({description, std::move(sample_generator)});
+        }
+
+        int round_up_sample_count(int sample_count) const
+        {
+            for(auto const& sample_stream : sample_streams_)
+            {
+                sample_count = sample_stream.sample_generator->round_up_sample_count(sample_count);
+            }
+            return sample_count;
         }
 
         void begin(vector2i pixel, int sample_count, allocator_wrapper& allocator)

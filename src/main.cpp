@@ -2,6 +2,7 @@
 #include "renderer/cameras/perspective_camera.hpp"
 #include "integrators/forward_mis_integrator.hpp"
 #include "integrators/forward_bsdf_integrator.hpp"
+#include "integrators/backward_integrator.hpp"
 #include "surfaces/sphere_surface.hpp"
 #include "surfaces/plane_surface.hpp"
 #include "materials/diffuse_material.hpp"
@@ -33,20 +34,25 @@ int main()
     fc::uniform_spatial_light_distribution_factory usldf{};
 
     fc::assets assets{};
-    auto image{assets.get_image("dikhololo_night")};
+    auto image{assets.get_image("env-loft-hall")};
     std::shared_ptr<fc::image_texture_2d_rgb> texture{new fc::image_texture_2d_rgb{image, fc::reconstruction_filter::bilinear, 4}};
     std::shared_ptr<fc::texture_infinity_area_light> infinity_area_light{new fc::texture_infinity_area_light{{}, texture, 1.0, image->get_resolution()}};
-
     //std::shared_ptr<fc::const_infinity_area_light> infinity_area_light{new fc::const_infinity_area_light{{0.5, 0.5, 0.5}, 0.3}};
 
     std::shared_ptr<fc::entity_scene> scene{new fc::entity_scene{std::move(entities), infinity_area_light, bfasf, uldf, usldf}};
 
 
+    //fc::random_sampler_1d_factory random_sampler_1d_factory{};
+    //fc::random_sampler_2d_factory random_sampler_2d_factory{};
+    fc::stratified_sampler_1d_factory random_sampler_1d_factory{true};
+    fc::stratified_sampler_2d_factory random_sampler_2d_factory{true};
+
     fc::perspective_camera_factory camera_factory{{{-4.0, 2.0, -4.0}, {fc::math::deg_to_rad(15.0), fc::math::deg_to_rad(45.0), 0.0}}, fc::math::deg_to_rad(45.0)};
-    std::shared_ptr<fc::forward_mis_integrator> integrator{new fc::forward_mis_integrator{10}};
+    //std::shared_ptr<fc::forward_mis_integrator> integrator{new fc::forward_mis_integrator{10}};
     //std::shared_ptr<fc::forward_bsdf_integrator> integrator{new fc::forward_bsdf_integrator{10}};
-    fc::renderer renderer{{512, 512}, camera_factory, integrator, scene, 16, 0};
-    renderer.run(4096);
+    std::shared_ptr<fc::backward_integrator> integrator{new fc::backward_integrator{10}};
+    fc::renderer renderer{{512, 512}, camera_factory, integrator, scene, 16, random_sampler_1d_factory, random_sampler_2d_factory, 0};
+    renderer.run(512);
     renderer.export_image("normals");
 
     return 0;

@@ -102,7 +102,7 @@ namespace fc
 
                                     if(fL10 && scene.visibility(*p1, *light_sample->p))
                                     {
-                                        double x{std::abs(dot(light_sample->p->get_normal(), w1L)) / LengthSqr(d1L)};
+                                        double x{std::abs(dot(light_sample->p->get_normal(), w1L)) / sqr_length(d1L)};
                                         double G1L{std::abs(dot(p1->get_normal(), w1L)) * x};
                                         double pdf_bsdf_pL{bsdf_p1->pdf_wi(w10, w1L) * x};
                                         double pdf_light_pL{pdf_light * light_sample->pdf_p};
@@ -143,7 +143,7 @@ namespace fc
                             {
                                 double pdf_light{scene.get_spatial_light_distribution()->get(*p1)->pdf(p2->get_light())};
                                 double pdf_light_p2{pdf_light * p2->get_light()->pdf_p(*p2)};
-                                double pdf_bsdf_p2{bsdf_sample->pdf_wi * std::abs(dot(p2->get_normal(), bsdf_sample->wi)) / LengthSqr(p2->get_position() - p1->get_position())};
+                                double pdf_bsdf_p2{bsdf_sample->pdf_wi * std::abs(dot(p2->get_normal(), bsdf_sample->wi)) / sqr_length(p2->get_position() - p1->get_position())};
                                 double weight{power_heuristics(pdf_bsdf_p2, pdf_light_p2)};
                                 Li += weight * beta * p2->get_light()->get_Le(*p2, w21);
                             }

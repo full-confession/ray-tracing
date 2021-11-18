@@ -65,15 +65,6 @@ namespace fc
 
         virtual std::optional<infinity_area_light_sample_wi_result> sample_wi(vector2 const& sample_direction) const override
         {
-            /*std::optional<infinity_area_light_sample_wi_result> result{};
-
-            result.emplace();
-            result->wi = sample_sphere_uniform(sample_direction);
-            result->pdf_wi = pdf_sphere_uniform();
-            result->Li = get_Li(result->wi);
-
-            return result;*/
-
             std::optional<infinity_area_light_sample_wi_result> result{};
             auto uv_sample{radiance_distribution_->sample_continuous(sample_direction)};
 
@@ -86,21 +77,44 @@ namespace fc
             double sin_phi{std::sin(phi)};
 
             if(sin_theta == 0.0) return result;
+            vector3 Li{texture_->evaluate(uv_sample.xy) * strength_};
+            if(!Li) return result;
 
             vector3 w{sin_theta * cos_phi, cos_theta, sin_theta * sin_phi};
 
             result.emplace();
             result->wi = transform_.transform_direction(w);
             result->pdf_wi = uv_sample.pdf_xy / (2.0 * math::pi * math::pi * sin_theta);
-            result->Li = texture_->evaluate(uv_sample.xy) * strength_;
+            result->Li = Li;
+
+            return result;
+        }
+
+        virtual std::optional<infinity_area_light_sample_wi_and_o_result> sample_wi_and_o(vector2 const& sample_direction, vector2 const& sample_origin) const override
+        {
+            std::optional<infinity_area_light_sample_wi_and_o_result> result{};
+
+            auto sample{sample_wi(sample_direction)};
+            if(!sample) return result;
+
+            result.emplace();
+            result->wi = sample->wi;
+            result->pdf_wi = sample->pdf_wi;
+            result->Li = sample->Li;
+
+            vector2 disk_sample{sample_disk_concentric(sample_origin)};
+            vector3 x{};
+            vector3 z{};
+            coordinate_system(result->wi, &x, &z);
+
+            result->o = scene_center_ + scene_radius_ * (disk_sample.x * x + disk_sample.y * z + result->wi);
+            result->pdf_o = 1.0 / (math::pi * scene_radius_ * scene_radius_);
 
             return result;
         }
 
         virtual double pdf_wi(vector3 const& wi) const override
         {
-            //return pdf_sphere_uniform();
-
             vector3 w{transform_.inverse_transform_direction(wi)};
 
             double theta{std::acos(std::clamp(w.y, -1.0, 1.0))};

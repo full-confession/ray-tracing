@@ -2,6 +2,8 @@
 #include "math.hpp"
 #include "allocator.hpp"
 
+#include <memory>
+
 namespace fc
 {
     class sampler_1d
@@ -25,10 +27,19 @@ namespace fc
     public:
         virtual ~sample_generator_1d() = default;
 
+        virtual int round_up_sample_count(int sample_count) const = 0;
         virtual std::size_t get_required_memory(int sample_count, int dimension_count) const = 0;
         virtual void begin(int sample_count, int dimension_count, allocator_wrapper& allocator) = 0;
         virtual void next_sample() = 0;
         virtual double get() = 0;
+    };
+
+    class sample_generator_1d_factory
+    {
+    public:
+        ~sample_generator_1d_factory() = default;
+
+        virtual std::unique_ptr<sample_generator_1d> create(std::uint64_t seed, std::uint64_t stream) const = 0;
     };
 
     class sample_generator_2d
@@ -36,10 +47,19 @@ namespace fc
     public:
         virtual ~sample_generator_2d() = default;
 
+        virtual int round_up_sample_count(int sample_count) const = 0;
         virtual std::size_t get_required_memory(int sample_count, int dimension_count) const = 0;
         virtual void begin(int sample_count, int dimension_count, allocator_wrapper& allocator) = 0;
         virtual void next_sample() = 0;
         virtual vector2 get() = 0;
+    };
+
+    class sample_generator_2d_factory
+    {
+    public:
+        ~sample_generator_2d_factory() = default;
+
+        virtual std::unique_ptr<sample_generator_2d> create(std::uint64_t seed, std::uint64_t stream) const = 0;
     };
 
     enum class sample_stream_1d_usage

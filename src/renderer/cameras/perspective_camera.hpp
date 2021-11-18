@@ -59,14 +59,14 @@ namespace fc
 
         virtual std::optional<measurement_sample_p> sample_p(surface_point const& view_point, vector2 const& sample_point, allocator_wrapper& allocator) const override
         {
-            vector3 wi{normalize(transform_.inverse_transform_point(view_point.get_position()))};
-            return sample_p_local(wi, sample_point, allocator);
+            vector3 wi_local{normalize(transform_.inverse_transform_point(view_point.get_position()))};
+            return sample_p_local(wi_local, sample_point, allocator);
         }
 
-        virtual std::optional<measurement_sample_p> sample_p(vector3 const& view_direction, vector2 const& sample_point, allocator_wrapper& allocator) const override
+        virtual std::optional<measurement_sample_p> sample_p(vector3 const& wi, vector2 const& sample_point, allocator_wrapper& allocator) const override
         {
-            vector3 wi{transform_.inverse_transform_direction(view_direction)};
-            return sample_p_local(wi, sample_point, allocator);
+            vector3 wi_local{transform_.inverse_transform_direction(wi)};
+            return sample_p_local(wi_local, sample_point, allocator);
         }
 
         virtual void add_sample(surface_point const& p, vector3 Li) const override

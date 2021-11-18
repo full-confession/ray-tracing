@@ -23,7 +23,15 @@ namespace fc
         static constexpr int tile_size = 32;
 
     public:
-        renderer(vector2i const& resolution, camera_factory const& camera_factory, std::shared_ptr<integrator> integrator, std::shared_ptr<scene> scene, int worker_count, std::uint64_t seed)
+        renderer(
+            vector2i const& resolution,
+            camera_factory const& camera_factory,
+            std::shared_ptr<integrator> integrator,
+            std::shared_ptr<scene> scene,
+            int worker_count,
+            sample_generator_1d_factory const& sample_generator_1d_factory,
+            sample_generator_2d_factory const& sample_generator_2d_factory,
+            std::uint64_t seed)
             : integrator_{std::move(integrator)}, scene_{std::move(scene)}, worker_count_{worker_count}
         {
             worker_count_ = std::max(1, worker_count_);
@@ -62,14 +70,12 @@ namespace fc
                     std::uint64_t stream_index{(tiles_.size() - 1) * sample_stream_count};
                     for(auto const& sample_stream_1d_description : required_1d_sample_streams)
                     {
-                        tile.sampler_1d.add_sample_stream(sample_stream_1d_description, std::unique_ptr<sample_generator_1d>{new stratified_sampler_1d{true, seed, stream_index++}});
-                        //tile.sampler_1d.add_sample_stream(sample_stream_1d_description, std::unique_ptr<sample_generator_1d>{new random_sampler_1d{seed, stream_index++}});
+                        tile.sampler_1d.add_sample_stream(sample_stream_1d_description, sample_generator_1d_factory.create(seed, stream_index++));
                     }
 
                     for(auto const& sample_stream_2d_description : required_2d_sample_streams)
                     {
-                        tile.sampler_2d.add_sample_stream(sample_stream_2d_description, std::unique_ptr<sample_generator_2d>{new stratified_sampler_2d{true, seed, stream_index++}});
-                        //tile.sampler_2d.add_sample_stream(sample_stream_2d_description, std::unique_ptr<sample_generator_2d>{new random_sampler_2d{seed, stream_index++}});
+                        tile.sampler_2d.add_sample_stream(sample_stream_2d_description, sample_generator_2d_factory.create(seed, stream_index++));
                     }
                 }
             }
@@ -77,6 +83,16 @@ namespace fc
 
         void run(int sample_count)
         {
+            int new_sample_count{tiles_[0].sampler_1d.round_up_sample_count(sample_count)};
+            new_sample_count = tiles_[1].sampler_2d.round_up_sample_count(new_sample_count);
+
+            if(sample_count != new_sample_count)
+            {
+                std::cout << "Changed number of samples per pixel from " << sample_count << " to " << new_sample_count << std::endl;
+            }
+            sample_count = new_sample_count;
+
+
             std::vector<std::thread> workers{};
             workers.reserve(worker_count_);
 
