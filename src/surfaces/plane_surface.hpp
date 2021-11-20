@@ -94,6 +94,10 @@ namespace fc
             };
             p->set_uv(uv);
 
+            p->set_shading_normal(p->get_normal());
+            p->set_shading_tangent(transform_.transform_direction({1.0, 0.0, 0.0}));
+            p->set_shading_bitangent(transform_.transform_direction({0.0, 0.0, 1.0}));
+
             result.emplace();
             result->p = p;
             result->t = t_hit;
@@ -104,12 +108,12 @@ namespace fc
         virtual void prepare_for_sampling() override
         { }
 
-        virtual std::optional<surface_sample_result> sample_p(surface_point const&, vector2 const& sample_point, allocator_wrapper& allocator) const override
+        virtual std::optional<surface_sample_result> sample_p(surface_point const&, double sample_primitive, vector2 const& sample_point, allocator_wrapper& allocator) const override
         {
-            return sample_p(sample_point, allocator);
+            return sample_p(sample_primitive, sample_point, allocator);
         }
 
-        virtual std::optional<surface_sample_result> sample_p(vector2 const& sample_point, allocator_wrapper& allocator) const override
+        virtual std::optional<surface_sample_result> sample_p(double, vector2 const& sample_point, allocator_wrapper& allocator) const override
         {
             std::optional<surface_sample_result> result{};
             result.emplace();

@@ -15,7 +15,7 @@ namespace fc
             return bsdf_type::standard;
         }
 
-        virtual vector3 evaluate(vector3 const& wo, vector3 const wi) const override
+        virtual vector3 evaluate(vector3 const& wo, vector3 const& wi) const override
         {
             if(wo.y * wi.y <= 0.0) return {};
             return reflectance_ * math::inv_pi;
@@ -57,6 +57,12 @@ namespace fc
         {
             if(wo.y * wi.y <= 0.0) return {};
             return std::abs(wi.y) * math::inv_pi;
+        }
+
+        virtual double pdf_wo(vector3 const& wo, vector3 const& wi) const override
+        {
+            if(wo.y * wi.y <= 0.0) return {};
+            return std::abs(wo.y) * math::inv_pi;
         }
 
     private:

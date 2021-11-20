@@ -39,8 +39,8 @@ namespace fc
         virtual std::optional<surface_raycast_surface_point_result> raycast_surface_point(std::uint32_t primitive, ray3 const& ray, double t_max, allocator_wrapper& allocator) const = 0;
 
         virtual void prepare_for_sampling() = 0;
-        virtual std::optional<surface_sample_result> sample_p(surface_point const& view_point, vector2 const& sample_point, allocator_wrapper& allocator) const = 0;
-        virtual std::optional<surface_sample_result> sample_p(vector2 const& sample_point, allocator_wrapper& allocator) const = 0;
+        virtual std::optional<surface_sample_result> sample_p(surface_point const& view_point, double sample_primitive, vector2 const& sample_point, allocator_wrapper& allocator) const = 0;
+        virtual std::optional<surface_sample_result> sample_p(double sample_primitive, vector2 const& sample_point, allocator_wrapper& allocator) const = 0;
         virtual double pdf_p(surface_point const& p) const = 0;
     };
 }

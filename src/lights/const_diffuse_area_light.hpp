@@ -24,11 +24,11 @@ namespace fc
             return color_ * strength_;
         }
 
-        virtual std::optional<standard_light_sample_p_result> sample_p(surface_point const& view_point, vector2 const& sample_point, allocator_wrapper& allocator) const override
+        virtual std::optional<standard_light_sample_p_result> sample_p(surface_point const& view_point, double sample_primitive, vector2 const& sample_point, allocator_wrapper& allocator) const override
         {
             std::optional<standard_light_sample_p_result> result{};
 
-            auto surface_sample{surface_->sample_p(view_point, sample_point, allocator)};
+            auto surface_sample{surface_->sample_p(view_point, sample_primitive, sample_point, allocator)};
             if(!surface_sample) return result;
 
             result.emplace();
@@ -40,16 +40,17 @@ namespace fc
             return result;
         }
 
-        virtual std::optional<standard_light_sample_p_and_wo_result> sample_p_and_wo(vector2 const& sample_point, vector2 const& sample_direction, allocator_wrapper& allocator) const override
+        virtual std::optional<standard_light_sample_p_and_wo_result> sample_p_and_wo(double sample_primitive, vector2 const& sample_point, vector2 const& sample_direction, allocator_wrapper& allocator) const override
         {
             std::optional<standard_light_sample_p_and_wo_result> result{};
             if(!color_ || strength_ == 0.0) return result;
 
-            auto surface_sample{surface_->sample_p(sample_point, allocator)};
+            auto surface_sample{surface_->sample_p(sample_primitive, sample_point, allocator)};
             if(!surface_sample) return result;
 
             surface_sample->p->set_light(this);
 
+            result.emplace();
             result->p = surface_sample->p;
             result->pdf_p = surface_sample->pdf_p;
 
@@ -66,6 +67,15 @@ namespace fc
         {
             if(p.get_light() != this) return {};
             return surface_->pdf_p(p);
+        }
+
+        virtual double pdf_wo(surface_point const& p, vector3 const& wo) const override
+        {
+            if(p.get_light() != this || p.get_surface() != surface_) return {};
+
+            double cos(dot(p.get_normal(), wo));
+            if(cos <= 0.0) return {};
+            return cos * math::inv_pi;
         }
 
 

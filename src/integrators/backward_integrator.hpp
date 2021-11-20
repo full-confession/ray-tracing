@@ -8,6 +8,7 @@ namespace fc
     class backward_integrator : public integrator
     {
         static constexpr int stream_light_picking = 0;
+        static constexpr int stream_primitive_picking = 0;
 
         static constexpr int stream_measurement_point_sampling = 0;
         static constexpr int stream_light_point_sampling = 1;
@@ -23,7 +24,8 @@ namespace fc
         virtual std::vector<sample_stream_1d_description> get_required_1d_sample_streams() const override
         {
             return {
-                {sample_stream_1d_usage::light_picking, 1}
+                {sample_stream_1d_usage::light_picking, 1},
+                {sample_stream_1d_usage::primitive_picking, 1}
             };
         }
 
@@ -51,7 +53,7 @@ namespace fc
             if(light->get_type() == light_type::standard)
             {
                 auto std_light{static_cast<standard_light const*>(light)};
-                auto light_sample{std_light->sample_p_and_wo(sampler_2d.get(stream_light_point_sampling), sampler_2d.get(stream_light_direction_sampling), allocator)};
+                auto light_sample{std_light->sample_p_and_wo(sampler_1d.get(stream_primitive_picking), sampler_2d.get(stream_light_point_sampling), sampler_2d.get(stream_light_direction_sampling), allocator)};
                 if(!light_sample) return;
 
                 auto measurement_sample{measurement.sample_p(*light_sample->p, sampler_2d.get(stream_measurement_point_sampling), allocator)};
@@ -64,7 +66,7 @@ namespace fc
                     if(L0C && scene.visibility(*light_sample->p, *measurement_sample->p))
                     {
                         double G0C{std::abs(dot(measurement_sample->p->get_normal(), w0C) * dot(light_sample->p->get_normal(), w0C)) / sqr_length(d0C)};
-                        vector3 Li{measurement_sample->Wo * L0C * (G0C / measurement_sample->pdf_p * light_sample->pdf_p * pdf_light)};
+                        vector3 Li{measurement_sample->Wo * L0C * (G0C / (measurement_sample->pdf_p * light_sample->pdf_p * pdf_light))};
                         measurement.add_sample(*measurement_sample->p, Li);
                     }
                 }

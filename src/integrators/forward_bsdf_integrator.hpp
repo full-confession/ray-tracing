@@ -8,7 +8,7 @@ namespace fc
     class forward_bsdf_integrator : public integrator
     {
         static constexpr int stream_measurement_point_sampling = 0;
-        static constexpr int stream_measurement_direction_sampling = 1;
+        static constexpr int stream_forward_measurement_direction_sampling = 1;
         static constexpr int stream_bsdf_picking = 2;
         static constexpr int stream_bsdf_direction_sampling = 3;
 
@@ -36,7 +36,7 @@ namespace fc
         {
             measurement.add_sample_count(1);
 
-            auto measurement_sample{measurement.sample_p_and_wi(sampler_2d.get(stream_measurement_point_sampling), sampler_2d.get(stream_measurement_direction_sampling), allocator)};
+            auto measurement_sample{measurement.sample_p_and_wi(sampler_2d.get(stream_measurement_point_sampling), sampler_2d.get(stream_forward_measurement_direction_sampling), allocator)};
             if(!measurement_sample) return;
 
             vector3 Li{};

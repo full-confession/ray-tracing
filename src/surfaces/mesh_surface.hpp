@@ -2,6 +2,7 @@
 #include "../core/surface.hpp"
 #include "../core/mesh.hpp"
 #include "../core/transform.hpp"
+#include "../core/distribution.hpp"
 
 #include <memory>
 
@@ -255,24 +256,46 @@ namespace fc
 
         virtual void prepare_for_sampling() override
         {
+            std::vector<double> triangle_areas_{};
+            triangle_areas_.reserve(primitive_count_);
 
+            for(std::uint32_t i{}; i < primitive_count_; ++i)
+            {
+                triangle_areas_.push_back(get_area(i));
+            }
+
+            area_distribution_.reset(new distribution_1d{std::move(triangle_areas_)});
         }
 
-        virtual std::optional<surface_sample_result> sample_p(surface_point const& view_point, vector2 const& sample_point, allocator_wrapper& allocator) const override
+        virtual std::optional<surface_sample_result> sample_p(surface_point const&, double sample_primitive, vector2 const& sample_point, allocator_wrapper& allocator) const override
         {
-            std::optional<surface_sample_result> result{};
-            return result;
+            return sample_p(sample_primitive, sample_point, allocator);
         }
 
-        virtual std::optional<surface_sample_result> sample_p(vector2 const& sample_point, allocator_wrapper& allocator) const override
+        virtual std::optional<surface_sample_result> sample_p(double sample_primitive, vector2 const& sample_point, allocator_wrapper& allocator) const override
         {
             std::optional<surface_sample_result> result{};
+            result.emplace();
+
+            auto dist_result{area_distribution_->sample_discrete(sample_primitive)};
+            auto [p0, p1, p2] {get_positions(static_cast<std::uint32_t>(dist_result.index))};
+
+            auto triangle_sample{sample_triangle_uniform(sample_point)};
+
+            surface_point* p{allocator.emplace<surface_point>()};
+            p->set_surface(this);
+            p->set_position(p0 * triangle_sample.x + p1 * triangle_sample.y + p2 * (1.0 - triangle_sample.x - triangle_sample.y));
+            p->set_normal(normalize(cross(p1 - p0, p2 - p0)));
+
+            result->p = p;
+            result->pdf_p = 1.0 / area_;
+
             return result;
         }
 
         virtual double pdf_p(surface_point const& p) const override
         {
-            return 0.0;
+            return 1.0 / area_;
         }
 
     private:
@@ -287,6 +310,8 @@ namespace fc
         std::uint32_t primitive_count_{};
         double area_{};
         bounds3f bounds_{};
+
+        std::unique_ptr<distribution_1d> area_distribution_{};
 
         std::tuple<vector3, vector3, vector3> get_positions(std::uint32_t primitive) const
         {

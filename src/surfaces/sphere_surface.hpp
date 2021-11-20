@@ -126,6 +126,13 @@ namespace fc
             p->set_position(transform_.transform_point(position));
             p->set_normal(transform_.transform_direction(normalize(position)));
 
+            vector3 tangent{};
+            vector3 bitangent{};
+            coordinate_system(p->get_normal(), &tangent, &bitangent);
+            p->set_shading_normal(p->get_normal());
+            p->set_shading_tangent(tangent);
+            p->set_shading_bitangent(bitangent);
+
             result.emplace();
             result->p = p;
             result->t = t_hit;
@@ -136,12 +143,12 @@ namespace fc
         virtual void prepare_for_sampling() override
         { }
 
-        virtual std::optional<surface_sample_result> sample_p(surface_point const&, vector2 const& sample_point, allocator_wrapper& allocator) const override
+        virtual std::optional<surface_sample_result> sample_p(surface_point const&, double sample_primitive, vector2 const& sample_point, allocator_wrapper& allocator) const override
         {
-            return sample_p(sample_point, allocator);
+            return sample_p(sample_primitive, sample_point, allocator);
         }
 
-        virtual std::optional<surface_sample_result> sample_p(vector2 const& sample_point, allocator_wrapper& allocator) const override
+        virtual std::optional<surface_sample_result> sample_p(double, vector2 const& sample_point, allocator_wrapper& allocator) const override
         {
             std::optional<surface_sample_result> result{};
             result.emplace();

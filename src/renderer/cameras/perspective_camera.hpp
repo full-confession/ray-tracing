@@ -10,6 +10,7 @@ namespace fc
         struct measurement_data
         {
             vector3 sample_plane_position{};
+            double pdf_wi{};
         };
 
     public:
@@ -67,6 +68,14 @@ namespace fc
         {
             vector3 wi_local{transform_.inverse_transform_direction(wi)};
             return sample_p_local(wi_local, sample_point, allocator);
+        }
+
+        virtual double pdf_wi(surface_point const& p, vector3 const& wi) const override
+        {
+            if(p.get_measurement() != this) return {};
+            measurement_data* data{static_cast<measurement_data*>(p.get_measurement_data())};
+
+            return data->pdf_wi;
         }
 
         virtual void add_sample(surface_point const& p, vector3 Li) const override
@@ -129,6 +138,7 @@ namespace fc
 
             measurement_data* data{allocator.emplace<measurement_data>()};
             data->sample_plane_position = sample_plane_position;
+            data->pdf_wi = 1.0 / (sample_plane_size_.x * sample_plane_size_.y * cos2 * cos);
             p->set_measurement_data(data);
 
             return result;

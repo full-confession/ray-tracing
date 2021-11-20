@@ -16,7 +16,7 @@ namespace fc
             return bsdf_->get_type();
         }
 
-        virtual vector3 evaluate(vector3 const& wo, vector3 const wi) const override
+        virtual vector3 evaluate(vector3 const& wo, vector3 const& wi) const override
         {
             double wo_wg{dot(wo, normal_)};
             double wo_ws{dot(wo, shading_frame_.get_normal())};
@@ -81,6 +81,18 @@ namespace fc
             if(wo_wg * wo_ws <= 0.0 || wi_wg * wi_ws <= 0.0) return {};
 
             return bsdf_->pdf_wi(shading_frame_.world_to_local(wo), shading_frame_.world_to_local(wi));
+        }
+
+        virtual double pdf_wo(vector3 const& wo, vector3 const& wi) const override
+        {
+            double wo_wg{dot(wo, normal_)};
+            double wo_ws{dot(wo, shading_frame_.get_normal())};
+            double wi_wg{dot(wi, normal_)};
+            double wi_ws{dot(wi, shading_frame_.get_normal())};
+
+            if(wo_wg * wo_ws <= 0.0 || wi_wg * wi_ws <= 0.0) return {};
+
+            return bsdf_->pdf_wo(shading_frame_.world_to_local(wo), shading_frame_.world_to_local(wi));
         }
     private:
         frame shading_frame_;

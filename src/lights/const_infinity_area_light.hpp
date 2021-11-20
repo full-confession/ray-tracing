@@ -70,6 +70,11 @@ namespace fc
             return pdf_sphere_uniform();
         }
 
+        virtual double pdf_o() const override
+        {
+            return 1.0 / (math::pi * scene_radius_ * scene_radius_);
+        }
+
     private:
         vector3 color_{};
         double strength_{};

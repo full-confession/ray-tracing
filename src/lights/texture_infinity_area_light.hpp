@@ -130,6 +130,11 @@ namespace fc
             return radiance_distribution_->pdf_continuous({u, v}) / (2.0 * math::pi * math::pi * sin_theta);
         }
 
+        virtual double pdf_o() const override
+        {
+            return 1.0 / (math::pi * scene_radius_ * scene_radius_);
+        }
+
     private:
         pr_transform transform_{};
         std::shared_ptr<texture_2d_rgb> texture_{};

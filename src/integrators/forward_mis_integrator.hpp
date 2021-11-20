@@ -6,21 +6,23 @@ namespace fc
     class forward_mis_integrator : public integrator
     {
         static constexpr int stream_light_picking = 0;
+        static constexpr int stream_primitive_picking = 0;
 
         static constexpr int stream_measurement_point_sampling = 0;
-        static constexpr int stream_measurement_direction_sampling = 1;
+        static constexpr int stream_forward_measurement_direction_sampling = 1;
         static constexpr int stream_bsdf_picking = 2;
         static constexpr int stream_bsdf_direction_sampling = 3;
         static constexpr int stream_light_point_sampling = 4;
     public:
-        explicit forward_mis_integrator(int max_path_length)
-            : max_path_length_{max_path_length}
+        explicit forward_mis_integrator(int max_path_length, bool visible_infinity_area_light)
+            : max_path_length_{max_path_length}, visible_infinity_area_light_{visible_infinity_area_light}
         { }
 
         virtual std::vector<sample_stream_1d_description> get_required_1d_sample_streams() const override
         {
             return {
-                {sample_stream_1d_usage::light_picking, max_path_length_ - 1}
+                {sample_stream_1d_usage::light_picking, max_path_length_ - 1},
+                {sample_stream_1d_usage::primitive_picking, max_path_length_ - 1}
             };
         }
 
@@ -39,7 +41,7 @@ namespace fc
         {
             measurement.add_sample_count(1);
 
-            auto measurement_sample{measurement.sample_p_and_wi(sampler_2d.get(stream_measurement_point_sampling), sampler_2d.get(stream_measurement_direction_sampling), allocator)};
+            auto measurement_sample{measurement.sample_p_and_wi(sampler_2d.get(stream_measurement_point_sampling), sampler_2d.get(stream_forward_measurement_direction_sampling), allocator)};
             if(!measurement_sample) return;
 
             vector3 Li{};
@@ -48,7 +50,7 @@ namespace fc
             auto raycast_result{scene.raycast(*measurement_sample->p, measurement_sample->wi, allocator)};
             if(!raycast_result)
             {
-                if(scene.get_infinity_area_light() != nullptr)
+                if(scene.get_infinity_area_light() != nullptr && visible_infinity_area_light_)
                 {
                     Li += beta * scene.get_infinity_area_light()->get_Li(measurement_sample->wi);
                 }
@@ -93,7 +95,7 @@ namespace fc
                             else if(light->get_type() == light_type::standard)
                             {
                                 auto std_light{static_cast<standard_light const*>(light)};
-                                auto light_sample{std_light->sample_p(*p1, sampler_2d.get(stream_light_point_sampling), allocator)};
+                                auto light_sample{std_light->sample_p(*p1, sampler_1d.get(stream_primitive_picking), sampler_2d.get(stream_light_point_sampling), allocator)};
                                 if(light_sample)
                                 {
                                     vector3 d1L{light_sample->p->get_position() - p1->get_position()};
@@ -107,7 +109,6 @@ namespace fc
                                         double pdf_bsdf_pL{bsdf_p1->pdf_wi(w10, w1L) * x};
                                         double pdf_light_pL{pdf_light * light_sample->pdf_p};
                                         double weight{power_heuristics(pdf_light_pL, pdf_bsdf_pL)};
- 
                                         Li += (beta * fL10 * G1L * light_sample->Lo) * (weight / pdf_light_pL);
                                     }
                                 }
@@ -198,6 +199,7 @@ namespace fc
         }
     private:
         int max_path_length_{};
+        bool visible_infinity_area_light_{};
 
         static double power_heuristics(double primary_pdf, double alternative_pdf)
         {

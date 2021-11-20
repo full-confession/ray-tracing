@@ -16,7 +16,7 @@ namespace fc
             return bsdf_type::delta;
         }
 
-        virtual vector3 evaluate(vector3 const&, vector3 const) const override
+        virtual vector3 evaluate(vector3 const&, vector3 const&) const override
         {
             return {};
         }
@@ -48,6 +48,11 @@ namespace fc
         }
 
         virtual double pdf_wi(vector3 const&, vector3 const&) const override
+        {
+            return {};
+        }
+
+        virtual double pdf_wo(vector3 const&, vector3 const&) const override
         {
             return {};
         }

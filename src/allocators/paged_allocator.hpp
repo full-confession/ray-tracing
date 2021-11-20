@@ -49,6 +49,7 @@ namespace fc
 
             std::byte* p{active_page_.bytes() + active_page_offset_};
             active_page_offset_ += count;
+            std::memset(p, 0, count);
             return p;
         }
 

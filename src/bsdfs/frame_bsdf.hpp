@@ -16,7 +16,7 @@ namespace fc
             return bsdf_->get_type();
         }
 
-        virtual vector3 evaluate(vector3 const& wo, vector3 const wi) const override
+        virtual vector3 evaluate(vector3 const& wo, vector3 const& wi) const override
         {
             return bsdf_->evaluate(frame_.world_to_local(wo), frame_.world_to_local(wi));
         }
@@ -40,6 +40,11 @@ namespace fc
         virtual double pdf_wi(vector3 const& wo, vector3 const& wi) const override
         {
             return bsdf_->pdf_wi(frame_.world_to_local(wo), frame_.world_to_local(wi));
+        }
+
+        virtual double pdf_wo(vector3 const& wo, vector3 const& wi) const override
+        {
+            return bsdf_->pdf_wo(frame_.world_to_local(wo), frame_.world_to_local(wi));
         }
     private:
         frame frame_;

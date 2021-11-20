@@ -65,7 +65,8 @@ namespace fc
     enum class sample_stream_1d_usage
     {
         general,
-        light_picking
+        light_picking,
+        primitive_picking
     };
 
     enum class sample_stream_2d_usage

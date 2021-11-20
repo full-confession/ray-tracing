@@ -51,4 +51,10 @@ namespace fc
     {
         return 1.0 / (4.0 * math::pi);
     }
+
+    inline vector2 sample_triangle_uniform(vector2 const& u)
+    {
+        double su0{std::sqrt(u.x)};
+        return {1.0 - su0, u.y * su0};
+    }
 }
