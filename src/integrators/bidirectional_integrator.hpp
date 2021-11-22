@@ -416,8 +416,8 @@ namespace fc
                 vector3 f{t0.bsdf->evaluate(t0.wo, -wo)};
                 if(!f || !scene.visibility(*t0.p, *s0.p)) return {};
 
-                double G{std::abs(dot(t0.p->get_normal(), wo) * dot(s0.p->get_normal(), wo)) / sqr_len};
-                vector3 Li{t0.beta * f * G * r * s0.beta};
+                double microfacet_shadowing{std::abs(dot(t0.p->get_normal(), wo) * dot(s0.p->get_normal(), wo)) / sqr_len};
+                vector3 Li{t0.beta * f * microfacet_shadowing * r * s0.beta};
 
                 if(Li)
                 {
@@ -455,8 +455,8 @@ namespace fc
             vector3 f{s0.bsdf->evaluate(wo, s0.wi)};
             if(!f || !scene.visibility(*sensor_sample->p, *s0.p)) return;
 
-            double G{std::abs(dot(sensor_sample->p->get_normal(), wo) * dot(s0.p->get_normal(), wo)) / sqr_len};
-            vector3 Li{sensor_sample->Wo * f * s0.beta * (G / sensor_sample->pdf_p)};
+            double microfacet_shadowing{std::abs(dot(sensor_sample->p->get_normal(), wo) * dot(s0.p->get_normal(), wo)) / sqr_len};
+            vector3 Li{sensor_sample->Wo * f * s0.beta * (microfacet_shadowing / sensor_sample->pdf_p)};
 
             if(Li)
             {
@@ -498,8 +498,8 @@ namespace fc
             vector3 fs{s0.bsdf->evaluate(wo, s0.wi)};
             if(!fs || !scene.visibility(*t0.p, *s0.p)) return {};
 
-            double G{std::abs(dot(t0.p->get_normal(), wi) * dot(s0.p->get_normal(), wi)) / sqr_len};
-            vector3 Li{t0.beta * ft * G * fs * s0.beta};
+            double microfacet_shadowing{std::abs(dot(t0.p->get_normal(), wi) * dot(s0.p->get_normal(), wi)) / sqr_len};
+            vector3 Li{t0.beta * ft * microfacet_shadowing * fs * s0.beta};
 
             if(Li)
             {

@@ -216,6 +216,18 @@
     <ClInclude Include="src\materials\glass_material.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\textures\checker_texture.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\bsdfs\smooth_conductor_bsdf.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\materials\conductor_material.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\bsdfs\rough_conductor_bsdf.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">

@@ -229,7 +229,7 @@ namespace fc
     }
 
     template <typename T>
-    TVector3<T> Sqrt(TVector3<T> const& a)
+    TVector3<T> sqrt(TVector3<T> const& a)
     {
         return {
             std::sqrt(a.x),

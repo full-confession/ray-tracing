@@ -10,6 +10,7 @@
 #include "materials/diffuse_material.hpp"
 #include "materials/mirror_material.hpp"
 #include "materials/glass_material.hpp"
+#include "materials/conductor_material.hpp"
 #include "acceleration_structures/brute_force_acceleration_structure.hpp"
 #include "acceleration_structures/bvh_acceleration_structure.hpp"
 #include "light_distributions/uniform_light_distribution.hpp"
@@ -17,6 +18,8 @@
 #include "lights/const_infinity_area_light.hpp"
 #include "lights/texture_infinity_area_light.hpp"
 #include "textures/image_texture.hpp"
+#include "textures/checker_texture.hpp"
+#include "textures/const_texture.hpp"
 #include "core/assets.hpp"
 #include "samplers/stratified_sampler.hpp"
 #include "allocators/fixed_size_allocator.hpp"
@@ -39,7 +42,7 @@ int main()
     std::shared_ptr<fc::plane_surface> surface2{new fc::plane_surface{{}, {10.0, 10.0}}};
     std::shared_ptr<fc::plane_surface> surface4{new fc::plane_surface{{{0.0, 8.0, 0.0}, {fc::math::deg_to_rad(180), 0.0, 0.0}}, {2.0, 2.0}}};
 
-    std::shared_ptr<fc::material> diffuse_material{new fc::diffuse_material{}};
+    std::shared_ptr<fc::material> diffuse_material{new fc::diffuse_material{nullptr}};
 
     std::shared_ptr<fc::area_light> al0{new fc::const_diffuse_area_light{surface4.get(), {1.0, 1.0, 1.0}, 25.0}};
 
@@ -98,7 +101,7 @@ void test_mis()
     std::shared_ptr<fc::material> m1{new fc::mirror_material{{1.0, 1.0, 1.0}, {0.2, 0.2}}};
     std::shared_ptr<fc::material> m2{new fc::mirror_material{{1.0, 1.0, 1.0}, {0.4, 0.4}}};
 
-    std::shared_ptr<fc::material> diffuse_material{new fc::diffuse_material{}};
+    std::shared_ptr<fc::material> diffuse_material{new fc::diffuse_material{nullptr}};
 
     std::shared_ptr<fc::area_light> al0{new fc::const_diffuse_area_light{l0.get(), {1.0, 0.055998, 0.14469}, 125.0}};
     std::shared_ptr<fc::area_light> al1{new fc::const_diffuse_area_light{l1.get(), {0.458948, 0.206491, 1.0}, 20.0}};
@@ -143,18 +146,24 @@ void test_dragon()
     std::shared_ptr<fc::surface> dragon{new fc::mesh_surface{{{0.0, 0.0, 0.0}, {}, {0.03, 0.03, 0.03}}, mesh}};
     std::shared_ptr<fc::surface> sphere{new fc::sphere_surface{{{0.0, 1.0, 0.0}}, 1.0}};
     std::shared_ptr<fc::surface> sphere2{new fc::sphere_surface{{{0.0, 4.0, 0.0}}, 0.5}};
-    std::shared_ptr<fc::surface> plane{new fc::plane_surface{{}, {100.0, 100.0}}};
+    std::shared_ptr<fc::surface> plane{new fc::plane_surface{{}, {25.0, 25.0}}};
 
-    std::shared_ptr<fc::material> diffuse_material{new fc::diffuse_material{}};
-    std::shared_ptr<fc::material> mirror_material{new fc::mirror_material{{0.8, 0.4, 0.2}, {0.3, 0.3}}};
-    std::shared_ptr<fc::material> glass_material{new fc::glass_material{{1.0, 1.0, 1.0}}};
+    std::shared_ptr<fc::texture_2d_rgb> checker_texture{new fc::checker_texture_2d_rgb{{0.8, 0.8, 0.8}, {0.6, 0.6, 0.6}, 10.0}};
+    std::shared_ptr<fc::texture_2d_rgb> const_texture{new fc::const_texture_2d_rgb{{0.2, 0.4, 0.8}}};
+
+    std::shared_ptr<fc::material> diffuse_material{new fc::diffuse_material{checker_texture}};
+    std::shared_ptr<fc::material> diffuse_material_dragon{new fc::diffuse_material{const_texture}};
+
+    std::shared_ptr<fc::material> mirror_material{new fc::mirror_material{{0.2, 0.4, 0.8}, {0.4, 0.4}}};
+    std::shared_ptr<fc::material> glass_material{new fc::glass_material{{1.0, 1.0, 1.0}, {0.2, 0.4, 0.8}, 1.45}};
+    std::shared_ptr<fc::material> conductor_material{new fc::conductor_material{{0.183, 0.422, 1.373}, {4.0, 1.6, 1.150}, {0.5, 0.5}}};
 
     std::shared_ptr<fc::area_light> al0{new fc::const_diffuse_area_light{sphere2.get(), {1.0, 1.0, 1.0}, 25.0}};
 
     std::vector<fc::entity> entities{};
-    entities.push_back({dragon, glass_material, nullptr});
-    //entities.push_back({sphere, glass_material, nullptr});
-    entities.push_back({sphere2, diffuse_material, al0});
+    entities.push_back({dragon, conductor_material, nullptr});
+   // entities.push_back({sphere, conductor_material, nullptr});
+    //entities.push_back({sphere2, diffuse_material, al0});
     entities.push_back({plane, diffuse_material, nullptr});
 
     fc::bvh_acceleration_structure_factory acceleration_structure_factory{};
@@ -163,23 +172,24 @@ void test_dragon()
 
     auto image{assets.get_image("env-loft-hall")};
     std::shared_ptr<fc::image_texture_2d_rgb> texture{new fc::image_texture_2d_rgb{image, fc::reconstruction_filter::bilinear, 4}};
-    //std::shared_ptr<fc::infinity_area_light> infinity_area_light{new fc::texture_infinity_area_light{{{}, {0.0, fc::math::deg_to_rad(45.0), 0.0}}, texture, 1.0, image->get_resolution()}};
+    std::shared_ptr<fc::infinity_area_light> infinity_area_light{new fc::texture_infinity_area_light{{{}, {0.0, fc::math::deg_to_rad(45.0), 0.0}}, texture, 1.0, image->get_resolution()}};
     //std::shared_ptr<fc::infinity_area_light> infinity_area_light{new fc::const_infinity_area_light{{0.5, 0.5, 0.5}, 1.0}};
     
-    std::shared_ptr<fc::entity_scene> scene{new fc::entity_scene{std::move(entities), nullptr, acceleration_structure_factory, uldf, usldf}};
+    std::shared_ptr<fc::entity_scene> scene{new fc::entity_scene{std::move(entities), infinity_area_light, acceleration_structure_factory, uldf, usldf}};
 
     //fc::random_sampler_1d_factory random_sampler_1d_factory{};
     //fc::random_sampler_2d_factory random_sampler_2d_factory{};
     fc::stratified_sampler_1d_factory random_sampler_1d_factory{true};
     fc::stratified_sampler_2d_factory random_sampler_2d_factory{true};
-    fc::perspective_camera_factory camera_factory{{{0.0, 1.5, -10.0}}, fc::math::deg_to_rad(45.0)};
+    fc::perspective_camera_factory camera_factory{{{-4.421, 5.753, -5.448}, {fc::math::deg_to_rad(34.309), fc::math::deg_to_rad(35.237), 0.0}}, fc::math::deg_to_rad(27.0)};
 
     //std::shared_ptr<fc::integrator> integrator{new fc::backward_integrator{10}};
     //std::shared_ptr<fc::integrator> integrator{new fc::forward_mis_integrator{10, true}};
     std::shared_ptr<fc::integrator> integrator{new fc::bidirectional_integrator{10, true}};
+    //std::shared_ptr<fc::integrator> integrator{new fc::forward_bsdf_integrator{10}};
 
-    fc::renderer renderer{{640, 360}, camera_factory, integrator, scene, 16, random_sampler_1d_factory, random_sampler_2d_factory, 0};
-    renderer.run(4096);
+    fc::renderer renderer{{640, 360}, camera_factory, integrator, scene, 15, random_sampler_1d_factory, random_sampler_2d_factory, 0};
+    renderer.run(1024);
     renderer.export_image("normals");
 }
 
@@ -194,7 +204,7 @@ void test_shader_ball()
     std::shared_ptr<fc::surface> ball_inside{new fc::mesh_surface{{}, inside}};
     std::shared_ptr<fc::surface> plane{new fc::plane_surface{{}, {100.0, 100.0}}};
 
-    std::shared_ptr<fc::material> diffuse_material{new fc::diffuse_material{}};
+    std::shared_ptr<fc::material> diffuse_material{new fc::diffuse_material{nullptr}};
     std::shared_ptr<fc::material> mirror_material{new fc::mirror_material{{1.0, 1.0, 1.0}, {0.3, 0.3}}};
 
     std::vector<fc::entity> entities{};

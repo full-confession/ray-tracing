@@ -23,8 +23,8 @@ namespace fc
             if(!wh) return {};
             wh = normalize(wh);
 
-            double d{D(wh, alpha_.x, alpha_.y)};
-            double g{G(wo, wi, alpha_.x, alpha_.y)};
+            double d{microfacet_distribution(wh, alpha_.x, alpha_.y)};
+            double g{microfacet_shadowing(wo, wi, alpha_.x, alpha_.y)};
 
             return (d * g / (4.0 * std::abs(wi.y) * std::abs(wo.y))) * reflectance_;
         }
@@ -33,14 +33,14 @@ namespace fc
         {
             std::optional<bsdf_sample_wi_result> result{};
             if(wo.y == 0.0) return result;
-            vector3 wh{SampleWh(wo, sample_direction, alpha_.x, alpha_.y)};
+            vector3 wh{microfacet_sample_wh(wo, sample_direction, alpha_.x, alpha_.y)};
             if(dot(wo, wh) < 0.0) return result;
 
             vector3 wi{Reflect(wo, wh)};
             if(wo.y * wi.y <= 0.0) return result;
 
-            double d{D(wh, alpha_.x, alpha_.y)};
-            double g{G(wi, wo, alpha_.x, alpha_.y)};
+            double d{microfacet_distribution(wh, alpha_.x, alpha_.y)};
+            double g{microfacet_shadowing(wi, wo, alpha_.x, alpha_.y)};
 
             result.emplace();
             result->f = (d * g / (4.0 * std::abs(wo.y) * std::abs(wi.y))) * reflectance_;
@@ -54,14 +54,14 @@ namespace fc
         {
             std::optional<bsdf_sample_wo_result> result{};
             if(wi.y == 0.0) return result;
-            vector3 wh{SampleWh(wi, sample_direction, alpha_.x, alpha_.y)};
+            vector3 wh{microfacet_sample_wh(wi, sample_direction, alpha_.x, alpha_.y)};
             if(dot(wi, wh) < 0.0) return result;
 
             vector3 wo{Reflect(wi, wh)};
             if(wi.y * wo.y <= 0.0) return result;
 
-            double d{D(wh, alpha_.x, alpha_.y)};
-            double g{G(wo, wi, alpha_.x, alpha_.y)};
+            double d{microfacet_distribution(wh, alpha_.x, alpha_.y)};
+            double g{microfacet_shadowing(wo, wi, alpha_.x, alpha_.y)};
 
             result.emplace();
             result->f = (d * g / (4.0 * std::abs(wi.y) * std::abs(wo.y))) * reflectance_;
@@ -78,7 +78,7 @@ namespace fc
             if(!wh) return {};
             wh = normalize(wh);
 
-            return D(wh, alpha_.x, alpha_.y) * std::abs(wh.y) / (4.0 * dot(wo, wh));
+            return microfacet_distribution(wh, alpha_.x, alpha_.y) * std::abs(wh.y) / (4.0 * dot(wo, wh));
         }
 
         virtual double pdf_wo(vector3 const& wo, vector3 const& wi) const override
@@ -88,14 +88,14 @@ namespace fc
             if(!wh) return {};
             wh = normalize(wh);
 
-            return D(wh, alpha_.x, alpha_.y) * std::abs(wh.y) / (4.0 * dot(wi, wh));
+            return microfacet_distribution(wh, alpha_.x, alpha_.y) * std::abs(wh.y) / (4.0 * dot(wi, wh));
         }
 
     private:
         vector3 reflectance_{};
         vector2 alpha_{};
 
-        static double D(vector3 const& wh, double alphaX, double alphaY)
+        static double microfacet_distribution(vector3 const& wh, double alphaX, double alphaY)
         {
             double cos2Theta{wh.y * wh.y};
             double sin2Theta{std::max(0.0, 1.0 - cos2Theta)};
@@ -115,7 +115,7 @@ namespace fc
             return 1.0 / (math::pi * alphaX * alphaY * cos4Theta * (1.0 + e) * (1.0 + e));
         }
 
-        static double Lambda(vector3 const& w, double alphaX, double alphaY)
+        static double microfacet_lambda(vector3 const& w, double alphaX, double alphaY)
         {
             double cosTheta{w.y};
             double cos2Theta{cosTheta * cosTheta};
@@ -136,12 +136,12 @@ namespace fc
             return (-1.0 + std::sqrt(1.0 + alpha2Tan2Theta)) / 2.0;
         }
 
-        static double G(vector3 const& wo, vector3 const& wi, double alphaX, double alphaY)
+        static double microfacet_shadowing(vector3 const& wo, vector3 const& wi, double alphaX, double alphaY)
         {
-            return 1.0 / (1.0 + Lambda(wo, alphaX, alphaY) + Lambda(wi, alphaX, alphaY));
+            return 1.0 / (1.0 + microfacet_lambda(wo, alphaX, alphaY) + microfacet_lambda(wi, alphaX, alphaY));
         }
 
-        static vector3 SampleWh(vector3 const& wi, vector2 const& u, double alphaX, double alphaY)
+        static vector3 microfacet_sample_wh(vector3 const& wi, vector2 const& u, double alphaX, double alphaY)
         {
             double cosTheta{};
             double phi{};
