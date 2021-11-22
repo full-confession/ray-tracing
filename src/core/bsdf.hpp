@@ -10,8 +10,7 @@ namespace fc
     enum class bsdf_type
     {
         standard,
-        delta,
-        random_walk
+        delta
     };
 
     struct bsdf_sample_wi_result

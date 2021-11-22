@@ -56,7 +56,7 @@ namespace fc
     {
         surface_point* p{};
         double pdf_p{};
-        vector3 Lo{};
+        vector3 Le{};
     };
 
     struct standard_light_sample_p_and_wo_result
@@ -65,7 +65,7 @@ namespace fc
         double pdf_p{};
         vector3 wo{};
         double pdf_wo{};
-        vector3 Lo{};
+        vector3 Le{};
     };
 
     class standard_light : public light

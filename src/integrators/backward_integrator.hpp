@@ -76,7 +76,7 @@ namespace fc
 
                 p1 = raycast_result.value();
                 w10 = -light_sample->wo;
-                beta = light_sample->Lo * (std::abs(dot(light_sample->p->get_normal(), w10)) / (light_sample->pdf_p * light_sample->pdf_wo * pdf_light));
+                beta = light_sample->Le * (std::abs(dot(light_sample->p->get_normal(), w10)) / (light_sample->pdf_p * light_sample->pdf_wo * pdf_light));
 
             }
             else if(light->get_type() == light_type::infinity_area)

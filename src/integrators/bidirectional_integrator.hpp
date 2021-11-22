@@ -19,8 +19,8 @@ namespace fc
         static constexpr int stream_backward_bsdf_direction_sampling = 7;
 
     public:
-        explicit bidirectional_integrator(int max_path_length)
-            : max_path_length_{max_path_length}
+        explicit bidirectional_integrator(int max_path_length, bool visible_infinity_area_light)
+            : max_path_length_{max_path_length}, visible_infinity_area_light_{visible_infinity_area_light}
         { }
 
         virtual std::vector<sample_stream_1d_description> get_required_1d_sample_streams() const override
@@ -61,7 +61,8 @@ namespace fc
                 int x{std::min(max_vertex_count - 1, s_vertex_count)};
                 for(int s{2}; s <= x; ++s)
                 {
-                    connect_t1_sn(measurement, scene, sampler_2d, allocator, s_vertices, s);
+                    if(s_vertices[s - 1].bsdf->get_type() != bsdf_type::delta)
+                        connect_t1_sn(measurement, scene, sampler_2d, allocator, s_vertices, s);
                 }
             }
 
@@ -76,17 +77,22 @@ namespace fc
                 int y{std::min(max_vertex_count - 1, t_vertex_count)};
                 for(int t{2}; t <= y; ++t)
                 {
-                    Li += connect_tn_s1(scene, t_vertices, t, s_vertices);
+                    if(!t_vertices[t - 1].infity_area_light && t_vertices[t - 1].bsdf->get_type() != bsdf_type::delta)
+                        Li += connect_tn_s1(scene, t_vertices, t, s_vertices);
                 }
             }
 
             int z{std::min(max_vertex_count - 2, t_vertex_count)};
             for(int t{2}; t <= z; ++t)
             {
-                int v{std::min(max_vertex_count - t, s_vertex_count)};
-                for(int s{2}; s <= v; ++s)
+                if(!t_vertices[t - 1].infity_area_light && t_vertices[t - 1].bsdf->get_type() != bsdf_type::delta)
                 {
-                    Li += connect_tn_sn(scene, t_vertices, t, s_vertices, s);
+                    int v{std::min(max_vertex_count - t, s_vertex_count)};
+                    for(int s{2}; s <= v; ++s)
+                    {
+                        if(s_vertices[s - 1].bsdf->get_type() != bsdf_type::delta)
+                            Li += connect_tn_sn(scene, t_vertices, t, s_vertices, s);
+                    }
                 }
             }
 
@@ -96,7 +102,7 @@ namespace fc
 
     private:
         int max_path_length_{};
-
+        bool visible_infinity_area_light_{};
 
         struct vertex
         {
@@ -113,6 +119,7 @@ namespace fc
             bsdf const* bsdf{};
 
             bool infity_area_light{};
+            bool connectable{};
         };
 
         template<typename T>
@@ -142,6 +149,7 @@ namespace fc
             vertices[0].pdf_forward = sensor_sample->pdf_p;
             vertices[0].wi = sensor_sample->wi;
             vertices[0].beta = vector3{1.0 / vertices[0].pdf_forward};
+            vertices[0].connectable = true;
             vertex_count += 1;
 
             auto raycast_result{scene.raycast(*vertices[0].p, vertices[0].wi, allocator)};
@@ -152,6 +160,7 @@ namespace fc
                     vertices[1].infity_area_light = true;
                     vertices[1].pdf_forward = sensor_sample->pdf_wi;
                     vertices[1].beta = vertices[0].beta * sensor_sample->Wo * (std::abs(dot(vertices[0].p->get_normal(), vertices[0].wi)) / sensor_sample->pdf_wi);
+                    vertices[1].connectable = true;
                     return vertex_count + 1;
                 }
                 else
@@ -165,6 +174,7 @@ namespace fc
             vertices[1].wo = -vertices[0].wi;
             vertices[1].beta = vertices[0].beta * sensor_sample->Wo * (std::abs(dot(vertices[0].p->get_normal(), vertices[0].wi)) / sensor_sample->pdf_wi);
             vertices[1].bsdf = vertices[1].p->get_material()->evaluate(*vertices[1].p, allocator);
+            vertices[1].connectable = vertices[1].bsdf->get_type() != bsdf_type::delta;
             vertex_count += 1;
 
             int v0{0};
@@ -185,8 +195,10 @@ namespace fc
                         vertices[v2].infity_area_light = true;
                         vertices[v2].pdf_forward = bsdf_sample->pdf_wi;
                         vertices[v2].beta = vertices[v1].beta * bsdf_sample->f * (std::abs(dot(vertices[v1].p->get_normal(), vertices[v1].wi)) / bsdf_sample->pdf_wi);
+                        vertices[v2].connectable = true;
 
                         vertices[v0].pdf_backward = vertices[v1].bsdf->pdf_wo(vertices[v1].wo, vertices[v1].wi) * std::abs(dot(vertices[v0].p->get_normal(), vertices[v1].wo)) / sqr_length(vertices[v0].p->get_position() - vertices[v1].p->get_position());
+
                         return vertex_count + 1;
                     }
                     else
@@ -200,9 +212,12 @@ namespace fc
                 vertices[v2].wo = -vertices[v1].wi;
                 vertices[v2].beta = vertices[v1].beta * bsdf_sample->f * (std::abs(dot(vertices[v1].p->get_normal(), vertices[v1].wi)) / bsdf_sample->pdf_wi);
                 vertices[v2].bsdf = vertices[v2].p->get_material()->evaluate(*vertices[v2].p, allocator);
+                vertices[v2].connectable = vertices[v2].bsdf->get_type() != bsdf_type::delta;
                 vertex_count += 1;
 
-                vertices[v0].pdf_backward = vertices[v1].bsdf->pdf_wo(vertices[v1].wo, vertices[v1].wi) * std::abs(dot(vertices[v0].p->get_normal(), vertices[v1].wo)) / sqr_length(vertices[v0].p->get_position() - vertices[v1].p->get_position());
+
+                double pdf_wo{vertices[v1].connectable ? vertices[v1].bsdf->pdf_wo(vertices[v1].wo, vertices[v1].wi) : 1.0};
+                vertices[v0].pdf_backward = pdf_wo * std::abs(dot(vertices[v0].p->get_normal(), vertices[v1].wo)) / sqr_length(vertices[v0].p->get_position() - vertices[v1].p->get_position());
 
                 v0 += 1;
                 v1 += 1;
@@ -227,6 +242,7 @@ namespace fc
                 vertices[0].pdf_backward = pdf_light * light_sample->pdf_p;
                 vertices[0].wo = light_sample->wo;
                 vertices[0].beta = vector3{1.0 / vertices[0].pdf_backward};
+                vertices[0].connectable = true;
                 vertex_count += 1;
 
                 auto raycast_result{scene.raycast(*vertices[0].p, vertices[0].wo, allocator)};
@@ -235,8 +251,9 @@ namespace fc
                 vertices[1].p = *raycast_result;
                 vertices[1].pdf_backward = light_sample->pdf_wo * std::abs(dot(vertices[1].p->get_normal(), vertices[0].wo)) / sqr_length(vertices[1].p->get_position() - vertices[0].p->get_position());
                 vertices[1].wi = -vertices[0].wo;
-                vertices[1].beta = vertices[0].beta * light_sample->Lo * (std::abs(dot(vertices[0].p->get_normal(), vertices[0].wo)) / light_sample->pdf_wo);
+                vertices[1].beta = vertices[0].beta * light_sample->Le * (std::abs(dot(vertices[0].p->get_normal(), vertices[0].wo)) / light_sample->pdf_wo);
                 vertices[1].bsdf = vertices[1].p->get_material()->evaluate(*vertices[1].p, allocator);
+                vertices[1].connectable = vertices[1].bsdf->get_type() != bsdf_type::delta;
                 vertex_count += 1;
             }
             else
@@ -249,6 +266,7 @@ namespace fc
                 vertices[0].pdf_backward = pdf_light * light_sample->pdf_wi;
                 vertices[0].wi = light_sample->wi;
                 vertices[0].beta = vector3{light_sample->Li / vertices[0].pdf_backward};
+                vertices[0].connectable = true;
                 vertex_count += 1;
 
                 surface_point p0{};
@@ -261,6 +279,7 @@ namespace fc
                 vertices[1].wi = light_sample->wi;
                 vertices[1].beta = vertices[0].beta / light_sample->pdf_o;
                 vertices[1].bsdf = vertices[1].p->get_material()->evaluate(*vertices[1].p, allocator);
+                vertices[1].connectable = vertices[1].bsdf->get_type() != bsdf_type::delta;
                 vertex_count += 1;
             }
 
@@ -283,16 +302,21 @@ namespace fc
                 vertices[v2].wi = -vertices[v1].wo;
                 vertices[v2].beta = vertices[v1].beta * bsdf_sample->f * (std::abs(dot(vertices[v1].p->get_normal(), vertices[v1].wo)) / bsdf_sample->pdf_wo);
                 vertices[v2].bsdf = vertices[v2].p->get_material()->evaluate(*vertices[v2].p, allocator);
+                vertices[v2].connectable = vertices[v2].bsdf->get_type() != bsdf_type::delta;
                 vertex_count += 1;
 
+
+
+                double pdf_wi{vertices[v1].connectable ? vertices[v1].bsdf->pdf_wi(vertices[v1].wo, vertices[v1].wi) : 1.0};
                 if(!vertices[v0].infity_area_light)
                 {
-                    vertices[v0].pdf_forward = vertices[v1].bsdf->pdf_wi(vertices[v1].wo, vertices[v1].wi) * std::abs(dot(vertices[v0].p->get_normal(), vertices[v1].wi)) / sqr_length(vertices[v0].p->get_position() - vertices[v1].p->get_position());
+                    vertices[v0].pdf_forward = pdf_wi * std::abs(dot(vertices[v0].p->get_normal(), vertices[v1].wi)) / sqr_length(vertices[v0].p->get_position() - vertices[v1].p->get_position());
                 }
                 else
                 {
-                    vertices[v0].pdf_forward = vertices[v1].bsdf->pdf_wi(vertices[v1].wo, vertices[v1].wi);
+                    vertices[v0].pdf_forward = pdf_wi;
                 }
+
 
                 v0 += 1;
                 v1 += 1;
@@ -303,13 +327,16 @@ namespace fc
         }
 
 
-        static vector3 connect_tn_s0(scene const& scene, vertex* t_vertices, int t)
+        vector3 connect_tn_s0(scene const& scene, vertex* t_vertices, int t) const
         {
             vertex& t0{t_vertices[t - 1]};
             vertex& t1{t_vertices[t - 2]};
 
             if(t0.infity_area_light)
             {
+                if(t == 2 && !visible_infinity_area_light_)
+                    return {};
+
                 vector3 Li{t0.beta * scene.get_infinity_area_light()->get_Li(t1.wi)};
 
                 if(t > 2 && Li)
@@ -352,8 +379,6 @@ namespace fc
         static vector3 connect_tn_s1(scene const& scene, vertex* t_vertices, int t, vertex* s_vertices)
         {
             vertex& t0{t_vertices[t - 1]};
-            if(t0.infity_area_light) return {};
-
             vertex& t1{t_vertices[t - 2]};
             vertex& s0{s_vertices[0]};
 
@@ -512,15 +537,20 @@ namespace fc
             double r{1.0};
             for(int i{t - 1}; i > 0; --i)
             {
-                r *= (t_vertices[i].pdf_backward / t_vertices[i].pdf_forward) * (t_vertices[i].pdf_backward / t_vertices[i].pdf_forward);
-                sum += r;
+                r *= (t_vertices[i].pdf_backward / t_vertices[i].pdf_forward);
+                
+                if(t_vertices[i].connectable && t_vertices[i - 1].connectable)
+                    sum += r;
             }
             
             r = 1.0;
             for(int i{s - 1}; i >= 0; --i)
             {
-                r *= (s_vertices[i].pdf_forward / s_vertices[i].pdf_backward) * (s_vertices[i].pdf_forward / s_vertices[i].pdf_backward);
-                sum += r;
+                r *= (s_vertices[i].pdf_forward / s_vertices[i].pdf_backward);
+                
+                bool c{i > 0 ? s_vertices[i - 1].connectable : true};
+                if(s_vertices[i].connectable && c)
+                    sum += r;
             }
             
             return 1.0 / sum;

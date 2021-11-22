@@ -204,6 +204,18 @@
     <ClInclude Include="src\integrators\bidirectional_integrator.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\bsdfs\glass_bsdf.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\bsdfs\common.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\bsdfs\specular_transmission.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\materials\glass_material.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">

@@ -35,7 +35,7 @@ namespace fc
             result->p = surface_sample->p;
             result->p->set_light(this);
             result->pdf_p = surface_sample->pdf_p;
-            result->Lo = color_ * strength_;
+            result->Le = color_ * strength_;
 
             return result;
         }
@@ -59,7 +59,7 @@ namespace fc
             result->wo = frame_around_normal.local_to_world(w);
             result->pdf_wo = w.y * math::inv_pi;
 
-            result->Lo = color_ * strength_;
+            result->Le = color_ * strength_;
             return result;
         }
 
