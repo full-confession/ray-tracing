@@ -82,6 +82,11 @@ namespace fc
                         surface_point const* p2{raycast_result.value()};
                         vector3 w21{-bsdf_sample->wi};
 
+                        if(p2->get_medium() != nullptr && dot(bsdf_sample->wi, p2->get_normal()) > 0.0)
+                        {
+                            beta *= p2->get_medium()->transmittance(p1->get_position(), p2->get_position());
+                        }
+
                         if(p2->get_light() != nullptr)
                         {
                             Li += beta * p2->get_light()->get_Le(*p2, w21);

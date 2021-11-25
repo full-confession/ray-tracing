@@ -2,6 +2,7 @@
 #include "surface.hpp"
 #include "material.hpp"
 #include "light.hpp"
+#include "medium.hpp"
 
 #include <memory>
 #include <vector>
@@ -13,6 +14,7 @@ namespace fc
         std::shared_ptr<surface> surface{};
         std::shared_ptr<material> material{};
         std::shared_ptr<area_light> area_light{};
+        std::shared_ptr<medium> medium{};
     };
 
     struct entity_primitive

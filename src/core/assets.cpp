@@ -1,6 +1,7 @@
 #include "assets.hpp"
 #include "../lib/json.hpp"
 
+#include "../images/r8_image.hpp"
 #include "../images/rgb8_image.hpp"
 #include "../images/srgb8_image.hpp"
 #include "../images/rgb32_image.hpp"
@@ -25,12 +26,14 @@ NLOHMANN_JSON_SERIALIZE_ENUM(asset_type, {
 
 enum class image_format
 {
+    r8,
     rgb8,
     srgb8,
     rgb32
 };
 
 NLOHMANN_JSON_SERIALIZE_ENUM(image_format, {
+    {image_format::r8, "r8"},
     {image_format::rgb8, "rgb8"},
     {image_format::srgb8, "srgb8"},
     {image_format::rgb32, "rgb32"}
@@ -154,7 +157,11 @@ std::shared_ptr<image> assets::load_image(std::string const& name)
     if(!std::filesystem::exists(image_path)) throw;
 
     std::size_t expected_size{};
-    if(description.format == image_format::srgb8 || description.format == image_format::rgb8)
+    if(description.format == image_format::r8)
+    {
+        expected_size = static_cast<std::size_t>(description.width) * static_cast<std::size_t>(description.height) * sizeof(r8_pixel);
+    }
+    else if(description.format == image_format::srgb8 || description.format == image_format::rgb8)
     {
         expected_size = static_cast<std::size_t>(description.width) * static_cast<std::size_t>(description.height) * sizeof(rgb8_pixel);
     }
@@ -172,7 +179,14 @@ std::shared_ptr<image> assets::load_image(std::string const& name)
     std::ifstream image_file{image_path, std::ios::in | std::ios::binary};
     if(!image_file) throw;
 
-    if(description.format == image_format::rgb8)
+    if(description.format == image_format::r8)
+    {
+        std::vector<r8_pixel> pixels{};
+        pixels.resize(static_cast<std::size_t>(description.width) * static_cast<std::size_t>(description.height));
+        image_file.read(reinterpret_cast<char*>(pixels.data()), expected_size);
+        return std::shared_ptr<r8_image>{new r8_image{{description.width, description.height}, std::move(pixels)}};
+    }
+    else if(description.format == image_format::rgb8)
     {
         std::vector<rgb8_pixel> pixels{};
         pixels.resize(static_cast<std::size_t>(description.width) * static_cast<std::size_t>(description.height));
@@ -186,7 +200,6 @@ std::shared_ptr<image> assets::load_image(std::string const& name)
         image_file.read(reinterpret_cast<char*>(pixels.data()), expected_size);
         return std::shared_ptr<srgb8_image>{new srgb8_image{{description.width, description.height}, std::move(pixels)}};
     }
-
     else if(description.format == image_format::rgb32)
     {
         std::vector<rgb32_pixel> pixels{};

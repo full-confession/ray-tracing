@@ -174,7 +174,7 @@
     <ClInclude Include="src\images\rgb32_image.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\bsdfs\mirror_bsdf.hpp">
+    <ClInclude Include="src\bsdfs\smooth_mirror_bsdf.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\materials\mirror_material.hpp">
@@ -198,13 +198,13 @@
     <ClInclude Include="src\bsdfs\frame_bsdf.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\bsdfs\mirror_microfacet.hpp">
+    <ClInclude Include="src\bsdfs\rough_mirror_bsdf.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\integrators\bidirectional_integrator.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\bsdfs\glass_bsdf.hpp">
+    <ClInclude Include="src\bsdfs\smooth_glass_bsdf.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\bsdfs\common.hpp">
@@ -226,6 +226,18 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\bsdfs\rough_conductor_bsdf.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\bsdfs\rough_plastic_bsdf.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\materials\plastic_material.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\core\medium.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\images\r8_image.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

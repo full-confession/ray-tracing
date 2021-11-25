@@ -7,6 +7,7 @@ namespace fc
     class material;
     class measurement;
     class surface;
+    class medium;
 
     class surface_point
     {
@@ -23,7 +24,7 @@ namespace fc
         material const* get_material() const { return material_; }
         measurement const* get_measurement() const { return measurement_; }
         surface const* get_surface() const { return surface_; }
-
+        medium const* get_medium() const { return medium_; }
 
         void set_position(vector3 const& position) { position_ = position; }
         void set_normal(vector3 const& normal) { normal_ = normal; }
@@ -37,7 +38,7 @@ namespace fc
         void set_material(material const* material) { material_ = material; }
         void set_measurement(measurement const* measurement) { measurement_ = measurement; }
         void set_surface(surface const* surface) { surface_ = surface; }
-
+        void set_medium(medium const* medium) { medium_ = medium; }
 
         void* get_measurement_data() const { return measurement_data_; }
         void set_measurement_data(void* data) { measurement_data_ = data; }
@@ -54,6 +55,7 @@ namespace fc
         standard_light const* light_{};
         material const* material_{};
         surface const* surface_{};
+        medium const* medium_{};
 
         measurement const* measurement_{};
         void* measurement_data_{};

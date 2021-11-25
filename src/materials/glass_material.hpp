@@ -2,28 +2,35 @@
 #include "../core/material.hpp"
 #include "../bsdfs/frame_bsdf.hpp"
 #include "../bsdfs/specular_transmission.hpp"
-#include "../bsdfs/glass_bsdf.hpp"
+#include "../bsdfs/smooth_glass_bsdf.hpp"
 #include "../bsdfs/shading_normal_bsdf.hpp"
+#include "../core/texture.hpp"
+#include <memory>
 
 namespace fc
 {
     class glass_material : public material
     {
     public:
-        explicit glass_material(vector3 const& reflectance, vector3 const& transmittance, double ior)
-            : reflectance_{reflectance}, transmittance_{transmittance}, ior_{ior}
+        explicit glass_material(std::shared_ptr<texture_2d_rgb> reflectance, std::shared_ptr<texture_2d_rgb> transmittance, double ior)
+            : reflectance_{std::move(reflectance)}, transmittance_{std::move(transmittance)}, ior_{ior}
         { }
 
         virtual bsdf const* evaluate(surface_point const& p, allocator_wrapper& allocator) const override
         {
-            bsdf const* specular_transmission{allocator.emplace<glass_bsdf>(reflectance_, transmittance_, 1.0, ior_)};
+            vector3 reflectance{reflectance_->evaluate(p.get_uv())};
+            vector3 trasmittance{transmittance_->evaluate(p.get_uv())};
+
+            bsdf const* bsdf{allocator.emplace<smooth_glass_bsdf>(reflectance, trasmittance, 1.0, ior_)};
+
             frame shading_frame{p.get_shading_tangent(), p.get_shading_normal(), p.get_shading_bitangent()};
-            return allocator.emplace<frame_bsdf>(shading_frame, specular_transmission);
+            return allocator.emplace<frame_bsdf>(shading_frame, bsdf);
         }
 
     private:
-        vector3 reflectance_{};
-        vector3 transmittance_{};
+        std::shared_ptr<texture_2d_rgb> reflectance_{};
+        std::shared_ptr<texture_2d_rgb> transmittance_{};
         double ior_{};
+
     };
 }

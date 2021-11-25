@@ -87,7 +87,6 @@ namespace fc
                                         double pdf_bsdf_w1L{bsdf_p1->pdf_wi(w10, light_sample->wi)};
                                         double pdf_light_w1L{pdf_light * light_sample->pdf_wi};
                                         double weight{power_heuristics(pdf_light_w1L, pdf_bsdf_w1L)};
-                                        weight = 1.0;
                                         Li += (beta * fL10 * light_sample->Li) * (weight * std::abs(dot(p1->get_normal(), light_sample->wi)) / pdf_light_w1L);
                                     }
                                 }
@@ -110,7 +109,6 @@ namespace fc
                                         double pdf_bsdf_pL{bsdf_p1->pdf_wi(w10, w1L) * x};
                                         double pdf_light_pL{pdf_light * light_sample->pdf_p};
                                         double weight{power_heuristics(pdf_light_pL, pdf_bsdf_pL)};
-                                        weight = 1.0;
                                         Li += (beta * fL10 * G1L * light_sample->Le) * (weight / pdf_light_pL);
                                     }
                                 }
@@ -132,10 +130,10 @@ namespace fc
                         {
                             if(scene.get_infinity_area_light() != nullptr)
                             {
-                                /*double pdf_light{scene.get_spatial_light_distribution()->get(*p1)->pdf(scene.get_infinity_area_light())};
+                                double pdf_light{scene.get_spatial_light_distribution()->get(*p1)->pdf(scene.get_infinity_area_light())};
                                 double pdf_light_w12{pdf_light * scene.get_infinity_area_light()->pdf_wi(bsdf_sample->wi)};
                                 double weight{power_heuristics(bsdf_sample->pdf_wi, pdf_light_w12)};
-                                Li += weight * beta * scene.get_infinity_area_light()->get_Li(bsdf_sample->wi);*/
+                                Li += weight * beta * scene.get_infinity_area_light()->get_Li(bsdf_sample->wi);
                             }
                             break;
                         }
@@ -143,13 +141,19 @@ namespace fc
                         {
                             surface_point const* p2{raycast_result.value()};
                             vector3 w21{-bsdf_sample->wi};
+
+                            if(p2->get_medium() != nullptr && dot(bsdf_sample->wi, p2->get_normal()) > 0.0)
+                            {
+                                beta *= p2->get_medium()->transmittance(p1->get_position(), p2->get_position());
+                            }
+
                             if(p2->get_light() != nullptr)
                             {
-                                /*double pdf_light{scene.get_spatial_light_distribution()->get(*p1)->pdf(p2->get_light())};
+                                double pdf_light{scene.get_spatial_light_distribution()->get(*p1)->pdf(p2->get_light())};
                                 double pdf_light_p2{pdf_light * p2->get_light()->pdf_p(*p2)};
                                 double pdf_bsdf_p2{bsdf_sample->pdf_wi * std::abs(dot(p2->get_normal(), bsdf_sample->wi)) / sqr_length(p2->get_position() - p1->get_position())};
                                 double weight{power_heuristics(pdf_bsdf_p2, pdf_light_p2)};
-                                Li += weight * beta * p2->get_light()->get_Le(*p2, w21);*/
+                                Li += weight * beta * p2->get_light()->get_Le(*p2, w21);
                             }
 
                             p1 = p2;
@@ -180,6 +184,11 @@ namespace fc
                         {
                             surface_point const* p2{raycast_result.value()};
                             vector3 w21{-bsdf_sample->wi};
+
+                            if(p2->get_medium() != nullptr && dot(bsdf_sample->wi, p2->get_normal()) > 0.0)
+                            {
+                                beta *= p2->get_medium()->transmittance(p1->get_position(), p2->get_position());
+                            }
 
                             if(p2->get_light() != nullptr)
                             {

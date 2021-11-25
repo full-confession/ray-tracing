@@ -268,7 +268,7 @@ namespace fc
     }
 
     template <typename T>
-    TVector3<T> Exp(TVector3<T> const& v)
+    TVector3<T> exp(TVector3<T> const& v)
     {
         return {std::exp(v.x), std::exp(v.y), std::exp(v.z)};
     }

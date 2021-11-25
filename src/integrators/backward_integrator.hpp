@@ -149,8 +149,16 @@ namespace fc
                 auto raycast_result{scene.raycast(*p1, bsdf_sample->wo, allocator)};
                 if(!raycast_result) break;
 
+                surface_point* p2{*raycast_result};
+
                 beta *= bsdf_sample->f * (std::abs(dot(p1->get_normal(), bsdf_sample->wo)) / bsdf_sample->pdf_wo);
-                p1 = raycast_result.value();
+
+                if(p2->get_medium() != nullptr && dot(bsdf_sample->wo, p2->get_normal()) > 0.0)
+                {
+                    beta *= p2->get_medium()->transmittance(p1->get_position(), p2->get_position());
+                }
+
+                p1 = p2;
                 w10 = -bsdf_sample->wo;
             }
         }

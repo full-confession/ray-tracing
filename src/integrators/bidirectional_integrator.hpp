@@ -5,7 +5,6 @@ namespace fc
 {
     class bidirectional_integrator : public integrator
     {
-
         static constexpr int stream_backward_light_picking = 0;
         static constexpr int stream_backward_light_primitive_picking = 1;
 
@@ -211,6 +210,10 @@ namespace fc
                 vertices[v2].pdf_forward = bsdf_sample->pdf_wi * std::abs(dot(vertices[v2].p->get_normal(), vertices[v1].wi)) / sqr_length(vertices[v2].p->get_position() - vertices[v1].p->get_position());
                 vertices[v2].wo = -vertices[v1].wi;
                 vertices[v2].beta = vertices[v1].beta * bsdf_sample->f * (std::abs(dot(vertices[v1].p->get_normal(), vertices[v1].wi)) / bsdf_sample->pdf_wi);
+                if(vertices[v2].p->get_medium() != nullptr && dot(vertices[v2].wo, vertices[v2].p->get_normal()) < 0.0)
+                {
+                    vertices[v2].beta *= vertices[v2].p->get_medium()->transmittance(vertices[v2].p->get_position(), vertices[v1].p->get_position());
+                }
                 vertices[v2].bsdf = vertices[v2].p->get_material()->evaluate(*vertices[v2].p, allocator);
                 vertices[v2].connectable = vertices[v2].bsdf->get_type() != bsdf_type::delta;
                 vertex_count += 1;
@@ -301,6 +304,10 @@ namespace fc
                 vertices[v2].pdf_backward = bsdf_sample->pdf_wo * std::abs(dot(vertices[v2].p->get_normal(), vertices[v1].wo)) / sqr_length(vertices[v2].p->get_position() - vertices[v1].p->get_position());
                 vertices[v2].wi = -vertices[v1].wo;
                 vertices[v2].beta = vertices[v1].beta * bsdf_sample->f * (std::abs(dot(vertices[v1].p->get_normal(), vertices[v1].wo)) / bsdf_sample->pdf_wo);
+                if(vertices[v2].p->get_medium() != nullptr && dot(vertices[v2].wi, vertices[v2].p->get_normal()) < 0.0)
+                {
+                    vertices[v2].beta *= vertices[v2].p->get_medium()->transmittance(vertices[v2].p->get_position(), vertices[v1].p->get_position());
+                }
                 vertices[v2].bsdf = vertices[v2].p->get_material()->evaluate(*vertices[v2].p, allocator);
                 vertices[v2].connectable = vertices[v2].bsdf->get_type() != bsdf_type::delta;
                 vertex_count += 1;
@@ -498,8 +505,8 @@ namespace fc
             vector3 fs{s0.bsdf->evaluate(wo, s0.wi)};
             if(!fs || !scene.visibility(*t0.p, *s0.p)) return {};
 
-            double microfacet_shadowing{std::abs(dot(t0.p->get_normal(), wi) * dot(s0.p->get_normal(), wi)) / sqr_len};
-            vector3 Li{t0.beta * ft * microfacet_shadowing * fs * s0.beta};
+            double G{std::abs(dot(t0.p->get_normal(), wi) * dot(s0.p->get_normal(), wi)) / sqr_len};
+            vector3 Li{t0.beta * ft * G * fs * s0.beta};
 
             if(Li)
             {

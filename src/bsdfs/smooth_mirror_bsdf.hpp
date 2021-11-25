@@ -4,10 +4,10 @@
 #include "../core/sampling.hpp"
 namespace fc
 {
-    class mirror_bsdf : public bsdf
+    class smooth_mirror_bsdf : public bsdf
     {
     public:
-        explicit mirror_bsdf(vector3 const& reflectance)
+        explicit smooth_mirror_bsdf(vector3 const& reflectance)
             : reflectance_{reflectance}
         { }
 

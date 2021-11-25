@@ -4,10 +4,10 @@
 
 namespace fc
 {
-    class glass_bsdf : public bsdf
+    class smooth_glass_bsdf : public bsdf
     {
     public:
-        explicit glass_bsdf(vector3 const& reflectance, vector3 const& transmittance, double eta_a, double eta_b)
+        explicit smooth_glass_bsdf(vector3 const& reflectance, vector3 const& transmittance, double eta_a, double eta_b)
             : reflectance_{reflectance}, transmittance_{transmittance}, eta_a_{eta_a}, eta_b_{eta_b}
         { }
 
