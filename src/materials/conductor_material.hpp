@@ -15,7 +15,7 @@ namespace fc
             : ior_{std::move(ior)}, k_{std::move(k)}, roughness_{std::move(roughness)}
         { }
 
-        virtual bsdf const* evaluate(surface_point const& p, allocator_wrapper& allocator) const override
+        virtual bsdf const* evaluate(surface_point const& p, double, allocator_wrapper& allocator) const override
         {
             bsdf const* bsdf{};
 

@@ -21,7 +21,7 @@ namespace fc
             return {};
         }
 
-        virtual std::optional<bsdf_sample_wi_result> sample_wi(vector3 const& wo, vector2 const& sample_pick, vector2 const& sample_direction) const override
+        virtual std::optional<bsdf_sample_wi_result> sample_wi(vector3 const& wo, double sample_pick, vector2 const& sample_direction) const override
         {
             std::optional<bsdf_sample_wi_result> result{};
             if(wo.y == 0.0) return result;
@@ -29,12 +29,13 @@ namespace fc
             bool leaving{wo.y > 0.0};
             double fresnel{leaving ? fr_dielectric(wo.y, eta_a_, eta_b_) : fr_dielectric(-wo.y, eta_b_, eta_a_)};
 
-            if(sample_pick.y < fresnel)
+            if(sample_pick < fresnel)
             {
                 result.emplace();
                 result->wi = {-wo.x, wo.y, -wo.z};
                 result->pdf_wi = fresnel;
                 result->f = reflectance_ * (fresnel / std::abs(result->wi.y));
+                return result;
             }
             else
             {
@@ -64,7 +65,7 @@ namespace fc
             }
         }
 
-        virtual std::optional<bsdf_sample_wo_result> sample_wo(vector3 const& wi, vector2 const& sample_pick, vector2 const& sample_direction) const override
+        virtual std::optional<bsdf_sample_wo_result> sample_wo(vector3 const& wi, double sample_pick, vector2 const& sample_direction) const override
         {
             std::optional<bsdf_sample_wo_result> result{};
             if(wi.y == 0.0) return result;
@@ -72,12 +73,13 @@ namespace fc
             bool leaving{wi.y > 0.0};
             double fresnel{leaving ? fr_dielectric(wi.y, eta_a_, eta_b_) : fr_dielectric(-wi.y, eta_b_, eta_a_)};
 
-            if(sample_pick.y < fresnel)
+            if(sample_pick < fresnel)
             {
                 result.emplace();
                 result->wo = {-wi.x, wi.y, -wi.z};
                 result->pdf_wo = fresnel;
                 result->f = reflectance_ * (fresnel / std::abs(result->wo.y));
+                return result;
             }
             else
             {

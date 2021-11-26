@@ -2,6 +2,7 @@
 #include "../core/material.hpp"
 #include "../bsdfs/frame_bsdf.hpp"
 #include "../bsdfs/rough_plastic_bsdf.hpp"
+#include "../bsdfs/shading_normal_bsdf.hpp"
 #include "../core/texture.hpp"
 #include <memory>
 
@@ -14,7 +15,7 @@ namespace fc
             : diffuse_{std::move(diffuse)}, specular_{std::move(specular)}, roughness_{std::move(roughness)}, ior_{ior}
         { }
 
-        virtual bsdf const* evaluate(surface_point const& p, allocator_wrapper& allocator) const override
+        virtual bsdf const* evaluate(surface_point const& p, double, allocator_wrapper& allocator) const override
         {
             vector3 diffuse{diffuse_->evaluate(p.get_uv())};
             vector3 specular{specular_->evaluate(p.get_uv())};

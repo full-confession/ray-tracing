@@ -8,13 +8,14 @@ namespace fc
     class backward_integrator : public integrator
     {
         static constexpr int stream_light_picking = 0;
-        static constexpr int stream_primitive_picking = 0;
+        static constexpr int stream_primitive_picking = 1;
+        static constexpr int stream_material_picking = 2;
+        static constexpr int stream_bsdf_picking = 3;
 
         static constexpr int stream_measurement_point_sampling = 0;
         static constexpr int stream_light_point_sampling = 1;
         static constexpr int stream_light_direction_sampling = 2;
-        static constexpr int stream_bsdf_picking = 3;
-        static constexpr int stream_bsdf_direction_sampling = 4;
+        static constexpr int stream_bsdf_direction_sampling = 3;
 
     public:
         explicit backward_integrator(int max_path_length)
@@ -25,7 +26,9 @@ namespace fc
         {
             return {
                 {sample_stream_1d_usage::light_picking, 1},
-                {sample_stream_1d_usage::primitive_picking, 1}
+                {sample_stream_1d_usage::primitive_picking, 1},
+                {sample_stream_1d_usage::material_picking, max_path_length_ - 1},
+                {sample_stream_1d_usage::bsdf_picking, max_path_length_ - 1}
             };
         }
 
@@ -35,7 +38,6 @@ namespace fc
                 {sample_stream_2d_usage::measurement_point_sampling, max_path_length_},
                 {sample_stream_2d_usage::light_point_sampling, 1},
                 {sample_stream_2d_usage::light_direction_sampling, 1},
-                {sample_stream_2d_usage::bsdf_picking, max_path_length_ - 1},
                 {sample_stream_2d_usage::bsdf_direction_sampling, max_path_length_ - 1}
             };
         }
@@ -114,7 +116,7 @@ namespace fc
             int path_length{2};
             while(true)
             {
-                bsdf const* bsdf_p1{p1->get_material()->evaluate(*p1, allocator)};
+                bsdf const* bsdf_p1{p1->get_material()->evaluate(*p1, sampler_1d.get(stream_material_picking), allocator)};
                 if(bsdf_p1->get_type() != bsdf_type::delta)
                 {
                     auto measurement_sample{measurement.sample_p(*p1, sampler_2d.get(stream_measurement_point_sampling), allocator)};
@@ -143,7 +145,7 @@ namespace fc
                 path_length += 1;
 
 
-                auto bsdf_sample{bsdf_p1->sample_wo(w10, sampler_2d.get(stream_bsdf_picking), sampler_2d.get(stream_bsdf_direction_sampling))};
+                auto bsdf_sample{bsdf_p1->sample_wo(w10, sampler_1d.get(stream_bsdf_picking), sampler_2d.get(stream_bsdf_direction_sampling))};
                 if(!bsdf_sample) break;
 
                 auto raycast_result{scene.raycast(*p1, bsdf_sample->wo, allocator)};

@@ -12,6 +12,7 @@
 #include "materials/glass_material.hpp"
 #include "materials/conductor_material.hpp"
 #include "materials/plastic_material.hpp"
+#include "materials/standard_material.hpp"
 #include "acceleration_structures/brute_force_acceleration_structure.hpp"
 #include "acceleration_structures/bvh_acceleration_structure.hpp"
 #include "light_distributions/uniform_light_distribution.hpp"
@@ -28,9 +29,10 @@
 void test_mis();
 void test_dragon();
 void test();
+void test_mask();
 int main()
 {
-    test_dragon();
+    test_mask();
     //test_dragon();
     return 0;
     return 0;
@@ -110,12 +112,14 @@ void test_dragon()
     std::shared_ptr<fc::texture_2d_rgb> gold_ior{new fc::const_texture_2d_rgb{{0.183, 0.422, 1.373}}};
     std::shared_ptr<fc::texture_2d_rgb> gold_k{new fc::const_texture_2d_rgb{{4.0, 1.6, 1.15}}};
     std::shared_ptr<fc::texture_2d_r> gold_roughness{new fc::const_texture_2d_r{0.5}};
+    std::shared_ptr<fc::texture_2d_r> glass_roughness{new fc::const_texture_2d_r{0.2}};
 
     std::shared_ptr<fc::material> diffuse_material{new fc::diffuse_material{texture1}};
     std::shared_ptr<fc::material> diffuse_material_dragon{new fc::diffuse_material{const_texture}};
     std::shared_ptr<fc::material> gold_material{new fc::conductor_material{gold_ior, gold_k, gold_roughness}};
     std::shared_ptr<fc::material> floor_material{new fc::plastic_material{texture1, const1_texture, texture2, 1.3}};
-    std::shared_ptr<fc::material> glass_material{new fc::glass_material{const1_texture, const1_texture, 1.45}};
+    std::shared_ptr<fc::material> glass_material{new fc::glass_material{const1_texture, const1_texture, glass_roughness, 1.45}};
+    std::shared_ptr<fc::material> mirror_material{new fc::mirror_material{const1_texture, glass_roughness}};
 
     /*std::shared_ptr<fc::material> mirror_material{new fc::mirror_material{{0.2, 0.4, 0.8}, {0.4, 0.4}}};
     std::shared_ptr<fc::material> glass_material{new fc::glass_material{{1.0, 1.0, 1.0}, {1.0, 1.0, 1.0}, 1.45}};
@@ -151,12 +155,59 @@ void test_dragon()
 
 
     //std::shared_ptr<fc::integrator> integrator{new fc::backward_integrator{10}};
-    std::shared_ptr<fc::integrator> integrator{new fc::forward_mis_integrator{10, true}};
+    //std::shared_ptr<fc::integrator> integrator{new fc::forward_mis_integrator{10, true}};
     //std::shared_ptr<fc::integrator> integrator{new fc::bidirectional_integrator{10, true}};
-    //std::shared_ptr<fc::integrator> integrator{new fc::forward_bsdf_integrator{10}};
+    std::shared_ptr<fc::integrator> integrator{new fc::forward_bsdf_integrator{10}};
 
     fc::renderer renderer{{800, 450}, camera_factory, integrator, scene, 15, sampler_1d_factory, sampler_2d_factory, 0};
-    renderer.run(64);
+    renderer.run(4000);
+    renderer.export_image("normals");
+}
+
+void test_mask()
+{
+    fc::assets assets{};
+    std::shared_ptr<fc::surface> mask{new fc::mesh_surface{{}, assets.get_mesh("mask")}};
+
+    //std::shared_ptr<fc::texture_2d_rgb> gold_ior{new fc::const_texture_2d_rgb{{0.183, 0.422, 1.373}}};
+    //std::shared_ptr<fc::texture_2d_rgb> gold_k{new fc::const_texture_2d_rgb{{4.0, 1.6, 1.15}}};
+
+    std::shared_ptr<fc::texture_2d_rgb> albedo{new fc::image_texture_2d_rgb{assets.get_image("mask-basecolor"), fc::reconstruction_filter::bilinear, 1}};
+    std::shared_ptr<fc::texture_2d_r> metalness{new fc::image_texture_2d_r{assets.get_image("mask-metalness"), fc::reconstruction_filter::bilinear, 1}};
+    std::shared_ptr<fc::texture_2d_r> roughness{new fc::image_texture_2d_r{assets.get_image("mask-roughness"), fc::reconstruction_filter::bilinear, 1}};
+    
+    
+    std::shared_ptr<fc::material> material{new fc::standard_material{albedo, metalness, roughness, 1.45}};
+
+    std::vector<fc::entity> entities{};
+    entities.push_back({mask, material, nullptr});
+
+    auto image{assets.get_image("env-loft-hall")};
+    std::shared_ptr<fc::image_texture_2d_rgb> texture{new fc::image_texture_2d_rgb{image, fc::reconstruction_filter::bilinear, 4}};
+    std::shared_ptr<fc::infinity_area_light> infinity_area_light{new fc::texture_infinity_area_light{{{}, {0.0, 0.0, 0.0}}, texture, 1.0, image->get_resolution()}};
+
+
+    fc::bvh_acceleration_structure_factory acceleration_structure_factory{};
+    fc::uniform_light_distribution_factory uldf{};
+    fc::uniform_spatial_light_distribution_factory usldf{};
+
+    std::shared_ptr<fc::entity_scene> scene{new fc::entity_scene{std::move(entities), infinity_area_light, acceleration_structure_factory, uldf, usldf}};
+
+    fc::stratified_sampler_1d_factory sampler_1d_factory{true};
+    fc::stratified_sampler_2d_factory sampler_2d_factory{true};
+
+
+    //fc::perspective_camera_factory camera_factory{{{-4.421, 5.753, -5.448}, {fc::math::deg_to_rad(34.309), fc::math::deg_to_rad(35.237), 0.0}}, fc::math::deg_to_rad(27.0), 0.1, 7.5};
+    fc::perspective_camera_factory camera_factory{{{2.367, 3.216, 6.485}, {0.0, fc::math::deg_to_rad(196.42), 0.0}}, fc::math::deg_to_rad(45.0), 0.05, 6.0};
+
+
+    //std::shared_ptr<fc::integrator> integrator{new fc::backward_integrator{10}};
+    //std::shared_ptr<fc::integrator> integrator{new fc::forward_mis_integrator{10, true}};
+    std::shared_ptr<fc::integrator> integrator{new fc::bidirectional_integrator{10, true}};
+    //std::shared_ptr<fc::integrator> integrator{new fc::forward_bsdf_integrator{10}};
+
+    fc::renderer renderer{{600, 900}, camera_factory, integrator, scene, 15, sampler_1d_factory, sampler_2d_factory, 0};
+    renderer.run(1024);
     renderer.export_image("normals");
 }
 

@@ -16,7 +16,7 @@ namespace fc
             : reflectance_{std::move(reflectance)}
         { }
 
-        virtual bsdf const* evaluate(surface_point const& p, allocator_wrapper& allocator) const override
+        virtual bsdf const* evaluate(surface_point const& p, double, allocator_wrapper& allocator) const override
         {
             auto bsdf{allocator.emplace<lambertian_reflection_bsdf>(reflectance_->evaluate(p.get_uv()))};
 

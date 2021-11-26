@@ -21,7 +21,7 @@ namespace fc
             return reflectance_ * math::inv_pi;
         }
 
-        virtual std::optional<bsdf_sample_wi_result> sample_wi(vector3 const& wo, vector2 const& sample_pick, vector2 const& sample_direction) const override
+        virtual std::optional<bsdf_sample_wi_result> sample_wi(vector3 const& wo, double sample_pick, vector2 const& sample_direction) const override
         {
             std::optional<bsdf_sample_wi_result> result{};
             if(wo.y == 0.0) return result;
@@ -37,7 +37,7 @@ namespace fc
             return result;
         }
 
-        virtual std::optional<bsdf_sample_wo_result> sample_wo(vector3 const& wi, vector2 const& sample_pick, vector2 const& sample_direction) const override
+        virtual std::optional<bsdf_sample_wo_result> sample_wo(vector3 const& wi, double sample_pick, vector2 const& sample_direction) const override
         {
             std::optional<bsdf_sample_wo_result> result{};
             if(wi.y == 0.0) return result;

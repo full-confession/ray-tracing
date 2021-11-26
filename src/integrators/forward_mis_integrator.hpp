@@ -7,12 +7,13 @@ namespace fc
     {
         static constexpr int stream_light_picking = 0;
         static constexpr int stream_primitive_picking = 0;
+        static constexpr int stream_material_picking = 1;
+        static constexpr int stream_bsdf_picking = 2;
 
         static constexpr int stream_measurement_point_sampling = 0;
         static constexpr int stream_forward_measurement_direction_sampling = 1;
-        static constexpr int stream_bsdf_picking = 2;
-        static constexpr int stream_bsdf_direction_sampling = 3;
-        static constexpr int stream_light_point_sampling = 4;
+        static constexpr int stream_bsdf_direction_sampling = 2;
+        static constexpr int stream_light_point_sampling = 3;
     public:
         explicit forward_mis_integrator(int max_path_length, bool visible_infinity_area_light)
             : max_path_length_{max_path_length}, visible_infinity_area_light_{visible_infinity_area_light}
@@ -22,7 +23,9 @@ namespace fc
         {
             return {
                 {sample_stream_1d_usage::light_picking, max_path_length_ - 1},
-                {sample_stream_1d_usage::primitive_picking, max_path_length_ - 1}
+                {sample_stream_1d_usage::primitive_picking, max_path_length_ - 1},
+                {sample_stream_1d_usage::material_picking, max_path_length_ - 1},
+                {sample_stream_1d_usage::bsdf_picking, max_path_length_ - 1}
             };
         }
 
@@ -31,7 +34,6 @@ namespace fc
             return {
                 {sample_stream_2d_usage::measurement_point_sampling, 1},
                 {sample_stream_2d_usage::measurement_direction_sampling, 1},
-                {sample_stream_2d_usage::bsdf_picking, max_path_length_ - 1},
                 {sample_stream_2d_usage::bsdf_direction_sampling, max_path_length_ - 1},
                 {sample_stream_2d_usage::light_point_sampling, max_path_length_ - 1}
             };
@@ -67,7 +69,7 @@ namespace fc
 
                 for(int i{2}; i <= max_path_length_; ++i)
                 {
-                    bsdf const* bsdf_p1{p1->get_material()->evaluate(*p1, allocator)};
+                    bsdf const* bsdf_p1{p1->get_material()->evaluate(*p1, sampler_1d.get(stream_material_picking), allocator)};
 
                     if(bsdf_p1->get_type() == bsdf_type::standard)
                     {
@@ -121,7 +123,7 @@ namespace fc
                         }
 
                         // bsdf strategy
-                        auto bsdf_sample{bsdf_p1->sample_wi(w10, sampler_2d.get(stream_bsdf_picking), sampler_2d.get(stream_bsdf_direction_sampling))};
+                        auto bsdf_sample{bsdf_p1->sample_wi(w10, sampler_1d.get(stream_bsdf_picking), sampler_2d.get(stream_bsdf_direction_sampling))};
                         if(!bsdf_sample) break;
                         beta *= bsdf_sample->f * (std::abs(dot(p1->get_normal(), bsdf_sample->wi)) / bsdf_sample->pdf_wi);
 
@@ -167,7 +169,7 @@ namespace fc
                         sampler_2d.get(stream_light_point_sampling);
 
                         // bsdf strategy
-                        auto bsdf_sample{bsdf_p1->sample_wi(w10, sampler_2d.get(stream_bsdf_picking), sampler_2d.get(stream_bsdf_direction_sampling))};
+                        auto bsdf_sample{bsdf_p1->sample_wi(w10, sampler_1d.get(stream_bsdf_picking), sampler_2d.get(stream_bsdf_direction_sampling))};
                         if(!bsdf_sample) break;
                         beta *= bsdf_sample->f * (std::abs(dot(p1->get_normal(), bsdf_sample->wi)) / bsdf_sample->pdf_wi);
 

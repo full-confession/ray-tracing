@@ -66,7 +66,9 @@ namespace fc
     {
         general,
         light_picking,
-        primitive_picking
+        primitive_picking,
+        material_picking,
+        bsdf_picking
     };
 
     enum class sample_stream_2d_usage
@@ -74,7 +76,6 @@ namespace fc
         general,
         measurement_point_sampling,
         measurement_direction_sampling,
-        bsdf_picking,
         bsdf_direction_sampling,
         light_point_sampling,
         light_direction_sampling

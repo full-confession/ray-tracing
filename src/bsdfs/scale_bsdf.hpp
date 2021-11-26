@@ -1,14 +1,13 @@
 #pragma once
 #include "../core/bsdf.hpp"
-#include "../core/frame.hpp"
 
 namespace fc
 {
-    class frame_bsdf : public bsdf
+    class scale_bsdf : public bsdf
     {
     public:
-        frame_bsdf(frame const& frame, bsdf const* bsdf)
-            : frame_{frame}, bsdf_{bsdf}
+        scale_bsdf(bsdf const* bsdf, vector3 const& value)
+            : bsdf_{bsdf}, value_{value}
         { }
 
         virtual bsdf_type get_type() const override
@@ -18,36 +17,36 @@ namespace fc
 
         virtual vector3 evaluate(vector3 const& wo, vector3 const& wi) const override
         {
-            return bsdf_->evaluate(frame_.world_to_local(wo), frame_.world_to_local(wi));
+            return bsdf_->evaluate(wo, wi) * value_;
         }
 
         virtual std::optional<bsdf_sample_wi_result> sample_wi(vector3 const& wo, double sample_pick, vector2 const& sample_direction) const override
         {
-            auto result{bsdf_->sample_wi(frame_.world_to_local(wo), sample_pick, sample_direction)};
-            if(result) result->wi = frame_.local_to_world(result->wi);
+            auto result{bsdf_->sample_wi(wo, sample_pick, sample_direction)};
+            if(result) result->f *= value_;
 
             return result;
         }
 
         virtual std::optional<bsdf_sample_wo_result> sample_wo(vector3 const& wi, double sample_pick, vector2 const& sample_direction) const override
         {
-            auto result{bsdf_->sample_wo(frame_.world_to_local(wi), sample_pick, sample_direction)};
-            if(result) result->wo = frame_.local_to_world(result->wo);
+            auto result{bsdf_->sample_wo(wi, sample_pick, sample_direction)};
+            if(result) result->f *= value_;
 
             return result;
         }
 
         virtual double pdf_wi(vector3 const& wo, vector3 const& wi) const override
         {
-            return bsdf_->pdf_wi(frame_.world_to_local(wo), frame_.world_to_local(wi));
+            return bsdf_->pdf_wi(wo, wi);
         }
 
         virtual double pdf_wo(vector3 const& wo, vector3 const& wi) const override
         {
-            return bsdf_->pdf_wo(frame_.world_to_local(wo), frame_.world_to_local(wi));
+            return bsdf_->pdf_wo(wo, wi);
         }
     private:
-        frame frame_;
         bsdf const* bsdf_{};
+        vector3 value_{};
     };
 }

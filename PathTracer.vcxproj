@@ -26,6 +26,8 @@
     <ClInclude Include="src\allocators\fixed_size_allocator.hpp" />
     <ClInclude Include="src\allocators\paged_allocator.hpp" />
     <ClInclude Include="src\bsdfs\common.hpp" />
+    <ClInclude Include="src\bsdfs\rough_glass_bsdf.hpp" />
+    <ClInclude Include="src\bsdfs\scale_bsdf.hpp" />
     <ClInclude Include="src\bsdfs\smooth_glass_bsdf.hpp" />
     <ClInclude Include="src\bsdfs\rough_mirror_bsdf.hpp" />
     <ClInclude Include="src\bsdfs\rough_conductor_bsdf.hpp" />
@@ -75,6 +77,7 @@
     <ClInclude Include="src\materials\glass_material.hpp" />
     <ClInclude Include="src\materials\mirror_material.hpp" />
     <ClInclude Include="src\materials\plastic_material.hpp" />
+    <ClInclude Include="src\materials\standard_material.hpp" />
     <ClInclude Include="src\renderer\camera.hpp" />
     <ClInclude Include="src\renderer\cameras\perspective_camera.hpp" />
     <ClInclude Include="src\renderer\renderer.hpp" />

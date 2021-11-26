@@ -36,14 +36,14 @@ namespace fc
             return specular + diffuse;
         }
 
-        virtual std::optional<bsdf_sample_wi_result> sample_wi(vector3 const& wo, vector2 const& sample_pick, vector2 const& sample_direction) const override
+        virtual std::optional<bsdf_sample_wi_result> sample_wi(vector3 const& wo, double sample_pick, vector2 const& sample_direction) const override
         {
             std::optional<bsdf_sample_wi_result> result{};
             if(wo.y == 0.0) return result;
 
             vector3 wh{};
             vector3 wi{};
-            if(sample_pick.y < 0.5)
+            if(sample_pick < 0.5)
             {
                 // sample diffuse
                 wi = sample_hemisphere_cosine_weighted(sample_direction);
@@ -77,7 +77,7 @@ namespace fc
             return result;
         }
 
-        virtual std::optional<bsdf_sample_wo_result> sample_wo(vector3 const& wi, vector2 const& sample_pick, vector2 const& sample_direction) const override
+        virtual std::optional<bsdf_sample_wo_result> sample_wo(vector3 const& wi, double sample_pick, vector2 const& sample_direction) const override
         {
             std::optional<bsdf_sample_wo_result> result_wo{};
             auto result_wi{sample_wi(wi, sample_pick, sample_direction)};
