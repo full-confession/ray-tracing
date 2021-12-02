@@ -407,7 +407,7 @@ namespace fc
                     scoped_assignment sa2{s0.pdf_forward};
 
                     t0.pdf_backward = scene.get_infinity_area_light()->pdf_o() * std::abs(dot(t0.p->get_normal(), s0.wi));
-                    t1.pdf_backward = t0.bsdf->pdf_wo(t1.wo, s0.wi) * std::abs(dot(t1.p->get_normal(), t1.wo)) / sqr_length(t1.p->get_position() - t0.p->get_position());
+                    t1.pdf_backward = t0.bsdf->pdf_wo(t0.wo, s0.wi) * std::abs(dot(t1.p->get_normal(), t0.wo)) / sqr_length(t1.p->get_position() - t0.p->get_position());
                     s0.pdf_forward = t0.bsdf->pdf_wi(t0.wo, s0.wi);
 
                     return Li * mis_weight(t_vertices, t, s_vertices, 1);
@@ -518,6 +518,8 @@ namespace fc
                 scoped_assignment sa1{t1.pdf_backward};
                 scoped_assignment sa2{s0.pdf_forward};
                 scoped_assignment sa3{s1.pdf_forward};
+
+                // t1 ----- t0 --wi--> ----- <--wo-- s0 ----- s1
             
 
                 s0.pdf_forward = t0.bsdf->pdf_wi(t0.wo, wi) * std::abs(dot(s0.p->get_normal(), wi)) / sqr_len;

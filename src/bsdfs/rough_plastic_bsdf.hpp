@@ -93,11 +93,8 @@ namespace fc
             double m_to_o{1.0 / (4.0 * dot(o, m))};
             double pdf_specular{pdf_m * m_to_o};
 
-
             double pdf_diffuse{o.y * math::inv_pi};
 
-
-            double fresnel{fr_dielectric(i.y, eta_i, ior_)};
             return 0.5 * pdf_specular + 0.5 * pdf_diffuse;
         }
 

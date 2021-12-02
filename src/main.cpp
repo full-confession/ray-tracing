@@ -195,28 +195,40 @@ void test_ball()
 {
     fc::assets assets{};
 
-    std::shared_ptr<fc::surface> sphere{new fc::sphere_surface{{{0.0, 0.0, 5.0}}, 1.0}};
+    std::shared_ptr<fc::surface> sphere{new fc::sphere_surface{{{-0.5, -0.5, 5.0}}, 0.4}};
+    std::shared_ptr<fc::surface> sphere1{new fc::sphere_surface{{{ 0.5, -0.5, 5.0}}, 0.4}};
+    std::shared_ptr<fc::surface> sphere2{new fc::sphere_surface{{{-0.5,  0.5, 5.0}}, 0.4}};
+    std::shared_ptr<fc::surface> sphere3{new fc::sphere_surface{{{ 0.5,  0.5, 5.0}}, 0.4}};
 
 
     std::shared_ptr<fc::texture_2d_rgb> const1_texture{new fc::const_texture_2d_rgb{{1.0, 1.0, 1.0}}};
     std::shared_ptr<fc::texture_2d_rgb> const08_texture{new fc::const_texture_2d_rgb{{0.8, 0.8, 0.8}}};
     std::shared_ptr<fc::texture_2d_rgb> const_texture{new fc::const_texture_2d_rgb{{0.2, 0.4, 0.8}}};
-    std::shared_ptr<fc::texture_2d_r> glass_roughness{new fc::const_texture_2d_r{0.5}};
+    std::shared_ptr<fc::texture_2d_r> glass_roughness{new fc::const_texture_2d_r{0.01}};
+    std::shared_ptr<fc::texture_2d_r> glass_roughness1{new fc::const_texture_2d_r{0.1}};
+    std::shared_ptr<fc::texture_2d_r> glass_roughness2{new fc::const_texture_2d_r{0.5}};
+    std::shared_ptr<fc::texture_2d_r> glass_roughness3{new fc::const_texture_2d_r{1.0}};
 
-    std::shared_ptr<fc::material> diffuse_material{new fc::diffuse_material{const08_texture}};
+    std::shared_ptr<fc::material> diffuse_material{new fc::diffuse_material{const_texture}};
     std::shared_ptr<fc::material> mirror_material{new fc::mirror_material{const1_texture, glass_roughness}};
     std::shared_ptr<fc::material> glass_material{new fc::glass_material{const_texture, const1_texture, glass_roughness, 1.45}};
-    std::shared_ptr<fc::material> plastic_material{new fc::plastic_material{const_texture, const1_texture, glass_roughness, 1.45}};
+    //std::shared_ptr<fc::material> plastic_material{new fc::plastic_material{const_texture, const1_texture, glass_roughness, 1.45}};
 
-    std::shared_ptr<fc::medium> uniform_medium{new fc::uniform_medium{{0.8, 0.4, 0.2}, 2.0}};
+    std::shared_ptr<fc::material> plastic_material{new fc::plastic_material{const_texture, const1_texture, glass_roughness, 1.45}};
+    std::shared_ptr<fc::material> plastic_material1{new fc::plastic_material{const_texture, const1_texture, glass_roughness1, 1.45}};
+    std::shared_ptr<fc::material> plastic_material2{new fc::plastic_material{const_texture, const1_texture, glass_roughness2, 1.45}};
+    std::shared_ptr<fc::material> plastic_material3{new fc::plastic_material{const_texture, const1_texture, glass_roughness3, 1.45}};
 
     std::vector<fc::entity> entities{};
-    entities.push_back({sphere, plastic_material, nullptr});
+    entities.push_back({sphere, diffuse_material, nullptr});
+    entities.push_back({sphere1, diffuse_material, nullptr});
+    entities.push_back({sphere2, diffuse_material, nullptr});
+    entities.push_back({sphere3, diffuse_material, nullptr});
 
     auto image{assets.get_image("evening_meadow_4k")};
     std::shared_ptr<fc::image_texture_2d_rgb> texture{new fc::image_texture_2d_rgb{image, fc::reconstruction_filter::bilinear, 4}};
     std::shared_ptr<fc::infinity_area_light> infinity_area_light{new fc::texture_infinity_area_light{{{}, {0.0, fc::math::deg_to_rad(5.0), 0.0}}, texture, 1.0, image->get_resolution()}};
-
+    //std::shared_ptr<fc::infinity_area_light> infinity_area_light{new fc::const_infinity_area_light{{1.0, 1.0, 1.0}, 0.5}};
 
     fc::bvh_acceleration_structure_factory acceleration_structure_factory{};
     fc::uniform_light_distribution_factory uldf{};
@@ -228,13 +240,13 @@ void test_ball()
 
     fc::perspective_camera_factory camera_factory{{}, fc::math::deg_to_rad(27.0), 0.1, 5.0};
 
-    //std::shared_ptr<fc::integrator> integrator{new fc::backward_integrator{10}};
-    //std::shared_ptr<fc::integrator> integrator{new fc::forward_mis_integrator{10, true}};
-    //std::shared_ptr<fc::integrator> integrator{new fc::bidirectional_integrator{10, true}};
-    std::shared_ptr<fc::integrator> integrator{new fc::forward_bsdf_integrator{10}};
+    //std::shared_ptr<fc::integrator> integrator{new fc::backward_integrator{3}};
+    //std::shared_ptr<fc::integrator> integrator{new fc::forward_mis_integrator{3, true}};
+    std::shared_ptr<fc::integrator> integrator{new fc::bidirectional_integrator{3, true}};
+    //std::shared_ptr<fc::integrator> integrator{new fc::forward_bsdf_integrator{3}};
 
     fc::renderer renderer{{512, 512}, camera_factory, integrator, scene, 15, sampler_1d_factory, sampler_2d_factory, 0};
-    renderer.run(1);
+    renderer.run(1000);
     renderer.export_image("normals");
 }
 
