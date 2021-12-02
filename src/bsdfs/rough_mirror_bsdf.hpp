@@ -33,19 +33,22 @@ namespace fc
         {
             std::optional<bsdf_sample_wi_result> result{};
             if(wo.y == 0.0) return result;
-            vector3 wh{microfacet_sample_wh(wo, sample_direction, alpha_)};
-            if(dot(wo, wh) < 0.0) return result;
 
-            vector3 wi{reflect(wo, wh)};
+            vector3 m{sample_m(wo, sample_direction)};
+            vector3 wi{2.0 * dot(wo, m) * m - wo};
+
             if(wo.y * wi.y <= 0.0) return result;
 
-            double d{microfacet_distribution(wh, alpha_)};
-            double g{microfacet_shadowing(wi, wo, alpha_)};
-
+            double d{D(m)};
+            double g{G2(wo, wi)};
             result.emplace();
-            result->f = (d * g / (4.0 * std::abs(wo.y) * std::abs(wi.y))) * reflectance_;
+            //result->f = (d * g / (4.0 * std::abs(wo.y) * std::abs(wi.y))) * reflectance_;
             result->wi = wi;
-            result->pdf_wi = d * std::abs(wh.y) / (4.0 * dot(wo, wh));
+            //result->pdf_wi = G1(wo) * d / (std::abs(wo.y) * 4.0);
+
+            result->f = reflectance_ * (g / (G1(wo) * std::abs(wi.y)));
+            //result->f = reflectance_ / std::abs(wi.y);
+            result->pdf_wi = 1.0;
 
             return result;
         }
@@ -82,5 +85,46 @@ namespace fc
     private:
         vector3 reflectance_{};
         vector2 alpha_{};
+
+
+        vector3 sample_m(vector3 const& i, vector2 const& u) const
+        {
+            vector3 ih{normalize(vector3{alpha_.x * i.x, i.y, alpha_.y * i.z})};
+            double lensq{ih.x * ih.x + ih.z * ih.z};
+            vector3 T1{lensq > 0.0 ? vector3{-ih.z, 0.0, ih.x} / std::sqrt(lensq) : vector3{1.0, 0.0, 0.0}};
+            vector3 T2 = cross(T1, ih);
+
+            double r{std::sqrt(u.x)};
+            double phi{2.0 * math::pi * u.y};
+            double t1{r * std::cos(phi)};
+            double t2{r * std::sin(phi)};
+            double s{0.5 * (1.0 + ih.y)};
+            t2 = (1.0 - s) * std::sqrt(1.0 - t1 * t1) + s * t2;
+
+            vector3 Nh{t1 * T1 + t2 * T2 + std::sqrt(std::max(0.0, 1.0 - t1 * t1 - t2 * t2)) * ih};
+            return normalize(vector3{alpha_.x * Nh.x, std::max(0.0, Nh.y), alpha_.y * Nh.z});
+        }
+
+        double D(vector3 const& m) const
+        {
+            double x{m.x * m.x / (alpha_.x * alpha_.x) + m.y * m.y + m.z * m.z / (alpha_.y * alpha_.y)};
+            return 1.0 / (math::pi * alpha_.x * alpha_.y * x * x);
+        }
+
+        double Lamda(vector3 const& i) const
+        {
+            double x{(alpha_.x * alpha_.x * i.x * i.x + alpha_.y * alpha_.y * i.z * i.z) / (i.y * i.y)};
+            return (-1.0 + std::sqrt(1 + x)) / 2.0;
+        }
+
+        double G1(vector3 const& i) const
+        {
+            return 1.0 / (1.0 + Lamda(i));
+        }
+
+        double G2(vector3 const& i, vector3 const& o) const
+        {
+            return 1.0 / (1.0 + Lamda(i) + Lamda(o));
+        }
     };
 }

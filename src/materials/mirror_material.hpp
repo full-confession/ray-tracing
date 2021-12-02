@@ -31,7 +31,8 @@ namespace fc
                 roughness = std::max(roughness, 0.002);
                 double alpha{roughness * roughness};
 
-                bsdf = allocator.emplace<rough_mirror_bsdf>(reflectance, vector2{alpha, alpha});
+                auto xd{allocator.emplace<microfacet_reflection_bsdfx>(reflectance, vector2{alpha, alpha})};
+                bsdf = allocator.emplace<bsdfx_adapter>(xd, 1.0, 1.45);
             }
 
             frame shading_frame{p.get_shading_tangent(), p.get_shading_normal(), p.get_shading_bitangent()};

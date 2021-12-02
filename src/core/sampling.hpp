@@ -34,6 +34,13 @@ namespace fc
         return {d.x, std::sqrt(std::max(0.0, 1.0 - d.x * d.x - d.y * d.y)), d.y};
     }
 
+    inline vector3 sample_hemisphere_uniform(vector2 const& u)
+    {
+        double r = std::sqrt(std::max(0.0, 1.0 - u.x * u.x));
+        double phi = 2 * math::pi * u.y;
+        return vector3(r * std::cos(phi), u.x, r * std::sin(phi));
+    }
+
     inline double pdf_hemisphere_cosine_weighted(vector3 const& w)
     {
         return w.y * math::inv_pi;

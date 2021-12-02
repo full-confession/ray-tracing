@@ -26,6 +26,7 @@
     <ClInclude Include="src\allocators\fixed_size_allocator.hpp" />
     <ClInclude Include="src\allocators\paged_allocator.hpp" />
     <ClInclude Include="src\bsdfs\common.hpp" />
+    <ClInclude Include="src\bsdfs\diffuse_bsdf.hpp" />
     <ClInclude Include="src\bsdfs\rough_glass_bsdf.hpp" />
     <ClInclude Include="src\bsdfs\scale_bsdf.hpp" />
     <ClInclude Include="src\bsdfs\smooth_glass_bsdf.hpp" />
@@ -38,6 +39,7 @@
     <ClInclude Include="src\bsdfs\frame_bsdf.hpp" />
     <ClInclude Include="src\bsdfs\smooth_conductor_bsdf.hpp" />
     <ClInclude Include="src\bsdfs\specular_transmission.hpp" />
+    <ClInclude Include="src\bxdfx_tester.hpp" />
     <ClInclude Include="src\core\acceleration_structure.hpp" />
     <ClInclude Include="src\core\allocator.hpp" />
     <ClInclude Include="src\core\assets.hpp" />
@@ -54,6 +56,7 @@
     <ClInclude Include="src\core\math.hpp" />
     <ClInclude Include="src\core\medium.hpp" />
     <ClInclude Include="src\core\mesh.hpp" />
+    <ClInclude Include="src\core\microfacet.hpp" />
     <ClInclude Include="src\core\sampling.hpp" />
     <ClInclude Include="src\core\surface.hpp" />
     <ClInclude Include="src\core\texture.hpp" />

@@ -27,10 +27,10 @@ namespace fc
             {
                 bsdf = allocator.emplace<rough_mirror_bsdf>(base_color, vector2{alpha, alpha});
             }
-            else
-            {
-                bsdf = allocator.emplace<rough_plastic_bsdf>(base_color, vector3{1.0, 1.0, 1.0}, ior_, vector2{alpha, alpha});
-            }
+            //else
+            //{
+            //    bsdf = allocator.emplace<rough_plastic_bsdf>(base_color, vector3{1.0, 1.0, 1.0}, ior_, vector2{alpha, alpha});
+            //}
 
             frame shading_frame{p.get_shading_tangent(), p.get_shading_normal(), p.get_shading_bitangent()};
             return allocator.emplace<shading_normal_bsdf>(shading_frame, p.get_normal(), bsdf);

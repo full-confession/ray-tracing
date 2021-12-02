@@ -22,10 +22,14 @@ namespace fc
 
             double roughness{std::max(roughness_->evaluate(p.get_uv()), 0.002)};
             double alpha{roughness * roughness};
-            auto bsdf{allocator.emplace<rough_plastic_bsdf>(diffuse, specular, ior_, vector2{alpha, alpha})};
+
+            auto microfacet{allocator.emplace<smith_ggx_microfacet_model>(vector2{alpha, alpha})};
+            auto bsdf{allocator.emplace<rough_plastic_bsdf>(diffuse, specular, microfacet, ior_)};
+
+            auto adapter{allocator.emplace<bsdfx_adapter>(bsdf, 1.0, 1.0)};
 
             frame shading_frame{p.get_shading_tangent(), p.get_shading_normal(), p.get_shading_bitangent()};
-            return allocator.emplace<shading_normal_bsdf>(shading_frame, p.get_normal(), bsdf);
+            return allocator.emplace<shading_normal_bsdf>(shading_frame, p.get_normal(), adapter);
         }
 
     private:
