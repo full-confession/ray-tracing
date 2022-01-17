@@ -7,46 +7,18 @@ namespace fc
 
     class backward_integrator : public integrator
     {
-        static constexpr int stream_light_picking = 0;
-        static constexpr int stream_primitive_picking = 1;
-        static constexpr int stream_material_picking = 2;
-        static constexpr int stream_bsdf_picking = 3;
-
-        static constexpr int stream_measurement_point_sampling = 0;
-        static constexpr int stream_light_point_sampling = 1;
-        static constexpr int stream_light_direction_sampling = 2;
-        static constexpr int stream_bsdf_direction_sampling = 3;
+        static constexpr int stream_backward = 0;
 
     public:
         explicit backward_integrator(int max_path_length)
             : max_path_length_{max_path_length}
         { }
 
-        virtual std::vector<sample_stream_1d_description> get_required_1d_sample_streams() const override
-        {
-            return {
-                {sample_stream_1d_usage::light_picking, 1},
-                {sample_stream_1d_usage::primitive_picking, 1},
-                {sample_stream_1d_usage::material_picking, max_path_length_ - 1},
-                {sample_stream_1d_usage::bsdf_picking, max_path_length_ - 1}
-            };
-        }
-
-        virtual std::vector<sample_stream_2d_description> get_required_2d_sample_streams() const override
-        {
-            return {
-                {sample_stream_2d_usage::measurement_point_sampling, max_path_length_},
-                {sample_stream_2d_usage::light_point_sampling, 1},
-                {sample_stream_2d_usage::light_direction_sampling, 1},
-                {sample_stream_2d_usage::bsdf_direction_sampling, max_path_length_ - 1}
-            };
-        }
-
-        virtual void run_once(measurement& measurement, scene const& scene, sampler_1d& sampler_1d, sampler_2d& sampler_2d, allocator_wrapper& allocator) const override
+        virtual void run_once(measurement& measurement, scene const& scene, sampler& sampler, allocator_wrapper& allocator) const override
         {
             measurement.add_sample_count(1);
 
-            auto [light, pdf_light]{scene.get_light_distribution()->sample(sampler_1d.get(stream_light_picking))};
+            auto [light, pdf_light]{scene.get_light_distribution()->sample(sampler.get_1d())};
 
             surface_point* p1{};
             vector3 w10{};
@@ -55,10 +27,10 @@ namespace fc
             if(light->get_type() == light_type::standard)
             {
                 auto std_light{static_cast<standard_light const*>(light)};
-                auto light_sample{std_light->sample_p_and_wo(sampler_1d.get(stream_primitive_picking), sampler_2d.get(stream_light_point_sampling), sampler_2d.get(stream_light_direction_sampling), allocator)};
+                auto light_sample{std_light->sample_p_and_wo(sampler.get_1d(), sampler.get_2d(), sampler.get_2d(), allocator)};
                 if(!light_sample) return;
 
-                auto measurement_sample{measurement.sample_p(*light_sample->p, sampler_2d.get(stream_measurement_point_sampling), allocator)};
+                auto measurement_sample{measurement.sample_p(*light_sample->p, sampler.get_2d(), allocator)};
                 if(measurement_sample)
                 {
                     vector3 d0C{measurement_sample->p->get_position() - light_sample->p->get_position()};
@@ -84,10 +56,10 @@ namespace fc
             else if(light->get_type() == light_type::infinity_area)
             {
                 auto inf_light{static_cast<infinity_area_light const*>(light)};
-                auto light_sample{inf_light->sample_wi_and_o(sampler_2d.get(stream_light_direction_sampling), sampler_2d.get(stream_light_point_sampling))};
+                auto light_sample{inf_light->sample_wi_and_o(sampler.get_2d(), sampler.get_2d())};
                 if(!light_sample) return;
 
-                auto measurement_sample{measurement.sample_p(light_sample->wi, sampler_2d.get(stream_measurement_point_sampling), allocator)};
+                auto measurement_sample{measurement.sample_p(light_sample->wi, sampler.get_2d(), allocator)};
                 if(measurement_sample)
                 {
                     if(scene.visibility(*measurement_sample->p, light_sample->wi))
@@ -116,10 +88,10 @@ namespace fc
             int path_length{2};
             while(true)
             {
-                bsdf const* bsdf_p1{p1->get_material()->evaluate(*p1, sampler_1d.get(stream_material_picking), allocator)};
+                bsdf const* bsdf_p1{p1->get_material()->evaluate(*p1, sampler.get_1d(), allocator)};
                 if(bsdf_p1->get_type() != bsdf_type::delta)
                 {
-                    auto measurement_sample{measurement.sample_p(*p1, sampler_2d.get(stream_measurement_point_sampling), allocator)};
+                    auto measurement_sample{measurement.sample_p(*p1, sampler.get_2d(), allocator)};
                     if(measurement_sample)
                     {
                         vector3 d1C{measurement_sample->p->get_position() - p1->get_position()};
@@ -137,7 +109,7 @@ namespace fc
                 else
                 {
                     // discard unused samples
-                    sampler_2d.get(stream_measurement_point_sampling);
+                    //sampler.skip_2d();
                 }
 
 
@@ -145,7 +117,7 @@ namespace fc
                 path_length += 1;
 
 
-                auto bsdf_sample{bsdf_p1->sample_wo(w10, sampler_1d.get(stream_bsdf_picking), sampler_2d.get(stream_bsdf_direction_sampling))};
+                auto bsdf_sample{bsdf_p1->sample_wo(w10, sampler.get_1d(), sampler.get_2d())};
                 if(!bsdf_sample) break;
 
                 auto raycast_result{scene.raycast(*p1, bsdf_sample->wo, allocator)};

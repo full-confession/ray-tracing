@@ -10,6 +10,7 @@ namespace fc
     {
     public:
         virtual vector2i get_image_plane_resolution() const = 0;
+        virtual void set_pixel(vector2i const& pixel) = 0;
     };
 
     class camera_factory

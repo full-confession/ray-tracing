@@ -57,6 +57,7 @@
     <ClInclude Include="src\core\medium.hpp" />
     <ClInclude Include="src\core\mesh.hpp" />
     <ClInclude Include="src\core\microfacet.hpp" />
+    <ClInclude Include="src\core\sampler.hpp" />
     <ClInclude Include="src\core\sampling.hpp" />
     <ClInclude Include="src\core\surface.hpp" />
     <ClInclude Include="src\core\texture.hpp" />
@@ -71,6 +72,7 @@
     <ClInclude Include="src\lib\pcg_extras.hpp" />
     <ClInclude Include="src\lib\pcg_random.hpp" />
     <ClInclude Include="src\lib\pcg_uint128.hpp" />
+    <ClInclude Include="src\lib\xxhash.h" />
     <ClInclude Include="src\lights\const_infinity_area_light.hpp" />
     <ClInclude Include="src\lights\const_diffuse_area_light.hpp" />
     <ClInclude Include="src\lights\texture_infinity_area_light.hpp" />
@@ -84,13 +86,11 @@
     <ClInclude Include="src\renderer\camera.hpp" />
     <ClInclude Include="src\renderer\cameras\perspective_camera.hpp" />
     <ClInclude Include="src\renderer\renderer.hpp" />
-    <ClInclude Include="src\core\sampler.hpp" />
     <ClInclude Include="src\core\scene.hpp" />
     <ClInclude Include="src\core\surface_point.hpp" />
     <ClInclude Include="src\integrators\forward_bsdf_integrator.hpp" />
     <ClInclude Include="src\integrators\forward_mis_integrator.hpp" />
     <ClInclude Include="src\lib\json.hpp" />
-    <ClInclude Include="src\renderer\renderer_sampler.hpp" />
     <ClInclude Include="src\renderer\render_target.hpp" />
     <ClInclude Include="src\samplers\random_sampler.hpp" />
     <ClInclude Include="src\samplers\stratified_sampler.hpp" />

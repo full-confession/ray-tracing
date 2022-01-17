@@ -5,45 +5,16 @@ namespace fc
 {
     class forward_mis_integrator : public integrator
     {
-        static constexpr int stream_light_picking = 0;
-        static constexpr int stream_primitive_picking = 0;
-        static constexpr int stream_material_picking = 1;
-        static constexpr int stream_bsdf_picking = 2;
-
-        static constexpr int stream_measurement_point_sampling = 0;
-        static constexpr int stream_forward_measurement_direction_sampling = 1;
-        static constexpr int stream_bsdf_direction_sampling = 2;
-        static constexpr int stream_light_point_sampling = 3;
     public:
         explicit forward_mis_integrator(int max_path_length, bool visible_infinity_area_light)
             : max_path_length_{max_path_length}, visible_infinity_area_light_{visible_infinity_area_light}
         { }
 
-        virtual std::vector<sample_stream_1d_description> get_required_1d_sample_streams() const override
-        {
-            return {
-                {sample_stream_1d_usage::light_picking, max_path_length_ - 1},
-                {sample_stream_1d_usage::primitive_picking, max_path_length_ - 1},
-                {sample_stream_1d_usage::material_picking, max_path_length_ - 1},
-                {sample_stream_1d_usage::bsdf_picking, max_path_length_ - 1}
-            };
-        }
-
-        virtual std::vector<sample_stream_2d_description> get_required_2d_sample_streams() const override
-        {
-            return {
-                {sample_stream_2d_usage::measurement_point_sampling, 1},
-                {sample_stream_2d_usage::measurement_direction_sampling, 1},
-                {sample_stream_2d_usage::bsdf_direction_sampling, max_path_length_ - 1},
-                {sample_stream_2d_usage::light_point_sampling, max_path_length_ - 1}
-            };
-        }
-
-        virtual void run_once(measurement& measurement, scene const& scene, sampler_1d& sampler_1d, sampler_2d& sampler_2d, allocator_wrapper& allocator) const override
+        virtual void run_once(measurement& measurement, scene const& scene, sampler& sampler, allocator_wrapper& allocator) const override
         {
             measurement.add_sample_count(1);
 
-            auto measurement_sample{measurement.sample_p_and_wi(sampler_2d.get(stream_measurement_point_sampling), sampler_2d.get(stream_forward_measurement_direction_sampling), allocator)};
+            auto measurement_sample{measurement.sample_p_and_wi(sampler.get_2d(), sampler.get_2d(), allocator)};
             if(!measurement_sample) return;
 
             vector3 Li{};
@@ -69,17 +40,17 @@ namespace fc
 
                 for(int i{2}; i <= max_path_length_; ++i)
                 {
-                    bsdf const* bsdf_p1{p1->get_material()->evaluate(*p1, sampler_1d.get(stream_material_picking), allocator)};
+                    bsdf const* bsdf_p1{p1->get_material()->evaluate(*p1, sampler.get_1d(), allocator)};
 
                     if(bsdf_p1->get_type() == bsdf_type::standard)
                     {
                         // light strategy
                         {
-                            auto [light, pdf_light] {scene.get_spatial_light_distribution()->get(*p1)->sample(sampler_1d.get(stream_light_picking))};
+                            auto [light, pdf_light] {scene.get_spatial_light_distribution()->get(*p1)->sample(sampler.get_1d())};
                             if(light->get_type() == light_type::infinity_area)
                             {
                                 auto inf_light{static_cast<infinity_area_light const*>(light)};
-                                auto light_sample{inf_light->sample_wi(sampler_2d.get(stream_light_point_sampling))};
+                                auto light_sample{inf_light->sample_wi(sampler.get_2d())};
                                 if(light_sample)
                                 {
                                     vector3 fL10{bsdf_p1->evaluate(w10, light_sample->wi)};
@@ -93,11 +64,13 @@ namespace fc
                                     }
                                 }
 
+                                //sampler.skip_1d();
+
                             }
                             else if(light->get_type() == light_type::standard)
                             {
                                 auto std_light{static_cast<standard_light const*>(light)};
-                                auto light_sample{std_light->sample_p(*p1, sampler_1d.get(stream_primitive_picking), sampler_2d.get(stream_light_point_sampling), allocator)};
+                                auto light_sample{std_light->sample_p(*p1, sampler.get_1d(), sampler.get_2d(), allocator)};
                                 if(light_sample)
                                 {
                                     vector3 d1L{light_sample->p->get_position() - p1->get_position()};
@@ -118,12 +91,13 @@ namespace fc
                             else
                             {
                                 // discard unused samples
-                                sampler_2d.get(stream_light_point_sampling);
+                                //sampler.skip_1d();
+                                //sampler.skip_2d();
                             }
                         }
 
                         // bsdf strategy
-                        auto bsdf_sample{bsdf_p1->sample_wi(w10, sampler_1d.get(stream_bsdf_picking), sampler_2d.get(stream_bsdf_direction_sampling))};
+                        auto bsdf_sample{bsdf_p1->sample_wi(w10, sampler.get_1d(), sampler.get_2d())};
                         if(!bsdf_sample) break;
                         beta *= bsdf_sample->f * (std::abs(dot(p1->get_normal(), bsdf_sample->wi)) / bsdf_sample->pdf_wi);
 
@@ -165,11 +139,11 @@ namespace fc
                     else if(bsdf_p1->get_type() == bsdf_type::delta)
                     {
                         // discard unused samples
-                        sampler_1d.get(stream_light_picking);
-                        sampler_2d.get(stream_light_point_sampling);
+                        //sampler.skip_1d(2);
+                        //sampler.skip_2d();
 
                         // bsdf strategy
-                        auto bsdf_sample{bsdf_p1->sample_wi(w10, sampler_1d.get(stream_bsdf_picking), sampler_2d.get(stream_bsdf_direction_sampling))};
+                        auto bsdf_sample{bsdf_p1->sample_wi(w10, sampler.get_1d(), sampler.get_2d())};
                         if(!bsdf_sample) break;
                         beta *= bsdf_sample->f * (std::abs(dot(p1->get_normal(), bsdf_sample->wi)) / bsdf_sample->pdf_wi);
 

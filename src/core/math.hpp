@@ -386,6 +386,12 @@ namespace fc
     }
 
     template <typename T>
+    bool operator!=(TVector2<T> const& a, TVector2<T> const& b)
+    {
+        return a.x != b.x || a.y != b.y;
+    }
+
+    template <typename T>
     TVector2<T> normalize(TVector2<T> const& v)
     {
         T length{std::sqrt(v.x * v.x + v.y * v.y)};

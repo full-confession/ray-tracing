@@ -5,56 +5,20 @@ namespace fc
 {
     class bidirectional_integrator : public integrator
     {
-        static constexpr int stream_backward_light_picking = 0;
-        static constexpr int stream_backward_light_primitive_picking = 1;
-        static constexpr int stream_forward_material_picking = 2;
-        static constexpr int stream_forward_bsdf_picking = 3;
-        static constexpr int stream_backward_material_picking = 4;
-        static constexpr int stream_backward_bsdf_picking = 5;
-
-        static constexpr int stream_forward_measurement_point_sampling = 0;
-        static constexpr int stream_forward_measurement_direction_sampling = 1;
-        static constexpr int stream_forward_bsdf_direction_sampling = 2;
-        static constexpr int stream_backward_light_point_sampling = 3;
-        static constexpr int stream_backward_light_direction_sampling = 4;
-        static constexpr int stream_backward_bsdf_direction_sampling = 5;
-
     public:
         explicit bidirectional_integrator(int max_path_length, bool visible_infinity_area_light)
             : max_path_length_{max_path_length}, visible_infinity_area_light_{visible_infinity_area_light}
         { }
 
-        virtual std::vector<sample_stream_1d_description> get_required_1d_sample_streams() const override
-        {
-            return {
-                {sample_stream_1d_usage::light_picking, 1},
-                {sample_stream_1d_usage::primitive_picking, 1},
-                {sample_stream_1d_usage::material_picking, max_path_length_ - 1},
-                {sample_stream_1d_usage::bsdf_picking, max_path_length_ - 1},
-                {sample_stream_1d_usage::material_picking, max_path_length_ - 1},
-                {sample_stream_1d_usage::bsdf_picking, max_path_length_ - 1}
-            };
-        }
-
-        virtual std::vector<sample_stream_2d_description> get_required_2d_sample_streams() const override
-        {
-            return {
-                {sample_stream_2d_usage::measurement_point_sampling, 2},
-                {sample_stream_2d_usage::measurement_direction_sampling, 1},
-                {sample_stream_2d_usage::bsdf_direction_sampling, max_path_length_ - 1},
-                {sample_stream_2d_usage::light_point_sampling, 1},
-                {sample_stream_2d_usage::light_direction_sampling, 1},
-                {sample_stream_2d_usage::bsdf_direction_sampling, max_path_length_ - 1}
-            };
-        }
-
-        virtual void run_once(measurement& measurement, scene const& scene, sampler_1d& sampler_1d, sampler_2d& sampler_2d, allocator_wrapper& allocator) const override
+        virtual void run_once(measurement& measurement, scene const& scene, sampler& sampler, allocator_wrapper& allocator) const override
         {
             vertex* t_vertices{reinterpret_cast<vertex*>(allocator.allocate(sizeof(vertex) * (max_path_length_ + 1)))};
             vertex* s_vertices{reinterpret_cast<vertex*>(allocator.allocate(sizeof(vertex) * (max_path_length_ + 1)))};
 
-            int t_vertex_count{create_sensor_subpath(t_vertices, measurement, scene, sampler_1d, sampler_2d, allocator)};
-            int s_vertex_count{create_light_subpath(s_vertices, measurement, scene, sampler_1d, sampler_2d, allocator)};
+            int t_vertex_count{create_sensor_subpath(t_vertices, measurement, scene, sampler, allocator)};
+            //sampler.next_stream();
+            int s_vertex_count{create_light_subpath(s_vertices, measurement, scene, sampler, allocator)};
+            //sampler.next_stream();
 
             vector3 Li{};
 
@@ -65,7 +29,7 @@ namespace fc
                 for(int s{2}; s <= x; ++s)
                 {
                     if(s_vertices[s - 1].bsdf->get_type() != bsdf_type::delta)
-                        connect_t1_sn(measurement, scene, sampler_2d, allocator, s_vertices, s);
+                        connect_t1_sn(measurement, scene, sampler, allocator, s_vertices, s);
                 }
             }
 
@@ -142,10 +106,10 @@ namespace fc
             T copy_{};
         };
 
-        int create_sensor_subpath(vertex* vertices, measurement& measurement, scene const& scene, sampler_1d& sampler_1d, sampler_2d& sampler_2d, allocator_wrapper& allocator) const
+        int create_sensor_subpath(vertex* vertices, measurement& measurement, scene const& scene, sampler& sampler, allocator_wrapper& allocator) const
         {
             int vertex_count{};
-            auto sensor_sample{measurement.sample_p_and_wi(sampler_2d.get(stream_forward_measurement_point_sampling), sampler_2d.get(stream_forward_measurement_direction_sampling), allocator)};
+            auto sensor_sample{measurement.sample_p_and_wi(sampler.get_2d(), sampler.get_2d(), allocator)};
             if(!sensor_sample) return vertex_count;
 
             vertices[0].p = sensor_sample->p;
@@ -176,7 +140,7 @@ namespace fc
             vertices[1].pdf_forward = sensor_sample->pdf_wi * std::abs(dot(vertices[1].p->get_normal(), vertices[0].wi)) / sqr_length(vertices[1].p->get_position() - vertices[0].p->get_position());
             vertices[1].wo = -vertices[0].wi;
             vertices[1].beta = vertices[0].beta * sensor_sample->Wo * (std::abs(dot(vertices[0].p->get_normal(), vertices[0].wi)) / sensor_sample->pdf_wi);
-            vertices[1].bsdf = vertices[1].p->get_material()->evaluate(*vertices[1].p, sampler_1d.get(stream_forward_material_picking), allocator);
+            vertices[1].bsdf = vertices[1].p->get_material()->evaluate(*vertices[1].p, sampler.get_1d(), allocator);
             vertices[1].connectable = vertices[1].bsdf->get_type() != bsdf_type::delta;
             vertex_count += 1;
 
@@ -185,7 +149,7 @@ namespace fc
             int v2{2};
             for(int i{2}; i <= max_path_length_; ++i)
             {
-                auto bsdf_sample{vertices[v1].bsdf->sample_wi(vertices[v1].wo, sampler_1d.get(stream_forward_bsdf_picking), sampler_2d.get(stream_forward_bsdf_direction_sampling))};
+                auto bsdf_sample{vertices[v1].bsdf->sample_wi(vertices[v1].wo, sampler.get_1d(), sampler.get_2d())};
                 if(!bsdf_sample) return vertex_count;
 
                 vertices[v1].wi = bsdf_sample->wi;
@@ -218,7 +182,7 @@ namespace fc
                 {
                     vertices[v2].beta *= vertices[v2].p->get_medium()->transmittance(vertices[v2].p->get_position(), vertices[v1].p->get_position());
                 }
-                vertices[v2].bsdf = vertices[v2].p->get_material()->evaluate(*vertices[v2].p, sampler_1d.get(stream_forward_material_picking), allocator);
+                vertices[v2].bsdf = vertices[v2].p->get_material()->evaluate(*vertices[v2].p, sampler.get_1d(), allocator);
                 vertices[v2].connectable = vertices[v2].bsdf->get_type() != bsdf_type::delta;
                 vertex_count += 1;
 
@@ -234,15 +198,15 @@ namespace fc
             return vertex_count;
         }
 
-        int create_light_subpath(vertex* vertices, measurement& measurement, scene const& scene, sampler_1d& sampler_1d, sampler_2d& sampler_2d, allocator_wrapper& allocator) const
+        int create_light_subpath(vertex* vertices, measurement& measurement, scene const& scene, sampler& sampler, allocator_wrapper& allocator) const
         {
             int vertex_count{};
-            auto [light, pdf_light] {scene.get_light_distribution()->sample(sampler_1d.get(stream_backward_light_picking))};
+            auto [light, pdf_light] {scene.get_light_distribution()->sample(sampler.get_1d())};
 
             if(light->get_type() == light_type::standard)
             {
                 auto std_light{static_cast<standard_light const*>(light)};
-                auto light_sample{std_light->sample_p_and_wo(sampler_1d.get(stream_backward_light_primitive_picking), sampler_2d.get(stream_backward_light_point_sampling), sampler_2d.get(stream_backward_light_direction_sampling), allocator)};
+                auto light_sample{std_light->sample_p_and_wo(sampler.get_1d(), sampler.get_2d(), sampler.get_2d(), allocator)};
                 if(!light_sample) return vertex_count;
 
                 vertices[0].p = light_sample->p;
@@ -259,14 +223,14 @@ namespace fc
                 vertices[1].pdf_backward = light_sample->pdf_wo * std::abs(dot(vertices[1].p->get_normal(), vertices[0].wo)) / sqr_length(vertices[1].p->get_position() - vertices[0].p->get_position());
                 vertices[1].wi = -vertices[0].wo;
                 vertices[1].beta = vertices[0].beta * light_sample->Le * (std::abs(dot(vertices[0].p->get_normal(), vertices[0].wo)) / light_sample->pdf_wo);
-                vertices[1].bsdf = vertices[1].p->get_material()->evaluate(*vertices[1].p, sampler_1d.get(stream_backward_material_picking), allocator);
+                vertices[1].bsdf = vertices[1].p->get_material()->evaluate(*vertices[1].p, sampler.get_1d(), allocator);
                 vertices[1].connectable = vertices[1].bsdf->get_type() != bsdf_type::delta;
                 vertex_count += 1;
             }
             else
             {
                 auto inf_light{static_cast<infinity_area_light const*>(light)};
-                auto light_sample{inf_light->sample_wi_and_o(sampler_2d.get(stream_backward_light_direction_sampling), sampler_2d.get(stream_backward_light_point_sampling))};
+                auto light_sample{inf_light->sample_wi_and_o(sampler.get_2d(), sampler.get_2d())};
                 if(!light_sample) return vertex_count;
 
                 vertices[0].infity_area_light = true;
@@ -285,7 +249,7 @@ namespace fc
                 vertices[1].pdf_backward = light_sample->pdf_o * std::abs(dot(vertices[1].p->get_normal(), light_sample->wi));
                 vertices[1].wi = light_sample->wi;
                 vertices[1].beta = vertices[0].beta / light_sample->pdf_o;
-                vertices[1].bsdf = vertices[1].p->get_material()->evaluate(*vertices[1].p, sampler_1d.get(stream_backward_material_picking), allocator);
+                vertices[1].bsdf = vertices[1].p->get_material()->evaluate(*vertices[1].p, sampler.get_1d(), allocator);
                 vertices[1].connectable = vertices[1].bsdf->get_type() != bsdf_type::delta;
                 vertex_count += 1;
             }
@@ -296,7 +260,7 @@ namespace fc
 
             for(int i{2}; i <= max_path_length_; ++i)
             {
-                auto bsdf_sample{vertices[v1].bsdf->sample_wo(vertices[v1].wi, sampler_1d.get(stream_backward_bsdf_picking), sampler_2d.get(stream_backward_bsdf_direction_sampling))};
+                auto bsdf_sample{vertices[v1].bsdf->sample_wo(vertices[v1].wi, sampler.get_1d(), sampler.get_2d())};
                 if(!bsdf_sample) return vertex_count;
 
                 vertices[v1].wo = bsdf_sample->wo;
@@ -312,7 +276,7 @@ namespace fc
                 {
                     vertices[v2].beta *= vertices[v2].p->get_medium()->transmittance(vertices[v2].p->get_position(), vertices[v1].p->get_position());
                 }
-                vertices[v2].bsdf = vertices[v2].p->get_material()->evaluate(*vertices[v2].p, sampler_1d.get(stream_backward_material_picking), allocator);
+                vertices[v2].bsdf = vertices[v2].p->get_material()->evaluate(*vertices[v2].p, sampler.get_1d(), allocator);
                 vertices[v2].connectable = vertices[v2].bsdf->get_type() != bsdf_type::delta;
                 vertex_count += 1;
 
@@ -451,12 +415,12 @@ namespace fc
             }
         }
 
-        static void connect_t1_sn(measurement& measurement, scene const& scene, sampler_2d& sampler_2d, allocator_wrapper& allocator, vertex* s_vertices, int s)
+        static void connect_t1_sn(measurement& measurement, scene const& scene, sampler& sampler, allocator_wrapper& allocator, vertex* s_vertices, int s)
         {
             vertex& s0{s_vertices[s - 1]};
             vertex& s1{s_vertices[s - 2]};
 
-            auto sensor_sample{measurement.sample_p(*s0.p, sampler_2d.get(stream_forward_measurement_point_sampling), allocator)};
+            auto sensor_sample{measurement.sample_p(*s0.p, sampler.get_2d(), allocator)};
             if(!sensor_sample) return;
 
             vector3 d{sensor_sample->p->get_position() - s0.p->get_position()};

@@ -126,9 +126,15 @@ namespace fc
             p->set_position(transform_.transform_point(position));
             p->set_normal(transform_.transform_direction(normalize(position)));
 
-            vector3 tangent{};
-            vector3 bitangent{};
-            coordinate_system(p->get_normal(), &tangent, &bitangent);
+
+            double phi{std::atan2(position.z, position.x)};
+            if(phi <= 0.0) phi += math::pi * 2.0;
+
+            vector3 tangent{-std::sin(phi), 0.0, std::cos(phi)};
+            vector3 bitangent{cross(tangent, p->get_normal())};
+
+            //coordinate_system(p->get_normal(), &tangent, &bitangent);
+
             p->set_shading_normal(p->get_normal());
             p->set_shading_tangent(tangent);
             p->set_shading_bitangent(bitangent);

@@ -6,205 +6,131 @@
 
 namespace fc
 {
-    class stratified_sampler_1d : public sample_generator_1d
-    {
-    private:
-        static constexpr float float_one_minus_epsilon{0x1.fffffep-1f};
+    //class stratified_sampler : public sampler6
+    //{
+    //public:
+    //    stratified_sampler(int sample_count, std::uint64_t seed = 0)
+    //        : seed_{seed}
+    //    {
+    //        sqrt_sample_count_ = static_cast<int>(std::sqrt(sample_count));
+    //        sample_count_ = sqrt_sample_count_ * sqrt_sample_count_;
+    //    }
 
-    public:
-        explicit stratified_sampler_1d(bool jitter, std::uint64_t seed, std::uint64_t stream)
-            : jitter_{jitter}, generator_{seed, stream}, distribution_{0.0, 1.0}
-        { }
+    //    virtual std::unique_ptr<sampler6> clone() const override
+    //    {
+    //        return std::unique_ptr<sampler6>{new stratified_sampler{sample_count_, seed_}};
+    //    }
 
-        virtual int round_up_sample_count(int sample_count) const override { return sample_count; }
-        virtual std::size_t get_required_memory(int sample_count, int dimension_count) const override
-        {
-            return sizeof(float) * sample_count * dimension_count;
-        }
+    //    virtual int get_sample_count() const override
+    //    {
+    //        return sample_count_;
+    //    }
 
-        virtual void begin(int sample_count, int dimension_count, allocator_wrapper& allocator) override
-        {
-            data_ = reinterpret_cast<float*>(allocator.allocate(sizeof(float) * sample_count * dimension_count));
-            sample_count_ = sample_count;
-            dimension_count_ = dimension_count;
-            sample_index_ = 0;
-            dimension_index_ = 0;
+    //    virtual void set_sample(vector2i const& pixel, int sample_index) override
+    //    {
+    //        if(current_pixel_ != pixel)
+    //        {
+    //            current_pixel_ = pixel;
+    //            streams_end_ = 0;
+    //        }
+    //        current_sample_ = sample_index;
 
-            for(int i{}; i < dimension_count; ++i)
-            {
-                float* begin{data_ + sample_count * i};
+    //        current_stream_ = -1;
+    //        next_stream();
+    //    }
 
-                // generate
-                for(int k{}; k < sample_count; ++k)
-                {
-                    float delta{jitter_ ? distribution_(generator_) : 0.5f};
-                    begin[k] = std::min((k + delta) / sample_count, float_one_minus_epsilon);
-                }
+    //    virtual double get_1d() override
+    //    {
+    //        return {};
+    //    }
 
-                // suffle
-                for(int k{sample_count - 1}; k >= 1; --k)
-                {
-                    int l{static_cast<int>(generator_(static_cast<uint32_t>(k) + 1))};
-                    std::swap(begin[k], begin[l]);
-                }
-            }
-        };
+    //    virtual vector2 get_2d() override
+    //    {
+    //        stream& stream{streams_[current_stream_]};
+    //        if(current_dimension_ == stream.dimensions_end)
+    //        {
+    //            if(stream.dimensions_end == stream.dimensions.size())
+    //                stream.dimensions.emplace_back(sample_count_);
 
-        virtual void next_sample() override
-        {
-            sample_index_ += 1;
-            dimension_index_ = 0;
-        };
+    //            stream.dimensions_end += 1;
 
-        virtual double get()
-        {
-            if(dimension_index_ >= dimension_count_)
-            {
-                return distribution_(generator_);
-            }
-            else
-            {
-                double sample{data_[sample_index_ + dimension_index_ * sample_count_]};
-                dimension_index_ += 1;
-                return sample;
-            }
-        }
+    //            // generate
+    //            auto& dim{stream.dimensions[current_dimension_]};
+    //            std::uniform_real_distribution<float> dist{};
 
-    private:
-        bool jitter_{};
-        pcg32 generator_{};
-        std::uniform_real_distribution<float> distribution_{};
+    //            for(int i{}; i < sqrt_sample_count_; ++i)
+    //            {
+    //                for(int j{}; j < sqrt_sample_count_; ++j)
+    //                {
+    //                    dim[i * sqrt_sample_count_ + j] = {
+    //                        (j + dist(stream.generator)) / sqrt_sample_count_,
+    //                        (i + dist(stream.generator)) / sqrt_sample_count_
+    //                    };
+    //                }
+    //            }
 
-        float* data_{};
-        int sample_index_{};
-        int dimension_index_{};
-        int sample_count_{};
-        int dimension_count_{};
-    };
+    //            // shuffle
+    //            for(int i{sample_count_ - 1}; i >= 1; --i)
+    //            {
+    //                int j{static_cast<int>(stream.generator(i + 1))};
+    //                std::swap(dim[i], dim[j]);
+    //            }
+    //        }
 
-    class stratified_sampler_1d_factory : public sample_generator_1d_factory
-    {
-    public:
-        explicit stratified_sampler_1d_factory(bool jitter)
-            : jitter_{jitter}
-        { }
+    //        return stream.dimensions[current_dimension_++][current_sample_];
+    //    }
 
-        virtual std::unique_ptr<sample_generator_1d> create(std::uint64_t seed, std::uint64_t stream) const override
-        {
-            return std::unique_ptr<sample_generator_1d>{new stratified_sampler_1d{jitter_, seed, stream}};
-        }
+    //    virtual void skip_1d(int count) override
+    //    {
+    //        for(int i{}; i < count; ++i)
+    //            get_1d();
+    //    }
 
-    private:
-        bool jitter_{};
-    };
+    //    virtual void skip_2d(int count) override
+    //    {
+    //        for(int i{}; i < count; ++i)
+    //            get_2d();
+    //    }
 
-    class stratified_sampler_2d : public sample_generator_2d
-    {
-    private:
-        static constexpr float float_one_minus_epsilon{0x1.fffffep-1f};
+    //    virtual void next_stream() override
+    //    {
+    //        current_stream_ += 1;
+    //        current_dimension_ = 0;
 
-    public:
-        explicit stratified_sampler_2d(bool jitter, std::uint64_t seed, std::uint64_t stream)
-            : jitter_{jitter}, generator_{seed, stream}, distribution_{0.0, 1.0}
-        { }
+    //        if(current_stream_ == streams_end_)
+    //        {
+    //            if(streams_end_ == streams_.size())
+    //                streams_.emplace_back();
 
-        virtual int round_up_sample_count(int sample_count) const override
-        {
-            int x{static_cast<int>(std::ceil(std::sqrt(sample_count)))};
-            return x * x;
-        }
+    //            int data[]{current_pixel_.x, current_pixel_.y, current_stream_};
+    //            std::uint64_t gen_seed{XXH64(data, sizeof(data), seed_)};
 
-        virtual std::size_t get_required_memory(int sample_count, int dimension_count) const override
-        {
-            return sizeof(vector2f) * sample_count * dimension_count;
-        }
+    //            streams_[current_stream_].generator = {gen_seed};
+    //            streams_[current_stream_].dimensions_end = 0;
 
-        virtual void begin(int sample_count, int dimension_count, allocator_wrapper& allocator) override
-        {
-            data_ = reinterpret_cast<vector2f*>(allocator.allocate(sizeof(vector2f) * sample_count * dimension_count));
-            sample_count_ = sample_count;
-            dimension_count_ = dimension_count;
-            sample_index_ = 0;
-            dimension_index_ = 0;
+    //            streams_end_ += 1;
+    //        }
+    //    }
 
-            int sqrt_sample_count{static_cast<int>(std::sqrt(sample_count))};
+    //private:
+    //    std::uint64_t seed_{};
+    //    int sample_count_{};
+    //    int sqrt_sample_count_{};
 
-            for(int i{}; i < dimension_count; ++i)
-            {
-                vector2f* begin{data_ + sample_count * i};
+    //    vector2i current_pixel_{};
+    //    int current_sample_{};
 
-                // generate
-                vector2f* p{begin};
-                for(int y{}; y < sqrt_sample_count; ++y)
-                {
-                    for(int x{}; x < sqrt_sample_count; ++x)
-                    {
-                        float delta_x{jitter_ ? distribution_(generator_) : 0.5f};
-                        float delta_y{jitter_ ? distribution_(generator_) : 0.5f};
+    //    struct stream
+    //    {
+    //        pcg32 generator{};
+    //        std::vector<std::vector<vector2f>> dimensions{};
+    //        int dimensions_end{};
+    //    };
 
-                        *p = {
-                            std::min((x + delta_x) / sqrt_sample_count, float_one_minus_epsilon),
-                            std::min((y + delta_y) / sqrt_sample_count, float_one_minus_epsilon)
-                        };
+    //    std::vector<stream> streams_{};
+    //    int current_stream_{};
+    //    int streams_end_{};
 
-                        p += 1;
-                    }
-                }
-
-                // suffle
-                for(int k{sample_count - 1}; k >= 1; --k)
-                {
-                    int l{static_cast<int>(generator_(static_cast<uint32_t>(k) + 1))};
-                    std::swap(begin[k], begin[l]);
-                }
-            }
-        };
-
-        virtual void next_sample() override
-        {
-            sample_index_ += 1;
-            dimension_index_ = 0;
-        };
-
-        virtual vector2 get()
-        {
-            if(dimension_index_ >= dimension_count_)
-            {
-                return {distribution_(generator_), distribution_(generator_)};
-            }
-            else
-            {
-                vector2f sample{data_[sample_index_ + dimension_index_ * sample_count_]};
-                dimension_index_ += 1;
-                return sample;
-            }
-        }
-
-    private:
-        bool jitter_{};
-        pcg32 generator_{};
-        std::uniform_real_distribution<float> distribution_{};
-
-        vector2f* data_{};
-        int sample_index_{};
-        int dimension_index_{};
-        int sample_count_{};
-        int dimension_count_{};
-    };
-
-    class stratified_sampler_2d_factory : public sample_generator_2d_factory
-    {
-    public:
-        explicit stratified_sampler_2d_factory(bool jitter)
-            : jitter_{jitter}
-        { }
-
-        virtual std::unique_ptr<sample_generator_2d> create(std::uint64_t seed, std::uint64_t stream) const override
-        {
-            return std::unique_ptr<sample_generator_2d>{new stratified_sampler_2d{jitter_, seed, stream}};
-        }
-
-    private:
-        bool jitter_{};
-    };
+    //    int current_dimension_{};
+    //};
 }

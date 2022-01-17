@@ -47,9 +47,10 @@ namespace fc
             result->p = p;
             result->pdf_p = lens_radius_ == 0.0 ? 1.0 : math::pi * lens_radius_ * lens_radius_;
 
+            vector2i resolution{render_target_->get_resolution()};
             vector3 sample_plane_position{
-                (sample_direction.x - 0.5) * sample_plane_size_.x,
-                (sample_direction.y - 0.5) * sample_plane_size_.y,
+                ((pixel_.x + sample_direction.x) / resolution.x - 0.5) * sample_plane_size_.x,
+                (0.5 - (pixel_.y + sample_direction.y) / resolution.y) * sample_plane_size_.y,
                 focus_distance_
             };
 
@@ -116,8 +117,11 @@ namespace fc
             measurement_data* data{static_cast<measurement_data*>(p.get_measurement_data())};
             vector2i resolution{render_target_->get_resolution()};
 
-            int x = std::clamp(static_cast<int>((data->sample_plane_position.x / sample_plane_size_.x + 0.5) * resolution.x), 0, resolution.x - 1);
-            int y = std::clamp(static_cast<int>((data->sample_plane_position.y / sample_plane_size_.y + 0.5) * resolution.y), 0, resolution.y - 1);
+            double x{data->sample_plane_position.x / sample_plane_size_.x + 0.5};
+            double y{1.0 - (data->sample_plane_position.y / sample_plane_size_.y + 0.5)};
+
+            int px = std::clamp(static_cast<int>(x * resolution.x), 0, resolution.x - 1);
+            int py = std::clamp(static_cast<int>(y * resolution.y), 0, resolution.y - 1);
             
             if(std::isinf(Li.x) || std::isinf(Li.y) || std::isinf(Li.z) ||
                 std::isnan(Li.x) || std::isnan(Li.y) || std::isnan(Li.z))
@@ -126,7 +130,7 @@ namespace fc
                 std::cout << "Nan of Inf value" << std::endl;
             }
 
-            render_target_->add_sample({x, y}, Li);
+            render_target_->add_sample({px, py}, Li);
         }
 
         virtual void add_sample_count(int value) const override
@@ -139,6 +143,11 @@ namespace fc
             return render_target_->get_resolution();
         }
 
+        virtual void set_pixel(vector2i const& pixel) override
+        {
+            pixel_ = pixel;
+        }
+
     private:
         std::shared_ptr<render_target> render_target_{};
         pr_transform transform_{};
@@ -147,6 +156,8 @@ namespace fc
 
         double pixel_size_{};
         vector2 sample_plane_size_{};
+
+        vector2i pixel_{};
 
         std::optional<measurement_sample_p> sample_p_local(vector3 const& lens_position, vector3 const& wi, allocator_wrapper& allocator) const
         {

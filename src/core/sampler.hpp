@@ -1,95 +1,39 @@
 #pragma once
 #include "math.hpp"
-#include "allocator.hpp"
 
+#include <random>
 #include <memory>
+#include <fstream>
+#include <string>
+
+#include "../lib/pcg_random.hpp"
+#define XXH_INLINE_ALL
+#include "lib/xxhash.h"
 
 namespace fc
 {
-    class sampler_1d
+    class sampler
     {
     public:
-        ~sampler_1d() = default;
+        virtual ~sampler() = default;
 
-        virtual double get(int stream_index) = 0;
+        // use one dimension
+        virtual double get_1d() = 0;
+
+        // use two dimnesions
+        virtual vector2 get_2d() = 0;
+
+        // skip the number of dimnesions
+        virtual void skip(int dimensions = 1) = 0;
     };
 
-    class sampler_2d
+
+    class sampler_source : public sampler
     {
     public:
-        ~sampler_2d() = default;
+        virtual std::unique_ptr<sampler_source> clone() const = 0;
+        virtual int get_sample_count() const = 0;
 
-        virtual vector2 get(int stream_index) = 0;
-    };
-
-    class sample_generator_1d
-    {
-    public:
-        virtual ~sample_generator_1d() = default;
-
-        virtual int round_up_sample_count(int sample_count) const = 0;
-        virtual std::size_t get_required_memory(int sample_count, int dimension_count) const = 0;
-        virtual void begin(int sample_count, int dimension_count, allocator_wrapper& allocator) = 0;
-        virtual void next_sample() = 0;
-        virtual double get() = 0;
-    };
-
-    class sample_generator_1d_factory
-    {
-    public:
-        ~sample_generator_1d_factory() = default;
-
-        virtual std::unique_ptr<sample_generator_1d> create(std::uint64_t seed, std::uint64_t stream) const = 0;
-    };
-
-    class sample_generator_2d
-    {
-    public:
-        virtual ~sample_generator_2d() = default;
-
-        virtual int round_up_sample_count(int sample_count) const = 0;
-        virtual std::size_t get_required_memory(int sample_count, int dimension_count) const = 0;
-        virtual void begin(int sample_count, int dimension_count, allocator_wrapper& allocator) = 0;
-        virtual void next_sample() = 0;
-        virtual vector2 get() = 0;
-    };
-
-    class sample_generator_2d_factory
-    {
-    public:
-        ~sample_generator_2d_factory() = default;
-
-        virtual std::unique_ptr<sample_generator_2d> create(std::uint64_t seed, std::uint64_t stream) const = 0;
-    };
-
-    enum class sample_stream_1d_usage
-    {
-        general,
-        light_picking,
-        primitive_picking,
-        material_picking,
-        bsdf_picking
-    };
-
-    enum class sample_stream_2d_usage
-    {
-        general,
-        measurement_point_sampling,
-        measurement_direction_sampling,
-        bsdf_direction_sampling,
-        light_point_sampling,
-        light_direction_sampling
-    };
-
-    struct sample_stream_1d_description
-    {
-        sample_stream_1d_usage usage{};
-        int dimension_count{};
-    };
-
-    struct sample_stream_2d_description
-    {
-        sample_stream_2d_usage usage{};
-        int dimension_count{};
+        virtual void set_sample(vector2i const& pixel, int sample) = 0;
     };
 }
