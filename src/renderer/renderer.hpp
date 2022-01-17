@@ -19,8 +19,6 @@ namespace fc
 {
     class renderer
     {
-        static constexpr int tile_size = 32;
-
     public:
         renderer(
             vector2i const& resolution,
@@ -29,7 +27,7 @@ namespace fc
             std::shared_ptr<scene> scene,
             int worker_count,
             sampler_source const& sampler_source)
-            : integrator_{std::move(integrator)}, scene_{std::move(scene)}, worker_count_{worker_count}
+            : resolution_{resolution}, integrator_{std::move(integrator)}, scene_{std::move(scene)}, worker_count_{worker_count}
         {
             worker_count_ = std::max(1, worker_count_);
 
@@ -44,23 +42,6 @@ namespace fc
                 sampler_sources_.push_back(sampler_source.clone());
                 sample_allocators_.emplace_back(new paged_allocator{1024 * 1024});
             }
-
-            vector2i image_plane_resolution{cameras_.back()->get_image_plane_resolution()};
-            vector2i tile_count{(image_plane_resolution + vector2i{tile_size - 1, tile_size - 1}) / vector2i{tile_size, tile_size}};
-
-            tiles_.reserve(static_cast<std::size_t>(tile_count.x) * tile_count.y);
-            for(int i{}; i < tile_count.y; ++i)
-            {
-                for(int j{}; j < tile_count.x; ++j)
-                {
-                    auto& tile{tiles_.emplace_back()};
-
-                    tile.bounds = bounds2i{
-                        {j * tile_size, i * tile_size},
-                        {std::min((j + 1) * tile_size, image_plane_resolution.x), std::min((i + 1) * tile_size, image_plane_resolution.y)}
-                    };
-                }
-            }
         }
 
         void run(int sample_count)
@@ -68,24 +49,23 @@ namespace fc
             std::vector<std::thread> workers{};
             workers.reserve(worker_count_);
 
-            std::atomic<int> next_tile{};
-            std::atomic<int> tiles_done{};
+            std::atomic<int> next_pixel{};
+            std::atomic<int> pixels_done{};
 
             for(int i{}; i < worker_count_; ++i)
             {
                 workers.emplace_back(
-                    [this, i, &next_tile, &tiles_done] ()
+                    [this, i, &next_pixel, &pixels_done] ()
                     {
-                        worker_thread(i, next_tile, tiles_done);
+                        worker_thread(i, next_pixel, pixels_done);
                     }
                 );
             }
 
             auto start_time{std::chrono::high_resolution_clock::now()};
-            int tile_count_digit_count{count_digits(static_cast<int>(tiles_.size()))};
             while(true)
             {
-                int tiles_done_local{tiles_done.load(std::memory_order_relaxed)};
+                int pixels_done_local{pixels_done.load(std::memory_order_relaxed)};
 
 
                 auto current_time{std::chrono::high_resolution_clock::now()};
@@ -95,16 +75,16 @@ namespace fc
                 int minutes{std::chrono::duration_cast<std::chrono::minutes>(duration).count() % 60};
                 int seconds{std::chrono::duration_cast<std::chrono::seconds>(duration).count() % 60};
 
-                double percentage{tiles_done_local / static_cast<double>(tiles_.size()) * 100.0};
+                double percentage{pixels_done_local / static_cast<double>(resolution_.x * resolution_.y) * 100.0};
 
                 std::cout << "["
                     << std::setfill(' ') << std::setw(6) << std::fixed << std::setprecision(2) << percentage << "%]["
-                    << std::setfill(' ') << std::setw(tile_count_digit_count) << tiles_done_local << "/" << tiles_.size() << "]["
                     << std::setfill('0') << std::setw(2) << hours << "h:"
                     << std::setfill('0') << std::setw(2) << minutes << "m:"
                     << std::setfill('0') << std::setw(2) << seconds << "s]" << std::endl;
 
-                if(tiles_done_local == tiles_.size()) break;
+                if(pixels_done_local == resolution_.x * resolution_.y) break;
+
                 std::this_thread::sleep_for(std::chrono::seconds(1));
             }
 
@@ -143,6 +123,7 @@ namespace fc
         }
 
     private:
+        vector2i resolution_{};
         std::shared_ptr<integrator> integrator_{};
         std::shared_ptr<scene> scene_{};
         int worker_count_{};
@@ -152,13 +133,7 @@ namespace fc
         std::vector<std::unique_ptr<allocator>> sample_allocators_{};
         std::vector<std::unique_ptr<sampler_source>> sampler_sources_{};
 
-        struct tile
-        {
-            bounds2i bounds{};
-        };
-        std::vector<tile> tiles_{};
-
-        void worker_thread(int index, std::atomic<int>& next_tile, std::atomic<int>& tiles_done)
+        void worker_thread(int index, std::atomic<int>& next_pixel, std::atomic<int>& pixels_done)
         {
             allocator_wrapper sample_allocator{sample_allocators_[index].get()};
             camera& camera{*cameras_[index]};
@@ -167,45 +142,22 @@ namespace fc
 
             while(true)
             {
-                int current_tile{next_tile.fetch_add(1, std::memory_order_relaxed)};
-                if(current_tile >= tiles_.size()) break;
+                int current_pixel_index{next_pixel.fetch_add(1, std::memory_order_relaxed)};
+                if(current_pixel_index >= resolution_.x * resolution_.y) break;
 
-                
-                tile& tile{tiles_[current_tile]};
-                for(int i{tile.bounds.Min().y}; i < tile.bounds.Max().y; ++i)
+                vector2i current_pixel{current_pixel_index % resolution_.x, current_pixel_index / resolution_.x};
+                camera.set_pixel(current_pixel);
+
+                for(int i{}; i < sample_count; ++i)
                 {
-                    for(int j{tile.bounds.Min().x}; j < tile.bounds.Max().x; ++j)
-                    {
-                        camera.set_pixel({j, i});
+                    sampler_source.set_sample(current_pixel, i);
+                    integrator_->run_once(camera, *scene_, sampler_source, sample_allocator);
 
-
-                        for(int k{}; k < sample_count; ++k)
-                        {
-                            sampler_source.set_sample({j, i}, k);
-                            //pixel_sampler_wrapper wrapper{sampler, {j, i}, k};
-                            integrator_->run_once(camera, *scene_, sampler_source, sample_allocator);
-
-                            sample_allocator.clear();
-                        }
-                    }
+                    sample_allocator.clear();
                 }
 
-                tiles_done.fetch_add(1, std::memory_order_relaxed);
+                pixels_done.fetch_add(1, std::memory_order_relaxed);
             }
-        }
-
-        int count_digits(int number)
-        {
-            if(number == 0) return 1;
-
-            int count{};
-            while(number != 0)
-            {
-                number /= 10;
-                count += 1;
-            }
-
-            return count;
         }
     };
 }
