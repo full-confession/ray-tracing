@@ -1,5 +1,6 @@
 #pragma once
 #include "bsdf.hpp"
+#include "bxdf.hpp"
 #include "surface_point.hpp"
 #include "allocator.hpp"
 
@@ -10,6 +11,6 @@ namespace fc
     public:
         virtual ~material() = default;
 
-        virtual bsdf const* evaluate(surface_point const& p, double sample_pick, allocator_wrapper& allocator) const = 0;
+        virtual bsdf2 const* evaluate(surface_point const& p, double sample_pick, allocator_wrapper& allocator) const = 0;
     };
 }

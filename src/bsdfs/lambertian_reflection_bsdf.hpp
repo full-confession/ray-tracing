@@ -1,6 +1,8 @@
 #pragma once
 #include "../core/bsdf.hpp"
 #include "../core/sampling.hpp"
+#include "../core/bxdf.hpp"
+
 namespace fc
 {
     class lambertian_reflection_bsdf : public bsdf
@@ -67,5 +69,51 @@ namespace fc
 
     private:
         vector3 reflectance_{};
+    };
+
+
+    class lambertian_brdf : public symmetric_brdf<lambertian_brdf>
+    {
+        friend symmetric_brdf<lambertian_brdf>;
+
+    public:
+        explicit lambertian_brdf(vector3 const& reflectance)
+            : reflectance_{reflectance}
+        { }
+
+        virtual bxdf_type get_type() const override
+        {
+            return bxdf_type::standard;
+        }
+
+    private:
+        vector3 reflectance_{};
+
+        vector3 evaluate(vector3 const& i, vector3 const& o) const
+        {
+            if(o.y <= 0.0) return {};
+            return reflectance_ * math::inv_pi;
+        }
+
+        sample_result sample(vector3 const& i, sampler& sv,
+            vector3* o, vector3* value, double* pdf_o, double* pdf_i) const
+        {
+            if(i.y == 0.0) return sample_result::fail;
+            *o = {sample_hemisphere_cosine_weighted(sv.get_2d())};
+            if(o->y == 0.0) return sample_result::fail;
+
+            *value = reflectance_ * math::inv_pi;
+
+            if(pdf_o != nullptr) *pdf_o = o->y * math::inv_pi;
+            if(pdf_i != nullptr) *pdf_i = i.y * math::inv_pi;
+
+            return sample_result::success;
+        }
+
+        virtual double pdf(vector3 const& i, vector3 const& o) const
+        {
+            if(o.y <= 0.0) return {};
+            return o.y * math::inv_pi;
+        }
     };
 }

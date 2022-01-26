@@ -45,31 +45,37 @@ namespace fc
 
                 for(int i{2}; i <= max_path_length_; ++i)
                 {
-                    vector2 u{sampler.get_2d()};
-                    bsdf const* bsdf_p1{p1->get_material()->evaluate(*p1, u.x, allocator)};
-                    auto bsdf_sample{bsdf_p1->sample_wi(w10, u.y, sampler.get_2d())};
-                    if(!bsdf_sample) break;
+                    bsdf2 const* bsdf_p1{p1->get_material()->evaluate(*p1, {}, allocator)};
 
-                    beta *= bsdf_sample->f * (std::abs(dot(p1->get_normal(), bsdf_sample->wi)) / bsdf_sample->pdf_wi);
+                    double bxdf_pdf{};
+                    int bxdf{bsdf_p1->sample_bxdf(sampler.get_1d(), &bxdf_pdf)};
 
-                    raycast_result = scene.raycast(*p1, bsdf_sample->wi, allocator);
+                    vector3 w12{};
+                    vector3 weight{};
+
+                    if(bsdf_p1->sample_wi(bxdf, w10, 1.0, 1.0, sampler, &w12, &weight) != sample_result::success)
+                        break;
+
+                    beta *= weight / bxdf_pdf;
+
+                    raycast_result = scene.raycast(*p1, w12, allocator);
                     if(!raycast_result)
                     {
                         if(scene.get_infinity_area_light() != nullptr)
                         {
-                            Li += beta * scene.get_infinity_area_light()->get_Li(bsdf_sample->wi);
+                            Li += beta * scene.get_infinity_area_light()->get_Li(w12);
                         }
                         break;
                     }
                     else
                     {
                         surface_point const* p2{raycast_result.value()};
-                        vector3 w21{-bsdf_sample->wi};
+                        vector3 w21{-w12};
 
-                        if(p2->get_medium() != nullptr && dot(bsdf_sample->wi, p2->get_normal()) > 0.0)
+                       /* if(p2->get_medium() != nullptr && dot(bsdf_sample->wi, p2->get_normal()) > 0.0)
                         {
                             beta *= p2->get_medium()->transmittance(p1->get_position(), p2->get_position());
-                        }
+                        }*/
 
                         if(p2->get_light() != nullptr)
                         {

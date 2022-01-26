@@ -88,15 +88,18 @@ namespace fc
             int path_length{2};
             while(true)
             {
-                bsdf const* bsdf_p1{p1->get_material()->evaluate(*p1, sampler.get_1d(), allocator)};
-                if(bsdf_p1->get_type() != bsdf_type::delta)
+                bsdf2 const* bsdf_p1{p1->get_material()->evaluate(*p1, sampler.get_1d(), allocator)};
+                double bxdf_pdf{};
+                int bxdf{bsdf_p1->sample_bxdf(sampler.get_1d(), &bxdf_pdf)};
+
+                if(bsdf_p1->get_type(bxdf) != bxdf_type::delta)
                 {
                     auto measurement_sample{measurement.sample_p(*p1, sampler.get_2d(), allocator)};
                     if(measurement_sample)
                     {
                         vector3 d1C{measurement_sample->p->get_position() - p1->get_position()};
                         vector3 w1C{normalize(d1C)};
-                        vector3 f01C{bsdf_p1->evaluate(w1C, w10)};
+                        vector3 f01C{bsdf_p1->evaluate(bxdf, w1C, w10, 1.0, 1.0)};
 
                         if(f01C && scene.visibility(*p1, *measurement_sample->p))
                         {
@@ -116,24 +119,26 @@ namespace fc
                 if(path_length >= max_path_length_) break;
                 path_length += 1;
 
+                vector3 w12{};
+                vector3 weight{};
+                double pdf_w12{};
+                if(bsdf_p1->sample_wo(bxdf, w10, 1.0, 1.0, sampler, &w12, &weight, &pdf_w12) != sample_result::success)
+                    break;
 
-                auto bsdf_sample{bsdf_p1->sample_wo(w10, sampler.get_1d(), sampler.get_2d())};
-                if(!bsdf_sample) break;
-
-                auto raycast_result{scene.raycast(*p1, bsdf_sample->wo, allocator)};
+                auto raycast_result{scene.raycast(*p1, w12, allocator)};
                 if(!raycast_result) break;
 
                 surface_point* p2{*raycast_result};
 
-                beta *= bsdf_sample->f * (std::abs(dot(p1->get_normal(), bsdf_sample->wo)) / bsdf_sample->pdf_wo);
+                beta *= weight / bxdf_pdf;
 
-                if(p2->get_medium() != nullptr && dot(bsdf_sample->wo, p2->get_normal()) > 0.0)
+                /*if(p2->get_medium() != nullptr && dot(bsdf_sample->wo, p2->get_normal()) > 0.0)
                 {
                     beta *= p2->get_medium()->transmittance(p1->get_position(), p2->get_position());
-                }
+                }*/
 
                 p1 = p2;
-                w10 = -bsdf_sample->wo;
+                w10 = -w12;
             }
         }
     private:

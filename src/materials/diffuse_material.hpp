@@ -16,12 +16,11 @@ namespace fc
             : reflectance_{std::move(reflectance)}
         { }
 
-        virtual bsdf const* evaluate(surface_point const& p, double, allocator_wrapper& allocator) const override
+        virtual bsdf2 const* evaluate(surface_point const& p, double, allocator_wrapper& allocator) const override
         {
-            auto bsdf{allocator.emplace<lambertian_reflection_bsdf>(reflectance_->evaluate(p.get_uv()))};
-
-            frame shading_frame{p.get_shading_tangent(), p.get_shading_normal(), p.get_shading_bitangent()};
-            return allocator.emplace<shading_normal_bsdf>(shading_frame, p.get_normal(), bsdf);
+            bsdf2* result{allocator.emplace<bsdf2>(p.get_shading_tangent(), p.get_shading_normal(), p.get_shading_bitangent(), p.get_normal())};
+            result->add_bxdf(allocator.emplace<lambertian_brdf>(reflectance_->evaluate(p.get_uv())));
+            return result;
         }
 
     private:

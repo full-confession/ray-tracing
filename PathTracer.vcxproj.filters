@@ -258,6 +258,9 @@
     <ClInclude Include="src\lib\xxhash.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\core\bxdf.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">

@@ -44,6 +44,7 @@
     <ClInclude Include="src\core\allocator.hpp" />
     <ClInclude Include="src\core\assets.hpp" />
     <ClInclude Include="src\core\bsdf.hpp" />
+    <ClInclude Include="src\core\bxdf.hpp" />
     <ClInclude Include="src\core\color.hpp" />
     <ClInclude Include="src\core\distribution.hpp" />
     <ClInclude Include="src\core\frame.hpp" />
