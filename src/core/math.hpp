@@ -398,6 +398,11 @@ namespace fc
         return {v.x / length, v.y / length};
     }
 
+    inline double sqr(double x)
+    {
+        return x * x;
+    }
+
     template <typename T>
     struct TMatrix4x4
     {

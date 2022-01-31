@@ -10,6 +10,16 @@ namespace fc
         virtual vector3 transmittance(vector3 const& a, vector3 const& b) const = 0;
     };
 
+
+    class vacuum_medium : public medium
+    {
+    public:
+        virtual vector3 transmittance(vector3 const& a, vector3 const& b) const override
+        {
+            return {1.0, 1.0, 1.0};
+        }
+    };
+
     class uniform_medium : public medium
     {
     public:

@@ -5,6 +5,7 @@
 
 *.ppm
 *.raw
+*.pgm
 assets/
 
 # User-specific files

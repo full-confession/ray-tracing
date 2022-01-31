@@ -1,6 +1,6 @@
 #pragma once
 #include "math.hpp"
-
+#include <concepts>
 namespace fc
 {
 
@@ -12,16 +12,17 @@ namespace fc
         virtual vector3 sample(vector3 const& i, vector2 const& u) const = 0;
         virtual double pdf(vector3 const& i, vector3 const& m) const = 0;
         virtual double distribution(vector3 const& m) const = 0;
-        virtual double masking(vector3 const& i) const = 0;
-        virtual double masking(vector3 const& i, vector3 const& o) const = 0;
+
+        virtual double masking(vector3 const& i, vector3 const& m) const = 0;
+        virtual double masking(vector3 const& i, vector3 const& o, vector3 const& m) const = 0;
     };
 
 
     class smith_ggx_microfacet_model : public microfacet_model
     {
     public:
-        explicit smith_ggx_microfacet_model(vector2 const& alpha)
-            : alpha_{alpha}
+        explicit smith_ggx_microfacet_model(vector2 const& roughness)
+            : alpha_{roughness_to_alpha(roughness)}
         { }
 
         virtual vector3 sample(vector3 const& i, vector2 const& u) const override
@@ -44,7 +45,7 @@ namespace fc
 
         virtual double pdf(vector3 const& i, vector3 const& m) const override
         {
-            return masking(i) * std::max(0.0, dot(i, m)) * distribution(m) / i.y;
+            return masking(i, m) * std::max(0.0, dot(i, m)) * distribution(m) / i.y;
         }
 
         virtual double distribution(vector3 const& m) const override
@@ -53,12 +54,12 @@ namespace fc
             return 1.0 / (math::pi * alpha_.x * alpha_.y * x * x);
         }
 
-        virtual double masking(vector3 const& i) const override
+        virtual double masking(vector3 const& i, vector3 const& m) const override
         {
             return 1.0 / (1.0 + lamda(i));
         }
 
-        virtual double masking(vector3 const& i, vector3 const& o) const override
+        virtual double masking(vector3 const& i, vector3 const& o, vector3 const& m) const override
         {
             return 1.0 / (1.0 + lamda(i) + lamda(o));
         }
@@ -70,6 +71,13 @@ namespace fc
         {
             double x{(alpha_.x * alpha_.x * i.x * i.x + alpha_.y * alpha_.y * i.z * i.z) / (i.y * i.y)};
             return (-1.0 + std::sqrt(1.0 + x)) / 2.0;
+        }
+
+        static vector2 roughness_to_alpha(vector2 const& roughness)
+        {
+            double x{std::max(roughness.x, 0.002)};
+            double y{std::max(roughness.y, 0.002)};
+            return {x * x, y * y};
         }
     };
 }

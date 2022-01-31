@@ -5,7 +5,8 @@
 #include "../bsdfs/rough_mirror_bsdf.hpp"
 #include "../bsdfs/shading_normal_bsdf.hpp"
 #include "../core/texture.hpp"
-
+#include "../core/microfacet.hpp"
+#include "../bsdfs/specular_transmission.hpp"
 namespace fc
 {
     class mirror_material : public material
@@ -27,9 +28,8 @@ namespace fc
             }
             else
             {
-                roughness = std::max(roughness, 0.002);
-                double alpha{roughness * roughness};
-                result->add_bxdf(allocator.emplace<microfacet_brdf>(reflectance, vector2{alpha, alpha}));
+                auto microfacet_model{allocator.emplace<smith_ggx_microfacet_model>(vector2{roughness, roughness})};
+                result->add_bxdf(allocator.emplace<microfacet_brdf>(reflectance, *microfacet_model));
             }
             return result;
 

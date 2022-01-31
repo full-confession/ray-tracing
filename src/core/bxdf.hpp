@@ -213,8 +213,12 @@ namespace fc
                 double wo_ws{dot(*wo, shading_normal_)};
                 if(wo_wg * wo_ws <= 0.0) return sample_result::fail;
 
+                *weight *= std::abs(wi_ws) / std::abs(wi_wg);
 
-                *weight *= std::abs(wi_ws) * std::abs(wo_wg) / (std::abs(wi_wg) * *pdf_wo);
+                if(bxdfs_[bxdf]->get_type() == bxdf_type::standard)
+                    *weight *= std::abs(wo_wg) / *pdf_wo;
+
+                //*weight *= std::abs(wi_ws) * std::abs(wo_wg) / (std::abs(wi_wg) * *pdf_wo);
             }
 
             return result;

@@ -131,7 +131,7 @@ namespace fc
     };
 
 
-    class microfacet_brdf : public symmetric_brdf<microfacet_brdf>
+    /*class microfacet_brdf : public symmetric_brdf<microfacet_brdf>
     {
         friend symmetric_brdf<microfacet_brdf>;
 
@@ -235,7 +235,7 @@ namespace fc
         {
             return 1.0 / (1.0 + L(wi) + L(wo));
         }
-    };
+    };*/
 
     class microfacet_importance_brdf : public bxdf
     {

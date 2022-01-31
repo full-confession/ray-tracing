@@ -44,6 +44,24 @@ namespace fc
             }
         }
 
+        void run_pixel(vector2i const& pixel)
+        {
+            allocator_wrapper sample_allocator{sample_allocators_[0].get()};
+            camera& camera{*cameras_[0]};
+            sampler_source& sampler_source{*sampler_sources_[0]};
+            int sample_count{sampler_source.get_sample_count()};
+
+            camera.set_pixel(pixel);
+
+            for(int i{}; i < sample_count; ++i)
+            {
+                sampler_source.set_sample(pixel, i);
+                integrator_->run_once(camera, *scene_, sampler_source, sample_allocator);
+
+                sample_allocator.clear();
+            }
+        }
+
         void run(int sample_count)
         {
             std::vector<std::thread> workers{};
