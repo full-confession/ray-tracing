@@ -21,13 +21,11 @@ namespace fc
             vector3 beta{measurement_sample->Wo * (std::abs(dot(measurement_sample->p->get_normal(), measurement_sample->wi)) / (measurement_sample->pdf_p * measurement_sample->pdf_wi))};
 
             helper helper{scene, allocator};
-            double eta_a{};
-            double eta_b{};
-            medium const* medium{};
+            medium const* above_medium{};
+            medium const* below_medium{};
 
-            surface_point const* p1{helper.raycast(*measurement_sample->p, measurement_sample->wi, &eta_a, &eta_b, &medium)};
+            surface_point const* p1{helper.raycast(*measurement_sample->p, measurement_sample->wi, &above_medium, &below_medium)};
 
-            //auto raycast_result{scene.raycast(*measurement_sample->p, measurement_sample->wi, allocator)};
             if(p1 == nullptr)
             {
                 if(scene.get_infinity_area_light() != nullptr && visible_infinity_area_light_)
@@ -46,11 +44,8 @@ namespace fc
 
                 for(int i{2}; i <= max_path_length_; ++i)
                 {
-                    bsdf2 const* bsdf{p1->get_material()->evaluate(*p1, {}, allocator)};
-
-                    double bxdf_pdf{};
-                    int bxdf{bsdf->sample_bxdf(sampler.get_1d(), &bxdf_pdf)};
-                    //bsdf const* bsdf_p1{p1->get_material()->evaluate(*p1, sampler.get_1d(), allocator)};
+                    bsdf const* bsdf{p1->get_material()->evaluate(*p1, {}, allocator)};
+                    int bxdf{bsdf->sample_bxdf(sampler.get_1d())};
 
                     if(bsdf->get_type(bxdf) == bxdf_type::standard)
                     {
@@ -63,14 +58,11 @@ namespace fc
                                 auto light_sample{inf_light->sample_wi(sampler.get_2d())};
                                 if(light_sample)
                                 {
-
-                                    vector3 fL10{bsdf->evaluate(bxdf, w10, light_sample->wi, eta_a, eta_b)};
-                                   // vector3 fL10{bsdf_p1->evaluate(w10, light_sample->wi)};
+                                    vector3 fL10{bsdf->evaluate(bxdf, w10, light_sample->wi, above_medium->get_ior(), below_medium->get_ior())};
 
                                     if(fL10 && scene.visibility(*p1, light_sample->wi))
                                     {
-                                        double pdf_bsdf_w1L{bsdf->pdf_wi(bxdf, w10, light_sample->wi, eta_a, eta_b) * bxdf_pdf};
-                                        //double pdf_bsdf_w1L{bsdf_p1->pdf_wi(w10, light_sample->wi)};
+                                        double pdf_bsdf_w1L{bsdf->pdf_wi(bxdf, w10, light_sample->wi, above_medium->get_ior(), below_medium->get_ior())};
                                         double pdf_light_w1L{pdf_light * light_sample->pdf_wi};
                                         double weight{power_heuristics(pdf_light_w1L, pdf_bsdf_w1L)};
                                         Li += (beta * fL10 * light_sample->Li) * (weight * std::abs(dot(p1->get_normal(), light_sample->wi)) / pdf_light_w1L);
@@ -88,15 +80,13 @@ namespace fc
                                 {
                                     vector3 d1L{light_sample->p->get_position() - p1->get_position()};
                                     vector3 w1L{normalize(d1L)};
-                                    vector3 fL10{bsdf->evaluate(bxdf, w10, w1L, eta_a, eta_b)};
-                                    //vector3 fL10{bsdf_p1->evaluate(w10, w1L)};
+                                    vector3 fL10{bsdf->evaluate(bxdf, w10, w1L, above_medium->get_ior(), below_medium->get_ior())};
 
                                     if(fL10 && scene.visibility(*p1, *light_sample->p))
                                     {
                                         double x{std::abs(dot(light_sample->p->get_normal(), w1L)) / sqr_length(d1L)};
                                         double G1L{std::abs(dot(p1->get_normal(), w1L)) * x};
-                                        double pdf_bsdf_pL{bsdf->pdf_wi(bxdf, w10, w1L, eta_a, eta_b) * bxdf_pdf * x};
-                                        //double pdf_bsdf_pL{bsdf_p1->pdf_wi(w10, w1L) * x};
+                                        double pdf_bsdf_pL{bsdf->pdf_wi(bxdf, w10, w1L, above_medium->get_ior(), below_medium->get_ior()) * x};
                                         double pdf_light_pL{pdf_light * light_sample->pdf_p};
                                         double weight{power_heuristics(pdf_light_pL, pdf_bsdf_pL)};
                                         Li += (beta * fL10 * G1L * light_sample->Le) * (weight / pdf_light_pL);
@@ -112,27 +102,26 @@ namespace fc
                         }
 
                         // bsdf strategy
-                        //auto bsdf_sample{bsdf_p1->sample_wi(w10, sampler.get_1d(), sampler.get_2d())};
-                        //if(!bsdf_sample) break;
-                        //beta *= bsdf_sample->f * (std::abs(dot(p1->get_normal(), bsdf_sample->wi)) / bsdf_sample->pdf_wi);
-
                         vector3 w12{};
-                        vector3 weight{};
+                        vector3 value{};
                         double pdf_w12{};
-                        if(bsdf->sample_wi(bxdf, w10, eta_a, eta_b, sampler, &w12, &weight, &pdf_w12) != sample_result::success)
+
+                        if(bsdf->sample_wi(bxdf, w10, above_medium->get_ior(), below_medium->get_ior(), sampler,
+                            &w12, &value, &pdf_w12) != sample_result::success)
+                        {
                             break;
-                        beta *= weight / bxdf_pdf;
+                        }
 
-                        surface_point const* p2{helper.raycast(*p1, w12, &eta_a, &eta_b, &medium)};
+                        beta *= value * (std::abs(dot(p1->get_normal(), w12)) / pdf_w12);
+                        surface_point const* p2{helper.raycast(*p1, w12, &above_medium, &below_medium)};
 
-                        //raycast_result = scene.raycast(*p1, w12, allocator);
                         if(p2 == nullptr)
                         {
                             if(scene.get_infinity_area_light() != nullptr)
                             {
                                 double pdf_light{scene.get_spatial_light_distribution()->get(*p1)->pdf(scene.get_infinity_area_light())};
                                 double pdf_light_w12{pdf_light * scene.get_infinity_area_light()->pdf_wi(w12)};
-                                double weight{power_heuristics(pdf_w12 * bxdf_pdf, pdf_light_w12)};
+                                double weight{power_heuristics(pdf_w12, pdf_light_w12)};
                                 Li += weight * beta * scene.get_infinity_area_light()->get_Li(w12);
                             }
                             break;
@@ -141,18 +130,21 @@ namespace fc
                         {
                             vector3 w21{-w12};
 
-                            beta *= medium->transmittance(p1->get_position(), p2->get_position());
-
-                           /* if(p2->get_medium() != nullptr && dot(bsdf_sample->wi, p2->get_normal()) > 0.0)
+                            bool entering{dot(p2->get_normal(), w12) <= 0.0};
+                            if(entering)
                             {
-                                beta *= p2->get_medium()->transmittance(p1->get_position(), p2->get_position());
-                            }*/
+                                beta *= above_medium->transmittance(p1->get_position(), p2->get_position());
+                            }
+                            else
+                            {
+                                beta *= below_medium->transmittance(p1->get_position(), p2->get_position());
+                            }
 
                             if(p2->get_light() != nullptr)
                             {
                                 double pdf_light{scene.get_spatial_light_distribution()->get(*p1)->pdf(p2->get_light())};
                                 double pdf_light_p2{pdf_light * p2->get_light()->pdf_p(*p2)};
-                                double pdf_bsdf_p2{pdf_w12 * bxdf_pdf * std::abs(dot(p2->get_normal(), w12)) / sqr_length(p2->get_position() - p1->get_position())};
+                                double pdf_bsdf_p2{pdf_w12 * std::abs(dot(p2->get_normal(), w12)) / sqr_length(p2->get_position() - p1->get_position())};
                                 double weight{power_heuristics(pdf_bsdf_p2, pdf_light_p2)};
                                 Li += weight * beta * p2->get_light()->get_Le(*p2, w21);
                             }
@@ -169,14 +161,18 @@ namespace fc
 
                         // bsdf strategy
                         vector3 w12{};
-                        vector3 weight{};
+                        vector3 value{};
+                        double pdf_w12{};
 
-                        if(bsdf->sample_wi(bxdf, w10, eta_a, eta_b, sampler, &w12, &weight) != sample_result::success)
+                        if(bsdf->sample_wi(bxdf, w10, above_medium->get_ior(), below_medium->get_ior(), sampler,
+                            &w12, &value, &pdf_w12) != sample_result::success)
+                        {
                             break;
+                        }
 
-                        beta *= weight / bxdf_pdf;
+                        beta *= value * (std::abs(dot(p1->get_normal(), w12)) / pdf_w12);
+                        surface_point const* p2{helper.raycast(*p1, w12, &above_medium, &below_medium)};
 
-                        surface_point const* p2{helper.raycast(*p1, w12, &eta_a, &eta_b, &medium)};
                         if(p2 == nullptr)
                         {
                             if(scene.get_infinity_area_light() != nullptr)
@@ -189,12 +185,15 @@ namespace fc
                         {
                             vector3 w21{-w12};
 
-                            beta *= medium->transmittance(p1->get_position(), p2->get_position());
-
-                            //if(p2->get_medium() != nullptr && dot(w12, p2->get_normal()) > 0.0)
-                            //{
-                            //    beta *= p2->get_medium()->transmittance(p1->get_position(), p2->get_position());
-                            //}
+                            bool entering{dot(p2->get_normal(), w12) <= 0.0};
+                            if(entering)
+                            {
+                                beta *= above_medium->transmittance(p1->get_position(), p2->get_position());
+                            }
+                            else
+                            {
+                                beta *= below_medium->transmittance(p1->get_position(), p2->get_position());
+                            }
 
                             if(p2->get_light() != nullptr)
                             {

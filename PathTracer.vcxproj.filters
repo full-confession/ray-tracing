@@ -99,10 +99,7 @@
     <ClInclude Include="src\core\frame.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\bsdfs\shading_normal_bsdf.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\bsdfs\lambertian_reflection_bsdf.hpp">
+    <ClInclude Include="src\bsdfs\lambertian_reflection.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\core\surface.hpp">
@@ -168,9 +165,6 @@
     <ClInclude Include="src\images\rgb32_image.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\bsdfs\smooth_mirror_bsdf.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\materials\mirror_material.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -189,16 +183,7 @@
     <ClInclude Include="src\acceleration_structures\bvh_acceleration_structure.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\bsdfs\frame_bsdf.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\bsdfs\rough_mirror_bsdf.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\integrators\bidirectional_integrator.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\bsdfs\smooth_glass_bsdf.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\bsdfs\common.hpp">
@@ -213,16 +198,7 @@
     <ClInclude Include="src\textures\checker_texture.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\bsdfs\smooth_conductor_bsdf.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\materials\conductor_material.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\bsdfs\rough_conductor_bsdf.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\bsdfs\rough_plastic_bsdf.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\materials\plastic_material.hpp">
@@ -234,19 +210,10 @@
     <ClInclude Include="src\images\r8_image.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\bsdfs\rough_glass_bsdf.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\materials\standard_material.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\bsdfs\scale_bsdf.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\bxdfx_tester.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\bsdfs\diffuse_bsdf.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\core\microfacet.hpp">
@@ -259,6 +226,24 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\core\bxdf.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\bsdfs\microfacet_transmission.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\materials\transmission_material.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\bsdfs\microfacet_glass.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\bsdfs\specular_glass.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\bsdfs\microfacet_reflection.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\bsdfs\specular_reflection.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

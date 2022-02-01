@@ -15,10 +15,12 @@ namespace fc
             vertex* t_vertices{reinterpret_cast<vertex*>(allocator.allocate(sizeof(vertex) * (max_path_length_ + 1)))};
             vertex* s_vertices{reinterpret_cast<vertex*>(allocator.allocate(sizeof(vertex) * (max_path_length_ + 1)))};
 
-            int t_vertex_count{create_sensor_subpath(t_vertices, measurement, scene, sampler, allocator)};
-            //sampler.next_stream();
-            int s_vertex_count{create_light_subpath(s_vertices, measurement, scene, sampler, allocator)};
-            //sampler.next_stream();
+            helper sensor_helper{scene, allocator};
+            int t_vertex_count{create_sensor_subpath(t_vertices, measurement, scene, sampler, allocator, sensor_helper)};
+
+            helper light_helper{scene, allocator};
+            int s_vertex_count{create_light_subpath(s_vertices, measurement, scene, sampler, allocator, light_helper)};
+
 
             vector3 Li{};
 
@@ -83,12 +85,14 @@ namespace fc
 
             vector3 beta{};
 
-            bsdf2 const* bsdf{};
+            bsdf const* bsdf{};
             int bxdf{};
-            double bxdf_pdf{};
 
             bool infity_area_light{};
             bool connectable{};
+
+            medium const* above_medium{};
+            medium const* below_medium{};
         };
 
         template<typename T>
@@ -108,7 +112,7 @@ namespace fc
             T copy_{};
         };
 
-        int create_sensor_subpath(vertex* vertices, measurement& measurement, scene const& scene, sampler& sampler, allocator_wrapper& allocator) const
+        int create_sensor_subpath(vertex* vertices, measurement& measurement, scene const& scene, sampler& sampler, allocator_wrapper& allocator, helper& helper) const
         {
             int vertex_count{};
             auto sensor_sample{measurement.sample_p_and_wi(sampler.get_2d(), sampler.get_2d(), allocator)};
@@ -121,12 +125,9 @@ namespace fc
             vertices[0].connectable = true;
             vertex_count += 1;
 
-            double eta_a{};
-            double eta_b{};
-            medium const* medium{};
-            helper helper{scene, allocator};
+            surface_point const* p{helper.raycast(*vertices[0].p, vertices[0].wi,
+                &vertices[1].above_medium, &vertices[1].below_medium)};
 
-            surface_point const* p{helper.raycast(*vertices[0].p, vertices[0].wi, &eta_a, &eta_b, &medium)};
             if(p == nullptr)
             {
                 if(scene.get_infinity_area_light() != nullptr)
@@ -148,7 +149,7 @@ namespace fc
             vertices[1].wo = -vertices[0].wi;
             vertices[1].beta = vertices[0].beta * sensor_sample->Wo * (std::abs(dot(vertices[0].p->get_normal(), vertices[0].wi)) / sensor_sample->pdf_wi);
             vertices[1].bsdf = vertices[1].p->get_material()->evaluate(*vertices[1].p, sampler.get_1d(), allocator);
-            vertices[1].bxdf = vertices[1].bsdf->sample_bxdf(sampler.get_1d(), &vertices[1].bxdf_pdf);
+            vertices[1].bxdf = vertices[1].bsdf->sample_bxdf(sampler.get_1d());
             vertices[1].connectable = vertices[1].bsdf->get_type(vertices[1].bxdf) != bxdf_type::delta;
             vertex_count += 1;
 
@@ -158,26 +159,29 @@ namespace fc
             for(int i{2}; i <= max_path_length_; ++i)
             {
                 double pdf_wi{};
-                if(vertices[v1].bsdf->sample_wi(vertices[v1].bxdf, vertices[v1].wo, eta_a, eta_b, sampler,
-                    &vertices[v1].wi, &vertices[v2].beta, &pdf_wi) != sample_result::success)
+                vector3 value{};
+
+                if(vertices[v1].bsdf->sample_wi(vertices[v1].bxdf, vertices[v1].wo, vertices[v1].above_medium->get_ior(), vertices[v1].below_medium->get_ior(), sampler,
+                    &vertices[v1].wi, &value, &pdf_wi) != sample_result::success)
                 {
                     return vertex_count;
                 }
 
-                p = helper.raycast(*vertices[v1].p, vertices[v1].wi, &eta_a, &eta_b, &medium);
+                p = helper.raycast(*vertices[v1].p, vertices[v1].wi,
+                    &vertices[v2].above_medium, &vertices[v2].below_medium);
+
                 if(p == nullptr)
                 {
                     if(scene.get_infinity_area_light() != nullptr)
                     {
                         vertices[v2].infity_area_light = true;
-                        vertices[v2].pdf_forward = pdf_wi * vertices[v1].bxdf_pdf;
-                        vertices[v2].beta *= vertices[v1].beta / vertices[v1].bxdf_pdf;
+                        vertices[v2].pdf_forward = pdf_wi;
+                        vertices[v2].beta = vertices[v1].beta * value * (std::abs(dot(vertices[v1].p->get_normal(), vertices[v1].wi)) / pdf_wi);
                         vertices[v2].connectable = true;
 
 
-                        double pdf_wo{vertices[v1].connectable ? vertices[v1].bsdf->pdf_wo(vertices[v1].bxdf, vertices[v1].wo, vertices[v1].wi, eta_a, eta_b) : 1.0};
-                        vertices[v0].pdf_backward = pdf_wo
-                            * std::abs(dot(vertices[v0].p->get_normal(), vertices[v1].wo)) * vertices[v1].bxdf_pdf
+                        double pdf_wo{vertices[v1].bsdf->pdf_wo(vertices[v1].bxdf, vertices[v1].wo, vertices[v1].wi, vertices[v1].above_medium->get_ior(), vertices[v1].below_medium->get_ior())};
+                        vertices[v0].pdf_backward = pdf_wo * std::abs(dot(vertices[v0].p->get_normal(), vertices[v1].wo))
                             / sqr_length(vertices[v0].p->get_position() - vertices[v1].p->get_position());
 
                         return vertex_count + 1;
@@ -189,18 +193,27 @@ namespace fc
                 }
 
                 vertices[v2].p = p;
-                vertices[v2].pdf_forward = pdf_wi * vertices[v1].bxdf_pdf * std::abs(dot(vertices[v2].p->get_normal(), vertices[v1].wi)) / sqr_length(vertices[v2].p->get_position() - vertices[v1].p->get_position());
+                double n2_dot_wi1{dot(vertices[v2].p->get_normal(), vertices[v1].wi)};
+                vertices[v2].pdf_forward = pdf_wi * std::abs(n2_dot_wi1) / sqr_length(vertices[v2].p->get_position() - vertices[v1].p->get_position());
                 vertices[v2].wo = -vertices[v1].wi;
-                vertices[v2].beta *= vertices[v1].beta / vertices[v1].bxdf_pdf;
-                vertices[v2].beta *= medium->transmittance(vertices[v2].p->get_position(), vertices[v1].p->get_position());
+                vertices[v2].beta = vertices[v1].beta * value * (std::abs(dot(vertices[v1].p->get_normal(), vertices[v1].wi)) / pdf_wi);
                 vertices[v2].bsdf = vertices[v2].p->get_material()->evaluate(*vertices[v2].p, sampler.get_1d(), allocator);
-                vertices[v2].bxdf = vertices[v2].bsdf->sample_bxdf(sampler.get_1d(), &vertices[v2].bxdf_pdf);
+                vertices[v2].bxdf = vertices[v2].bsdf->sample_bxdf(sampler.get_1d());
                 vertices[v2].connectable = vertices[v2].bsdf->get_type(vertices[v2].bxdf) != bxdf_type::delta;
+
+                if(n2_dot_wi1 <= 0.0)
+                {
+                    vertices[v2].beta *= vertices[v2].above_medium->transmittance(vertices[v2].p->get_position(), vertices[v1].p->get_position());
+                }
+                else
+                {
+                    vertices[v2].beta *= vertices[v2].below_medium->transmittance(vertices[v2].p->get_position(), vertices[v1].p->get_position());
+                }
+
                 vertex_count += 1;
 
-
-                double pdf_wo{vertices[v1].connectable ? vertices[v1].bsdf->pdf_wo(vertices[v1].bxdf, vertices[v1].wo, vertices[v1].wi, eta_a, eta_b) : 1.0};
-                vertices[v0].pdf_backward = pdf_wo * vertices[v1].bxdf_pdf * std::abs(dot(vertices[v0].p->get_normal(), vertices[v1].wo)) / sqr_length(vertices[v0].p->get_position() - vertices[v1].p->get_position());
+                double pdf_wo{vertices[v1].bsdf->pdf_wo(vertices[v1].bxdf, vertices[v1].wo, vertices[v1].wi, vertices[v1].above_medium->get_ior(), vertices[v1].below_medium->get_ior())};
+                vertices[v0].pdf_backward = pdf_wo * std::abs(dot(vertices[v0].p->get_normal(), vertices[v1].wo)) / sqr_length(vertices[v0].p->get_position() - vertices[v1].p->get_position());
 
                 v0 += 1;
                 v1 += 1;
@@ -210,15 +223,10 @@ namespace fc
             return vertex_count;
         }
 
-        int create_light_subpath(vertex* vertices, measurement& measurement, scene const& scene, sampler& sampler, allocator_wrapper& allocator) const
+        int create_light_subpath(vertex* vertices, measurement& measurement, scene const& scene, sampler& sampler, allocator_wrapper& allocator, helper& helper) const
         {
             int vertex_count{};
             auto [light, pdf_light] {scene.get_light_distribution()->sample(sampler.get_1d())};
-
-            double eta_a{};
-            double eta_b{};
-            medium const* medium{};
-            helper helper{scene, allocator};
 
             if(light->get_type() == light_type::standard)
             {
@@ -233,7 +241,9 @@ namespace fc
                 vertices[0].connectable = true;
                 vertex_count += 1;
 
-                surface_point const* p{helper.raycast(*vertices[0].p, vertices[0].wo, &eta_a, &eta_b, &medium)};
+                surface_point const* p{helper.raycast(*vertices[0].p, vertices[0].wo,
+                    &vertices[1].above_medium, &vertices[1].below_medium)};
+
                 if(p == nullptr) return vertex_count;
 
                 vertices[1].p = p;
@@ -241,7 +251,7 @@ namespace fc
                 vertices[1].wi = -vertices[0].wo;
                 vertices[1].beta = vertices[0].beta * light_sample->Le * (std::abs(dot(vertices[0].p->get_normal(), vertices[0].wo)) / light_sample->pdf_wo);
                 vertices[1].bsdf = vertices[1].p->get_material()->evaluate(*vertices[1].p, sampler.get_1d(), allocator);
-                vertices[1].bxdf = vertices[1].bsdf->sample_bxdf(sampler.get_1d(), &vertices[1].bxdf_pdf);
+                vertices[1].bxdf = vertices[1].bsdf->sample_bxdf(sampler.get_1d());
                 vertices[1].connectable = vertices[1].bsdf->get_type(vertices[1].bxdf) != bxdf_type::delta;
                 vertex_count += 1;
             }
@@ -261,7 +271,9 @@ namespace fc
                 surface_point p0{};
                 p0.set_position(light_sample->o);
 
-                surface_point const* p{helper.raycast(p0, -light_sample->wi, &eta_a, &eta_b, &medium)};
+                surface_point const* p{helper.raycast(p0, -light_sample->wi,
+                    &vertices[1].above_medium, &vertices[1].below_medium)};
+
                 if(p == nullptr) return vertex_count;
 
                 vertices[1].p = p;
@@ -269,7 +281,7 @@ namespace fc
                 vertices[1].wi = light_sample->wi;
                 vertices[1].beta = vertices[0].beta / light_sample->pdf_o;
                 vertices[1].bsdf = vertices[1].p->get_material()->evaluate(*vertices[1].p, sampler.get_1d(), allocator);
-                vertices[1].bxdf = vertices[1].bsdf->sample_bxdf(sampler.get_1d(), &vertices[1].bxdf_pdf);
+                vertices[1].bxdf = vertices[1].bsdf->sample_bxdf(sampler.get_1d());
                 vertices[1].connectable = vertices[1].bsdf->get_type(vertices[1].bxdf) != bxdf_type::delta;
                 vertex_count += 1;
             }
@@ -281,35 +293,46 @@ namespace fc
             for(int i{2}; i <= max_path_length_; ++i)
             {
                 double pdf_wo{};
-                if(vertices[v1].bsdf->sample_wo(vertices[v1].bxdf, vertices[v1].wi, eta_a, eta_b, sampler,
-                    &vertices[v1].wo, &vertices[v2].beta, &pdf_wo) != sample_result::success)
+                vector3 value{};
+                if(vertices[v1].bsdf->sample_wo(vertices[v1].bxdf, vertices[v1].wi, vertices[v1].above_medium->get_ior(), vertices[v1].below_medium->get_ior(), sampler,
+                    &vertices[v1].wo, &value, &pdf_wo) != sample_result::success)
                 {
                     return vertex_count;
                 }
 
-                surface_point const* p{helper.raycast(*vertices[v1].p, vertices[v1].wo, &eta_a, &eta_b, &medium)};
+                surface_point const* p{helper.raycast(*vertices[v1].p, vertices[v1].wo, &vertices[v2].above_medium, &vertices[v2].below_medium)};
                 if(p == nullptr) return vertex_count;
 
                 vertices[v2].p = p;
-                vertices[v2].pdf_backward = pdf_wo * vertices[v1].bxdf_pdf * std::abs(dot(vertices[v2].p->get_normal(), vertices[v1].wo)) / sqr_length(vertices[v2].p->get_position() - vertices[v1].p->get_position());
+                double n2_dot_wo1{dot(vertices[v2].p->get_normal(), vertices[v1].wo)};
+                vertices[v2].pdf_backward = pdf_wo * std::abs(n2_dot_wo1) / sqr_length(vertices[v2].p->get_position() - vertices[v1].p->get_position());
                 vertices[v2].wi = -vertices[v1].wo;
-                vertices[v2].beta *= vertices[v1].beta / vertices[v1].bxdf_pdf;
-                vertices[v2].beta *= medium->transmittance(vertices[v2].p->get_position(), vertices[v1].p->get_position());
+                vertices[v2].beta = vertices[v1].beta * value * (std::abs(dot(vertices[v1].p->get_normal(), vertices[v1].wo)) / pdf_wo);
                 vertices[v2].bsdf = vertices[v2].p->get_material()->evaluate(*vertices[v2].p, sampler.get_1d(), allocator);
-                vertices[v2].bxdf = vertices[v2].bsdf->sample_bxdf(sampler.get_1d(), &vertices[v2].bxdf_pdf);
+                vertices[v2].bxdf = vertices[v2].bsdf->sample_bxdf(sampler.get_1d());
                 vertices[v2].connectable = vertices[v2].bsdf->get_type(vertices[v2].bxdf) != bxdf_type::delta;
+
+                if(n2_dot_wo1 <= 0.0)
+                {
+                    vertices[v2].beta *= vertices[v2].above_medium->transmittance(vertices[v2].p->get_position(), vertices[v1].p->get_position());
+                }
+                else
+                {
+                    vertices[v2].beta *= vertices[v2].below_medium->transmittance(vertices[v2].p->get_position(), vertices[v1].p->get_position());
+                }
+
                 vertex_count += 1;
 
 
 
-                double pdf_wi{vertices[v1].connectable ? vertices[v1].bsdf->pdf_wi(vertices[v1].bxdf, vertices[v1].wo, vertices[v1].wi, eta_a, eta_b) : 1.0};
+                double pdf_wi{vertices[v1].bsdf->pdf_wi(vertices[v1].bxdf, vertices[v1].wo, vertices[v1].wi, vertices[v1].above_medium->get_ior(), vertices[v1].below_medium->get_ior())};
                 if(!vertices[v0].infity_area_light)
                 {
-                    vertices[v0].pdf_forward = pdf_wi * vertices[v1].bxdf_pdf * std::abs(dot(vertices[v0].p->get_normal(), vertices[v1].wi)) / sqr_length(vertices[v0].p->get_position() - vertices[v1].p->get_position());
+                    vertices[v0].pdf_forward = pdf_wi * std::abs(dot(vertices[v0].p->get_normal(), vertices[v1].wi)) / sqr_length(vertices[v0].p->get_position() - vertices[v1].p->get_position());
                 }
                 else
                 {
-                    vertices[v0].pdf_forward = pdf_wi * vertices[v1].bxdf_pdf;
+                    vertices[v0].pdf_forward = pdf_wi;
                 }
 
 
@@ -379,7 +402,10 @@ namespace fc
 
             if(s0.infity_area_light)
             {
-                vector3 f{t0.bsdf->evaluate(t0.bxdf, t0.wo, s0.wi, 1.0, 1.0)};
+                double eta_a{t0.above_medium->get_ior()};
+                double eta_b{t0.below_medium->get_ior()};
+
+                vector3 f{t0.bsdf->evaluate(t0.bxdf, t0.wo, s0.wi, eta_a, eta_b)};
                 if(!f || !scene.visibility(*t0.p, s0.wi)) return {};
 
                 vector3 Li{t0.beta * f * std::abs(dot(t0.p->get_normal(), s0.wi)) * s0.beta};
@@ -391,8 +417,8 @@ namespace fc
                     scoped_assignment sa2{s0.pdf_forward};
 
                     t0.pdf_backward = scene.get_infinity_area_light()->pdf_o() * std::abs(dot(t0.p->get_normal(), s0.wi));
-                    t1.pdf_backward = t0.bsdf->pdf_wo(t0.bxdf, t0.wo, s0.wi, 1.0, 1.0) * t0.bxdf_pdf * std::abs(dot(t1.p->get_normal(), t0.wo)) / sqr_length(t1.p->get_position() - t0.p->get_position());
-                    s0.pdf_forward = t0.bsdf->pdf_wi(t0.bxdf, t0.wo, s0.wi, 1.0, 1.0) * t0.bxdf_pdf;
+                    t1.pdf_backward = t0.bsdf->pdf_wo(t0.bxdf, t0.wo, s0.wi, eta_a, eta_b) * std::abs(dot(t1.p->get_normal(), t0.wo)) / sqr_length(t1.p->get_position() - t0.p->get_position());
+                    s0.pdf_forward = t0.bsdf->pdf_wi(t0.bxdf, t0.wo, s0.wi, eta_a, eta_b);
 
                     return Li * mis_weight(t_vertices, t, s_vertices, 1);
                 }
@@ -408,11 +434,14 @@ namespace fc
                 vector3 r{s0.p->get_light()->get_Le(*s0.p, wo)};
                 if(!r) return {};
 
-                vector3 f{t0.bsdf->evaluate(t0.bxdf, t0.wo, -wo, 1.0, 1.0)};
+                double eta_a{t0.above_medium->get_ior()};
+                double eta_b{t0.below_medium->get_ior()};
+
+                vector3 f{t0.bsdf->evaluate(t0.bxdf, t0.wo, -wo, eta_a, eta_b)};
                 if(!f || !scene.visibility(*t0.p, *s0.p)) return {};
 
-                double microfacet_shadowing{std::abs(dot(t0.p->get_normal(), wo) * dot(s0.p->get_normal(), wo)) / sqr_len};
-                vector3 Li{t0.beta * f * microfacet_shadowing * r * s0.beta};
+                double g{std::abs(dot(t0.p->get_normal(), wo) * dot(s0.p->get_normal(), wo)) / sqr_len};
+                vector3 Li{t0.beta * f * g * r * s0.beta};
 
                 if(Li)
                 {
@@ -423,8 +452,8 @@ namespace fc
                     vector3 wi{-wo};
 
                     t0.pdf_backward = s0.p->get_light()->pdf_wo(*s0.p, wo) * std::abs(dot(t0.p->get_normal(), wo)) / sqr_len;
-                    t1.pdf_backward = t0.bsdf->pdf_wo(t0.bxdf, t0.wo, wi, 1.0, 1.0) * t0.bxdf_pdf * std::abs(dot(t1.p->get_normal(), t0.wo)) / sqr_length(t1.p->get_position() - t0.p->get_position());
-                    s0.pdf_forward = t0.bsdf->pdf_wi(t0.bxdf, t0.wo, wi, 1.0, 1.0) * t0.bxdf_pdf * std::abs(dot(s0.p->get_normal(), wi)) / sqr_len;
+                    t1.pdf_backward = t0.bsdf->pdf_wo(t0.bxdf, t0.wo, wi, eta_a, eta_b) * std::abs(dot(t1.p->get_normal(), t0.wo)) / sqr_length(t1.p->get_position() - t0.p->get_position());
+                    s0.pdf_forward = t0.bsdf->pdf_wi(t0.bxdf, t0.wo, wi, eta_a, eta_b) * std::abs(dot(s0.p->get_normal(), wi)) / sqr_len;
 
                     return Li * mis_weight(t_vertices, t, s_vertices, 1);
                 }
@@ -447,7 +476,10 @@ namespace fc
             double sqr_len{sqr_length(d)};
             vector3 wo{d / std::sqrt(sqr_len)};
 
-            vector3 f{s0.bsdf->evaluate(s0.bxdf, wo, s0.wi, 1.0, 1.0)};
+            double eta_a{s0.above_medium->get_ior()};
+            double eta_b{s0.below_medium->get_ior()};
+
+            vector3 f{s0.bsdf->evaluate(s0.bxdf, wo, s0.wi, eta_a, eta_b)};
             if(!f || !scene.visibility(*sensor_sample->p, *s0.p)) return;
 
             double microfacet_shadowing{std::abs(dot(sensor_sample->p->get_normal(), wo) * dot(s0.p->get_normal(), wo)) / sqr_len};
@@ -463,11 +495,11 @@ namespace fc
                 s0.pdf_forward = measurement.pdf_wi(*sensor_sample->p, wi) * std::abs(dot(s0.p->get_normal(), wi)) / sqr_len;
                 if(s1.infity_area_light)
                 {
-                    s1.pdf_forward = s0.bsdf->pdf_wi(s0.bxdf, wo, s0.wi, 1.0, 1.0) * s0.bxdf_pdf;
+                    s1.pdf_forward = s0.bsdf->pdf_wi(s0.bxdf, wo, s0.wi, eta_a, eta_b);
                 }
                 else
                 {
-                    s1.pdf_forward = s0.bsdf->pdf_wi(s0.bxdf, wo, s0.wi, 1.0, 1.0) * s0.bxdf_pdf * std::abs(dot(s1.p->get_normal(), s0.wi)) / sqr_length(s1.p->get_position() - s0.p->get_position());
+                    s1.pdf_forward = s0.bsdf->pdf_wi(s0.bxdf, wo, s0.wi, eta_a, eta_b) * std::abs(dot(s1.p->get_normal(), s0.wi)) / sqr_length(s1.p->get_position() - s0.p->get_position());
                 }
 
                 measurement.add_sample(*sensor_sample->p, Li * mis_weight(nullptr, 1, s_vertices, s));
@@ -487,10 +519,15 @@ namespace fc
             vector3 wo{d / std::sqrt(sqr_len)};
             vector3 wi{-wo};
 
-            vector3 ft{t0.bsdf->evaluate(t0.bxdf, t0.wo, wi, 1.0, 1.0)};
+            double t_eta_a{t0.above_medium->get_ior()};
+            double t_eta_b{t0.below_medium->get_ior()};
+            double s_eta_a{s0.above_medium->get_ior()};
+            double s_eta_b{s0.below_medium->get_ior()};
+
+            vector3 ft{t0.bsdf->evaluate(t0.bxdf, t0.wo, wi, t_eta_a, t_eta_b)};
             if(!ft) return {};
 
-            vector3 fs{s0.bsdf->evaluate(s0.bxdf, wo, s0.wi, 1.0, 1.0)};
+            vector3 fs{s0.bsdf->evaluate(s0.bxdf, wo, s0.wi, s_eta_a, s_eta_b)};
             if(!fs || !scene.visibility(*t0.p, *s0.p)) return {};
 
             double G{std::abs(dot(t0.p->get_normal(), wi) * dot(s0.p->get_normal(), wi)) / sqr_len};
@@ -506,18 +543,18 @@ namespace fc
                 // t1 ----- t0 --wi--> ----- <--wo-- s0 ----- s1
             
 
-                s0.pdf_forward = t0.bsdf->pdf_wi(t0.bxdf, t0.wo, wi, 1.0, 1.0) * t0.bxdf_pdf * std::abs(dot(s0.p->get_normal(), wi)) / sqr_len;
+                s0.pdf_forward = t0.bsdf->pdf_wi(t0.bxdf, t0.wo, wi, t_eta_a, t_eta_b) * std::abs(dot(s0.p->get_normal(), wi)) / sqr_len;
                 if(s1.infity_area_light)
                 {
-                    s1.pdf_forward = s0.bsdf->pdf_wi(s0.bxdf, wo, s0.wi, 1.0, 1.0) * t0.bxdf_pdf;
+                    s1.pdf_forward = s0.bsdf->pdf_wi(s0.bxdf, wo, s0.wi, s_eta_a, s_eta_b);
                 }
                 else
                 {
-                    s1.pdf_forward = s0.bsdf->pdf_wi(s0.bxdf, wo, s0.wi, 1.0, 1.0) * s0.bxdf_pdf * std::abs(dot(s1.p->get_normal(), s0.wi)) / sqr_length(s1.p->get_position() - s0.p->get_position());
+                    s1.pdf_forward = s0.bsdf->pdf_wi(s0.bxdf, wo, s0.wi, s_eta_a, s_eta_b) * std::abs(dot(s1.p->get_normal(), s0.wi)) / sqr_length(s1.p->get_position() - s0.p->get_position());
                 }
 
-                t0.pdf_backward = s0.bsdf->pdf_wo(s0.bxdf, wo, s0.wi, 1.0, 1.0) * s0.bxdf_pdf * std::abs(dot(t0.p->get_normal(), wo)) / sqr_len;
-                t1.pdf_backward = t0.bsdf->pdf_wo(t0.bxdf, t0.wo, wi, 1.0, 1.0) * t0.bxdf_pdf * std::abs(dot(t1.p->get_normal(), t0.wo)) / sqr_length(t1.p->get_position() - t0.p->get_position());
+                t0.pdf_backward = s0.bsdf->pdf_wo(s0.bxdf, wo, s0.wi, s_eta_a, s_eta_b) * std::abs(dot(t0.p->get_normal(), wo)) / sqr_len;
+                t1.pdf_backward = t0.bsdf->pdf_wo(t0.bxdf, t0.wo, wi, t_eta_a, t_eta_b) * std::abs(dot(t1.p->get_normal(), t0.wo)) / sqr_length(t1.p->get_position() - t0.p->get_position());
 
                 return Li * mis_weight(t_vertices, t, s_vertices, s);
             }

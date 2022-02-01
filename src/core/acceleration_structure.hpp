@@ -15,8 +15,6 @@ namespace fc
         std::shared_ptr<material> material{};
         std::shared_ptr<area_light> area_light{};
         std::shared_ptr<medium> medium{};
-        int priority{};
-        double ior{};
     };
 
     struct entity_primitive

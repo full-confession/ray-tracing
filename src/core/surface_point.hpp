@@ -43,11 +43,6 @@ namespace fc
         void* get_measurement_data() const { return measurement_data_; }
         void set_measurement_data(void* data) { measurement_data_ = data; }
 
-        int get_priority() const { return priority_; }
-        void set_priority(int priority) { priority_ = priority; }
-
-        double get_ior() const { return ior_; }
-        void set_ior(double ior) { ior_ = ior; }
 
     private:
         vector3 position_{};
@@ -65,8 +60,5 @@ namespace fc
 
         measurement const* measurement_{};
         void* measurement_data_{};
-
-        int priority_{};
-        double ior_{};
     };
 }

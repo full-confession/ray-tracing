@@ -101,8 +101,6 @@ namespace fc
                 p->set_light(e->area_light.get());
                 p->set_material(e->material.get());
                 p->set_medium(e->medium.get());
-                p->set_ior(e->ior);
-                p->set_priority(e->priority);
 
                 result = raycast_surface_point_result->p;
             }

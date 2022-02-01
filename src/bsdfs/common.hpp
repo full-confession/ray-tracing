@@ -24,18 +24,18 @@ namespace fc
         return -w + 2.0 * dot(w, n) * n;
     }
 
-    inline std::optional<vector3> refract(vector3 const& w, vector3 const& n, double eta)
+    inline bool refract(vector3 const& i, vector3 const& m, double eta,
+        vector3* o)
     {
-        std::optional<vector3> result{};
-        double cos_theta_i = dot(n, w);
+        double cos_theta_i = dot(i, m);
         double sin2_theta_i = std::max(0.0, 1.0 - cos_theta_i * cos_theta_i);
         double sin2_theta_t = eta * eta * sin2_theta_i;
-        if(sin2_theta_t >= 1.0) return result;
+
+        if(sin2_theta_t >= 1.0) return false;
 
         double cos_theta_t = std::sqrt(1 - sin2_theta_t);
-
-        result = eta * -w + (eta * cos_theta_i - cos_theta_t) * n;
-        return result;
+        *o = eta * -i + (eta * cos_theta_i - cos_theta_t) * m;
+        return true;
     }
 
     inline vector3 faceforward(vector3 const& n, vector3 const& v)

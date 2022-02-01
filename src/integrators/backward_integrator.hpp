@@ -25,9 +25,8 @@ namespace fc
             vector3 beta{};
 
             helper helper{scene, allocator};
-            double eta_a{};
-            double eta_b{};
-            medium const* medium{};
+            medium const* above_medium{};
+            medium const* below_medium{};
 
             if(light->get_type() == light_type::standard)
             {
@@ -50,7 +49,7 @@ namespace fc
                     }
                 }
 
-                p1 = helper.raycast(*light_sample->p, light_sample->wo, &eta_a, &eta_b, &medium);
+                p1 = helper.raycast(*light_sample->p, light_sample->wo, &above_medium, &below_medium);
                 if(p1 == nullptr) return;
 
                 w10 = -light_sample->wo;
@@ -76,7 +75,7 @@ namespace fc
                 surface_point p0{};
                 p0.set_position(light_sample->o);
 
-                p1 = helper.raycast(p0, -light_sample->wi, &eta_a, &eta_b, &medium);
+                p1 = helper.raycast(p0, -light_sample->wi, &above_medium, &below_medium);
                 if(p1 == nullptr) return;
 
                 w10 = light_sample->wi;
@@ -92,9 +91,8 @@ namespace fc
             int path_length{2};
             while(true)
             {
-                bsdf2 const* bsdf_p1{p1->get_material()->evaluate(*p1, sampler.get_1d(), allocator)};
-                double bxdf_pdf{};
-                int bxdf{bsdf_p1->sample_bxdf(sampler.get_1d(), &bxdf_pdf)};
+                bsdf const* bsdf_p1{p1->get_material()->evaluate(*p1, sampler.get_1d(), allocator)};
+                int bxdf{bsdf_p1->sample_bxdf(sampler.get_1d())};
 
                 if(bsdf_p1->get_type(bxdf) != bxdf_type::delta)
                 {
@@ -103,7 +101,7 @@ namespace fc
                     {
                         vector3 d1C{measurement_sample->p->get_position() - p1->get_position()};
                         vector3 w1C{normalize(d1C)};
-                        vector3 f01C{bsdf_p1->evaluate(bxdf, w1C, w10, eta_a, eta_b)};
+                        vector3 f01C{bsdf_p1->evaluate(bxdf, w1C, w10, above_medium->get_ior(), below_medium->get_ior())};
 
                         if(f01C && scene.visibility(*p1, *measurement_sample->p))
                         {
@@ -124,17 +122,28 @@ namespace fc
                 path_length += 1;
 
                 vector3 w12{};
-                vector3 weight{};
+                vector3 value{};
                 double pdf_w12{};
-                if(bsdf_p1->sample_wo(bxdf, w10, eta_a, eta_b, sampler, &w12, &weight, &pdf_w12) != sample_result::success)
+                if(bsdf_p1->sample_wo(bxdf, w10, above_medium->get_ior(), below_medium->get_ior(), sampler,
+                    &w12, &value, &pdf_w12) != sample_result::success)
+                {
                     break;
+                }
 
-
-                surface_point const* p2{helper.raycast(*p1, w12, &eta_a, &eta_b, &medium)};
+                surface_point const* p2{helper.raycast(*p1, w12, &above_medium, &below_medium)};
                 if(p2 == nullptr) break;
 
-                beta *= weight / bxdf_pdf;
-                beta *= medium->transmittance(p1->get_position(), p2->get_position());
+                beta *= value * (std::abs(dot(p1->get_normal(), w12)) / pdf_w12);
+
+                bool entering{dot(p2->get_normal(), w12) <= 0.0};
+                if(entering)
+                {
+                    beta *= above_medium->transmittance(p1->get_position(), p2->get_position());
+                }
+                else
+                {
+                    beta *= below_medium->transmittance(p1->get_position(), p2->get_position());
+                }
 
                 p1 = p2;
                 w10 = -w12;

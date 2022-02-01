@@ -2,14 +2,14 @@
 #include "../core/bsdf.hpp"
 #include "common.hpp"
 #include "../core/bxdf.hpp"
-#include "../core/microfacet.hpp"
+
 namespace fc
 {
-    class specular_transmission : public bxdf_adapter<specular_transmission>
+    class specular_reflection : public bxdf_adapter<specular_reflection>
     {
     public:
-        explicit specular_transmission(vector3 const& transmittance)
-            : transmittance_{transmittance}
+        explicit specular_reflection(vector3 const& reflectance, fresnel const& fresnel, double ior)
+            : reflectance_{reflectance}, fresnel_{&fresnel}, ior_{ior}
         { }
 
         virtual bxdf_type get_type() const override
@@ -22,12 +22,15 @@ namespace fc
             return {};
         }
 
-        sample_result sample(vector3 const& i, double eta_a, double eta_b, sampler& sv,
+        sample_result sample(vector3 const& i, double eta_a, double eta_b, sampler& sampler,
             vector3* o, vector3* value, double* pdf_o) const
         {
-            if(!refract(i, {0.0, 1.0, 0.0}, eta_a / eta_b, o)) return sample_result::fail;
+            if(i.y == 0.0) return sample_result::fail;
 
-            *value = transmittance_ * ((eta_b * eta_b) / (eta_a * eta_a * -o->y));
+            vector3 fresnel{fresnel_->evaluate(i.y, eta_a, ior_)};
+
+            *o = {-i.x, i.y, -i.z};
+            *value = fresnel * reflectance_ / o->y;
             *pdf_o = 1.0;
 
             return sample_result::success;
@@ -39,6 +42,8 @@ namespace fc
         }
 
     private:
-        vector3 transmittance_{};
+        vector3 reflectance_{};
+        fresnel const* fresnel_{};
+        double ior_{};
     };
 }

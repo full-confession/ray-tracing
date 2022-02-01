@@ -1,6 +1,7 @@
 #pragma once
 #include "../core/light.hpp"
 #include "../core/surface.hpp"
+#include "../core/frame.hpp"
 
 namespace fc
 {

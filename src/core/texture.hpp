@@ -13,6 +13,14 @@ namespace fc
         virtual vector3 integrate(vector2 const& a, vector2 const& b) const = 0;
     };
 
+    class texture_2d_rg
+    {
+    public:
+        virtual ~texture_2d_rg() = default;
+
+        virtual vector2 evaluate(vector2 const& uv) const = 0;
+    };
+
     class texture_2d_r
     {
     public:

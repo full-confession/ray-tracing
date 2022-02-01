@@ -26,6 +26,22 @@ namespace fc
         vector3 value_{};
     };
 
+    class const_texture_2d_rg : public texture_2d_rg
+    {
+    public:
+        explicit const_texture_2d_rg(vector2 const& value)
+            : value_{value}
+        { }
+
+        virtual vector2 evaluate(vector2 const& uv) const override
+        {
+            return value_;
+        }
+
+    private:
+        vector2 value_{};
+    };
+
     class const_texture_2d_r : public texture_2d_r
     {
     public:
