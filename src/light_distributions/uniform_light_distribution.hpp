@@ -10,7 +10,7 @@ namespace fc
             : lights_{std::move(lights)}
         { }
 
-        virtual light_distribution_sample_result sample(double const& sample_picking) const override
+        virtual light_distribution_sample_result sample(double sample_picking) const override
         {
             std::size_t index{std::min(static_cast<std::size_t>(sample_picking * static_cast<double>(lights_.size())), lights_.size() - 1)};
             return {lights_[index], 1.0 / static_cast<double>(lights_.size())};

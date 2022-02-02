@@ -16,7 +16,7 @@ namespace fc
         {
             measurement.add_sample_count(1);
 
-            auto measurement_sample{measurement.sample_p_and_wi(sampler.get_2d(), sampler.get_2d(), allocator)};
+            auto measurement_sample{measurement.sample_p_and_wi(sampler.get(), sampler.get(), allocator)};
             if(!measurement_sample) return;
 
             vector3 Li{};
@@ -46,15 +46,14 @@ namespace fc
 
                 for(int i{2}; i <= max_path_length_; ++i)
                 {
-                    bsdf const* bsdf_p1{p1->get_material()->evaluate(*p1, {}, allocator)};
-
-                    int bxdf{bsdf_p1->sample_bxdf(sampler.get_1d())};
+                    bsdf const* bsdf_p1{p1->get_material()->evaluate(*p1, allocator)};
+                    int bxdf{bsdf_p1->sample_bxdf(sampler.get().x)};
 
                     vector3 w12{};
                     vector3 value{};
                     double pdf_w12{};
 
-                    if(bsdf_p1->sample_wi(bxdf, w10, above_medium->get_ior(), below_medium->get_ior(), sampler,
+                    if(bsdf_p1->sample_wi(bxdf, w10, above_medium->get_ior(), below_medium->get_ior(), sampler.get(), sampler.get(),
                         &w12, &value, &pdf_w12) != sample_result::success)
                     {
                         break;

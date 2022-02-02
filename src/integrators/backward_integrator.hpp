@@ -18,7 +18,7 @@ namespace fc
         {
             measurement.add_sample_count(1);
 
-            auto [light, pdf_light]{scene.get_light_distribution()->sample(sampler.get_1d())};
+            auto [light, pdf_light]{scene.get_light_distribution()->sample(sampler.get().x)};
 
             surface_point const* p1{};
             vector3 w10{};
@@ -31,10 +31,10 @@ namespace fc
             if(light->get_type() == light_type::standard)
             {
                 auto std_light{static_cast<standard_light const*>(light)};
-                auto light_sample{std_light->sample_p_and_wo(sampler.get_1d(), sampler.get_2d(), sampler.get_2d(), allocator)};
+                auto light_sample{std_light->sample_p_and_wo(sampler.get().x, sampler.get(), sampler.get(), allocator)};
                 if(!light_sample) return;
 
-                auto measurement_sample{measurement.sample_p(*light_sample->p, sampler.get_2d(), allocator)};
+                auto measurement_sample{measurement.sample_p(*light_sample->p, sampler.get(), allocator)};
                 if(measurement_sample)
                 {
                     vector3 d0C{measurement_sample->p->get_position() - light_sample->p->get_position()};
@@ -59,10 +59,10 @@ namespace fc
             else if(light->get_type() == light_type::infinity_area)
             {
                 auto inf_light{static_cast<infinity_area_light const*>(light)};
-                auto light_sample{inf_light->sample_wi_and_o(sampler.get_2d(), sampler.get_2d())};
+                auto light_sample{inf_light->sample_wi_and_o(sampler.get(), sampler.get())};
                 if(!light_sample) return;
 
-                auto measurement_sample{measurement.sample_p(light_sample->wi, sampler.get_2d(), allocator)};
+                auto measurement_sample{measurement.sample_p(light_sample->wi, sampler.get(), allocator)};
                 if(measurement_sample)
                 {
                     if(scene.visibility(*measurement_sample->p, light_sample->wi))
@@ -80,6 +80,8 @@ namespace fc
 
                 w10 = light_sample->wi;
                 beta = light_sample->Li / (light_sample->pdf_o * light_sample->pdf_wi * pdf_light);
+
+                sampler.advance_dimension();
             }
             else
             {
@@ -91,12 +93,12 @@ namespace fc
             int path_length{2};
             while(true)
             {
-                bsdf const* bsdf_p1{p1->get_material()->evaluate(*p1, sampler.get_1d(), allocator)};
-                int bxdf{bsdf_p1->sample_bxdf(sampler.get_1d())};
+                bsdf const* bsdf_p1{p1->get_material()->evaluate(*p1, allocator)};
+                int bxdf{bsdf_p1->sample_bxdf(sampler.get().x)};
 
                 if(bsdf_p1->get_type(bxdf) != bxdf_type::delta)
                 {
-                    auto measurement_sample{measurement.sample_p(*p1, sampler.get_2d(), allocator)};
+                    auto measurement_sample{measurement.sample_p(*p1, sampler.get(), allocator)};
                     if(measurement_sample)
                     {
                         vector3 d1C{measurement_sample->p->get_position() - p1->get_position()};
@@ -113,8 +115,7 @@ namespace fc
                 }
                 else
                 {
-                    // discard unused samples
-                    //sampler.skip_2d();
+                    sampler.advance_dimension();
                 }
 
 
@@ -124,7 +125,7 @@ namespace fc
                 vector3 w12{};
                 vector3 value{};
                 double pdf_w12{};
-                if(bsdf_p1->sample_wo(bxdf, w10, above_medium->get_ior(), below_medium->get_ior(), sampler,
+                if(bsdf_p1->sample_wo(bxdf, w10, above_medium->get_ior(), below_medium->get_ior(), sampler.get(), sampler.get(),
                     &w12, &value, &pdf_w12) != sample_result::success)
                 {
                     break;

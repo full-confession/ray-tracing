@@ -25,10 +25,10 @@ namespace fc
 
         virtual vector3 evaluate(vector3 const& wo, vector3 const& wi, double eta_a, double eta_b) const = 0;
 
-        virtual sample_result sample_wi(vector3 const& wo, double eta_a, double eta_b, sampler& sv,
+        virtual sample_result sample_wi(vector3 const& wo, double eta_a, double eta_b, vector2 const& u1, vector2 const& u2,
             vector3* wi, vector3* weight, double* pdf_wi = nullptr, double* pdf_wo = nullptr) const = 0;
 
-        virtual sample_result sample_wo(vector3 const& wi, double eta_a, double eta_b, sampler& sv,
+        virtual sample_result sample_wo(vector3 const& wi, double eta_a, double eta_b, vector2 const& u1, vector2 const& u2,
             vector3* wo, vector3* weight, double* pdf_wo = nullptr, double* pdf_wi = nullptr) const = 0;
 
         virtual double pdf_wi(vector3 const& wo, vector3 const& wi, double eta_a, double eta_b) const = 0;
@@ -52,12 +52,12 @@ namespace fc
             }
         }
 
-        virtual sample_result sample_wi(vector3 const& wo, double eta_a, double eta_b, sampler& sv,
+        virtual sample_result sample_wi(vector3 const& wo, double eta_a, double eta_b, vector2 const& u1, vector2 const& u2,
             vector3* wi, vector3* value, double* pdf_wi, double* pdf_wo) const override
         {
             if(wo.y >= 0.0)
             {
-                auto result{static_cast<Derived const*>(this)->sample(wo, eta_a, eta_b, sv, wi, value, pdf_wi)};
+                auto result{static_cast<Derived const*>(this)->sample(wo, eta_a, eta_b, u1, u2, wi, value, pdf_wi)};
                 if(result == sample_result::success)
                 {
                     if(wi->y <= 0.0)
@@ -69,7 +69,7 @@ namespace fc
             }
             else
             {
-                auto result{static_cast<Derived const*>(this)->sample(-wo, eta_b, eta_a, sv, wi, value, pdf_wi)};
+                auto result{static_cast<Derived const*>(this)->sample(-wo, eta_b, eta_a, u1, u2, wi, value, pdf_wi)};
                 if(result == sample_result::success)
                 {
                     *wi = -*wi;
@@ -82,16 +82,16 @@ namespace fc
             }
         }
 
-        virtual sample_result sample_wo(vector3 const& wi, double eta_a, double eta_b, sampler& sv,
+        virtual sample_result sample_wo(vector3 const& wi, double eta_a, double eta_b, vector2 const& u1, vector2 const& u2,
             vector3* wo, vector3* value, double* pdf_wo = nullptr, double* pdf_wi = nullptr) const override
         {
             if(wi.y >= 0.0)
             {
-                return static_cast<Derived const*>(this)->sample(wi, eta_a, eta_b, sv, wo, value, pdf_wo);
+                return static_cast<Derived const*>(this)->sample(wi, eta_a, eta_b, u1, u2, wo, value, pdf_wo);
             }
             else
             {
-                auto result{static_cast<Derived const*>(this)->sample(-wi, eta_b, eta_a, sv, wo, value, pdf_wo)};
+                auto result{static_cast<Derived const*>(this)->sample(-wi, eta_b, eta_a, u1, u2, wo, value, pdf_wo)};
                 if(result == sample_result::success)
                 {
                     *wo = -*wo;
@@ -130,7 +130,7 @@ namespace fc
             return {};
         }
 
-        sample_result sample(vector3 const& i, double eta_a, double eta_b, sampler& sv,
+        sample_result sample(vector3 const& i, double eta_a, double eta_b, vector2 const& u1, vector2 const& u2,
             vector3* o, vector3* weight, double* pdf_o) const
         {
             return {};

@@ -45,13 +45,13 @@ namespace fc
             return transmittance_ * (i_dot_h * g2 * d * jacobian / (i.y * -o.y));
         }
 
-        sample_result sample(vector3 const& i, double eta_a, double eta_b, sampler& sv,
+        sample_result sample(vector3 const& i, double eta_a, double eta_b, vector2 const& u1, vector2 const& u2,
             vector3* o, vector3* value, double* pdf_o) const
         {
             if(i.y == 0.0) return sample_result::fail;
 
             // sample half vector
-            vector3 h{microfacet_model_->sample(i, sv.get_2d())};
+            vector3 h{microfacet_model_->sample(i, u1)};
 
             // check if backfacing
             double i_dot_h{dot(i, h)};

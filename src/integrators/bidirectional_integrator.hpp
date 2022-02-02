@@ -17,10 +17,15 @@ namespace fc
 
             helper sensor_helper{scene, allocator};
             int t_vertex_count{create_sensor_subpath(t_vertices, measurement, scene, sampler, allocator, sensor_helper)};
+            
+            int sensor_max_dimensions{3 + 3 * (max_path_length_ - 1)};
+            sampler.set_dimension(sensor_max_dimensions);
 
             helper light_helper{scene, allocator};
             int s_vertex_count{create_light_subpath(s_vertices, measurement, scene, sampler, allocator, light_helper)};
 
+            int light_max_dimensions{5 + 3 * (max_path_length_ - 1)};
+            sampler.set_dimension(sensor_max_dimensions + light_max_dimensions);
 
             vector3 Li{};
 
@@ -65,7 +70,9 @@ namespace fc
                 }
             }
 
-            if(t_vertex_count >= 1) measurement.add_sample(*t_vertices[0].p, Li);
+            if(t_vertex_count >= 1)
+                measurement.add_sample(*t_vertices[0].p, Li);
+
             measurement.add_sample_count(1);
         }
 
@@ -115,7 +122,7 @@ namespace fc
         int create_sensor_subpath(vertex* vertices, measurement& measurement, scene const& scene, sampler& sampler, allocator_wrapper& allocator, helper& helper) const
         {
             int vertex_count{};
-            auto sensor_sample{measurement.sample_p_and_wi(sampler.get_2d(), sampler.get_2d(), allocator)};
+            auto sensor_sample{measurement.sample_p_and_wi(sampler.get(), sampler.get(), allocator)};
             if(!sensor_sample) return vertex_count;
 
             vertices[0].p = sensor_sample->p;
@@ -148,8 +155,8 @@ namespace fc
             vertices[1].pdf_forward = sensor_sample->pdf_wi * std::abs(dot(vertices[1].p->get_normal(), vertices[0].wi)) / sqr_length(vertices[1].p->get_position() - vertices[0].p->get_position());
             vertices[1].wo = -vertices[0].wi;
             vertices[1].beta = vertices[0].beta * sensor_sample->Wo * (std::abs(dot(vertices[0].p->get_normal(), vertices[0].wi)) / sensor_sample->pdf_wi);
-            vertices[1].bsdf = vertices[1].p->get_material()->evaluate(*vertices[1].p, sampler.get_1d(), allocator);
-            vertices[1].bxdf = vertices[1].bsdf->sample_bxdf(sampler.get_1d());
+            vertices[1].bsdf = vertices[1].p->get_material()->evaluate(*vertices[1].p, allocator);
+            vertices[1].bxdf = vertices[1].bsdf->sample_bxdf(sampler.get().x);
             vertices[1].connectable = vertices[1].bsdf->get_type(vertices[1].bxdf) != bxdf_type::delta;
             vertex_count += 1;
 
@@ -161,7 +168,7 @@ namespace fc
                 double pdf_wi{};
                 vector3 value{};
 
-                if(vertices[v1].bsdf->sample_wi(vertices[v1].bxdf, vertices[v1].wo, vertices[v1].above_medium->get_ior(), vertices[v1].below_medium->get_ior(), sampler,
+                if(vertices[v1].bsdf->sample_wi(vertices[v1].bxdf, vertices[v1].wo, vertices[v1].above_medium->get_ior(), vertices[v1].below_medium->get_ior(), sampler.get(), sampler.get(),
                     &vertices[v1].wi, &value, &pdf_wi) != sample_result::success)
                 {
                     return vertex_count;
@@ -197,8 +204,8 @@ namespace fc
                 vertices[v2].pdf_forward = pdf_wi * std::abs(n2_dot_wi1) / sqr_length(vertices[v2].p->get_position() - vertices[v1].p->get_position());
                 vertices[v2].wo = -vertices[v1].wi;
                 vertices[v2].beta = vertices[v1].beta * value * (std::abs(dot(vertices[v1].p->get_normal(), vertices[v1].wi)) / pdf_wi);
-                vertices[v2].bsdf = vertices[v2].p->get_material()->evaluate(*vertices[v2].p, sampler.get_1d(), allocator);
-                vertices[v2].bxdf = vertices[v2].bsdf->sample_bxdf(sampler.get_1d());
+                vertices[v2].bsdf = vertices[v2].p->get_material()->evaluate(*vertices[v2].p, allocator);
+                vertices[v2].bxdf = vertices[v2].bsdf->sample_bxdf(sampler.get().x);
                 vertices[v2].connectable = vertices[v2].bsdf->get_type(vertices[v2].bxdf) != bxdf_type::delta;
 
                 if(n2_dot_wi1 <= 0.0)
@@ -226,12 +233,12 @@ namespace fc
         int create_light_subpath(vertex* vertices, measurement& measurement, scene const& scene, sampler& sampler, allocator_wrapper& allocator, helper& helper) const
         {
             int vertex_count{};
-            auto [light, pdf_light] {scene.get_light_distribution()->sample(sampler.get_1d())};
+            auto [light, pdf_light] {scene.get_light_distribution()->sample(sampler.get().x)};
 
             if(light->get_type() == light_type::standard)
             {
                 auto std_light{static_cast<standard_light const*>(light)};
-                auto light_sample{std_light->sample_p_and_wo(sampler.get_1d(), sampler.get_2d(), sampler.get_2d(), allocator)};
+                auto light_sample{std_light->sample_p_and_wo(sampler.get().x, sampler.get(), sampler.get(), allocator)};
                 if(!light_sample) return vertex_count;
 
                 vertices[0].p = light_sample->p;
@@ -250,15 +257,15 @@ namespace fc
                 vertices[1].pdf_backward = light_sample->pdf_wo * std::abs(dot(vertices[1].p->get_normal(), vertices[0].wo)) / sqr_length(vertices[1].p->get_position() - vertices[0].p->get_position());
                 vertices[1].wi = -vertices[0].wo;
                 vertices[1].beta = vertices[0].beta * light_sample->Le * (std::abs(dot(vertices[0].p->get_normal(), vertices[0].wo)) / light_sample->pdf_wo);
-                vertices[1].bsdf = vertices[1].p->get_material()->evaluate(*vertices[1].p, sampler.get_1d(), allocator);
-                vertices[1].bxdf = vertices[1].bsdf->sample_bxdf(sampler.get_1d());
+                vertices[1].bsdf = vertices[1].p->get_material()->evaluate(*vertices[1].p, allocator);
+                vertices[1].bxdf = vertices[1].bsdf->sample_bxdf(sampler.get().x);
                 vertices[1].connectable = vertices[1].bsdf->get_type(vertices[1].bxdf) != bxdf_type::delta;
                 vertex_count += 1;
             }
             else
             {
                 auto inf_light{static_cast<infinity_area_light const*>(light)};
-                auto light_sample{inf_light->sample_wi_and_o(sampler.get_2d(), sampler.get_2d())};
+                auto light_sample{inf_light->sample_wi_and_o(sampler.get(), sampler.get())};
                 if(!light_sample) return vertex_count;
 
                 vertices[0].infity_area_light = true;
@@ -280,10 +287,12 @@ namespace fc
                 vertices[1].pdf_backward = light_sample->pdf_o * std::abs(dot(vertices[1].p->get_normal(), light_sample->wi));
                 vertices[1].wi = light_sample->wi;
                 vertices[1].beta = vertices[0].beta / light_sample->pdf_o;
-                vertices[1].bsdf = vertices[1].p->get_material()->evaluate(*vertices[1].p, sampler.get_1d(), allocator);
-                vertices[1].bxdf = vertices[1].bsdf->sample_bxdf(sampler.get_1d());
+                vertices[1].bsdf = vertices[1].p->get_material()->evaluate(*vertices[1].p, allocator);
+                vertices[1].bxdf = vertices[1].bsdf->sample_bxdf(sampler.get().x);
                 vertices[1].connectable = vertices[1].bsdf->get_type(vertices[1].bxdf) != bxdf_type::delta;
                 vertex_count += 1;
+
+                sampler.advance_dimension();
             }
 
             int v0{0};
@@ -294,7 +303,7 @@ namespace fc
             {
                 double pdf_wo{};
                 vector3 value{};
-                if(vertices[v1].bsdf->sample_wo(vertices[v1].bxdf, vertices[v1].wi, vertices[v1].above_medium->get_ior(), vertices[v1].below_medium->get_ior(), sampler,
+                if(vertices[v1].bsdf->sample_wo(vertices[v1].bxdf, vertices[v1].wi, vertices[v1].above_medium->get_ior(), vertices[v1].below_medium->get_ior(), sampler.get(), sampler.get(),
                     &vertices[v1].wo, &value, &pdf_wo) != sample_result::success)
                 {
                     return vertex_count;
@@ -308,8 +317,8 @@ namespace fc
                 vertices[v2].pdf_backward = pdf_wo * std::abs(n2_dot_wo1) / sqr_length(vertices[v2].p->get_position() - vertices[v1].p->get_position());
                 vertices[v2].wi = -vertices[v1].wo;
                 vertices[v2].beta = vertices[v1].beta * value * (std::abs(dot(vertices[v1].p->get_normal(), vertices[v1].wo)) / pdf_wo);
-                vertices[v2].bsdf = vertices[v2].p->get_material()->evaluate(*vertices[v2].p, sampler.get_1d(), allocator);
-                vertices[v2].bxdf = vertices[v2].bsdf->sample_bxdf(sampler.get_1d());
+                vertices[v2].bsdf = vertices[v2].p->get_material()->evaluate(*vertices[v2].p, allocator);
+                vertices[v2].bxdf = vertices[v2].bsdf->sample_bxdf(sampler.get().x);
                 vertices[v2].connectable = vertices[v2].bsdf->get_type(vertices[v2].bxdf) != bxdf_type::delta;
 
                 if(n2_dot_wo1 <= 0.0)
@@ -469,7 +478,7 @@ namespace fc
             vertex& s0{s_vertices[s - 1]};
             vertex& s1{s_vertices[s - 2]};
 
-            auto sensor_sample{measurement.sample_p(*s0.p, sampler.get_2d(), allocator)};
+            auto sensor_sample{measurement.sample_p(*s0.p, sampler.get(), allocator)};
             if(!sensor_sample) return;
 
             vector3 d{sensor_sample->p->get_position() - s0.p->get_position()};

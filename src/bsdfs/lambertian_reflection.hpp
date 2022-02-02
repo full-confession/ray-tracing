@@ -23,11 +23,11 @@ namespace fc
             return reflectance_ * math::inv_pi;
         }
 
-        sample_result sample(vector3 const& i, double eta_a, double eta_b, sampler& sampler,
+        sample_result sample(vector3 const& i, double eta_a, double eta_b, vector2 const& u1, vector2 const& u2,
             vector3* o, vector3* value, double* pdf_o) const
         {
             if(i.y == 0.0) return sample_result::fail;
-            *o = sample_hemisphere_cosine_weighted(sampler.get_2d());
+            *o = sample_hemisphere_cosine_weighted(u1);
             if(o->y == 0.0) return sample_result::fail;
 
             *value = reflectance_ * math::inv_pi;

@@ -16,24 +16,28 @@ namespace fc
             : reflectance_{std::move(reflectance)}, transmittance_{std::move(transmittance)}, roughness_{std::move(roughness)}
         { }
 
-        virtual bsdf const* evaluate(surface_point const& p, double, allocator_wrapper& allocator) const override
+        virtual bsdf const* evaluate(surface_point const& p, allocator_wrapper& allocator) const override
         {
-            bsdf* result{allocator.emplace<bsdf>(p.get_shading_tangent(), p.get_shading_normal(), p.get_shading_bitangent(), p.get_normal())};
+            bxdf const* bxdf{};
+            double scale{1.0};
+            double weight{1.0};
 
             vector3 reflectance{reflectance_->evaluate(p.get_uv())};
             vector3 transmittance{transmittance_->evaluate(p.get_uv())};
             vector2 roughness{roughness_->evaluate(p.get_uv())};
+
             if(roughness.x == 0.0 && roughness.y == 0.0)
             {
-                result->add_bxdf(allocator.emplace<specular_glass>(reflectance, transmittance));
+                bxdf = allocator.emplace<specular_glass>(reflectance, transmittance);
             }
             else
             {
                 microfacet_model const* model{allocator.emplace<smith_ggx_microfacet_model>(roughness)};
-                result->add_bxdf(allocator.emplace<microfacet_glass>(reflectance, transmittance, *model));
+                bxdf = allocator.emplace<microfacet_glass>(reflectance, transmittance, *model);
             }
 
-            return result;
+            return allocator.emplace<bsdf>(p.get_shading_tangent(), p.get_shading_normal(), p.get_shading_bitangent(), p.get_normal(),
+                1, &bxdf, &scale, &weight);
         }
 
     private:

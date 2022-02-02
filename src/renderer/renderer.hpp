@@ -62,7 +62,7 @@ namespace fc
             }
         }
 
-        void run(int sample_count)
+        void run()
         {
             std::vector<std::thread> workers{};
             workers.reserve(worker_count_);

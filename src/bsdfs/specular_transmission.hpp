@@ -22,7 +22,7 @@ namespace fc
             return {};
         }
 
-        sample_result sample(vector3 const& i, double eta_a, double eta_b, sampler& sv,
+        sample_result sample(vector3 const& i, double eta_a, double eta_b, vector2 const& u1, vector2 const& u2,
             vector3* o, vector3* value, double* pdf_o) const
         {
             if(!refract(i, {0.0, 1.0, 0.0}, eta_a / eta_b, o)) return sample_result::fail;

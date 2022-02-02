@@ -17,14 +17,10 @@ namespace fc
     public:
         virtual ~sampler() = default;
 
-        // use one dimension
-        virtual double get_1d() = 0;
+        virtual vector2 get() = 0;
 
-        // use two dimnesions
-        virtual vector2 get_2d() = 0;
-
-        // skip the number of dimnesions
-        virtual void skip(int dimensions = 1) = 0;
+        virtual void advance_dimension(int count = 1) = 0;
+        virtual void set_dimension(int dimension_index) = 0;
     };
 
 

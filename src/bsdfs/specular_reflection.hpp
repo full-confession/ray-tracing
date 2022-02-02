@@ -22,7 +22,7 @@ namespace fc
             return {};
         }
 
-        sample_result sample(vector3 const& i, double eta_a, double eta_b, sampler& sampler,
+        sample_result sample(vector3 const& i, double eta_a, double eta_b, vector2 const& u1, vector2 const& u2,
             vector3* o, vector3* value, double* pdf_o) const
         {
             if(i.y == 0.0) return sample_result::fail;

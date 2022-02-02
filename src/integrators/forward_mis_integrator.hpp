@@ -14,7 +14,7 @@ namespace fc
         {
             measurement.add_sample_count(1);
 
-            auto measurement_sample{measurement.sample_p_and_wi(sampler.get_2d(), sampler.get_2d(), allocator)};
+            auto measurement_sample{measurement.sample_p_and_wi(sampler.get(), sampler.get(), allocator)};
             if(!measurement_sample) return;
 
             vector3 Li{};
@@ -44,18 +44,18 @@ namespace fc
 
                 for(int i{2}; i <= max_path_length_; ++i)
                 {
-                    bsdf const* bsdf{p1->get_material()->evaluate(*p1, {}, allocator)};
-                    int bxdf{bsdf->sample_bxdf(sampler.get_1d())};
+                    bsdf const* bsdf{p1->get_material()->evaluate(*p1, allocator)};
+                    int bxdf{bsdf->sample_bxdf(sampler.get().x)};
 
                     if(bsdf->get_type(bxdf) == bxdf_type::standard)
                     {
                         // light strategy
                         {
-                            auto [light, pdf_light] {scene.get_spatial_light_distribution()->get(*p1)->sample(sampler.get_1d())};
+                            auto [light, pdf_light] {scene.get_spatial_light_distribution()->get(*p1)->sample(sampler.get().x)};
                             if(light->get_type() == light_type::infinity_area)
                             {
                                 auto inf_light{static_cast<infinity_area_light const*>(light)};
-                                auto light_sample{inf_light->sample_wi(sampler.get_2d())};
+                                auto light_sample{inf_light->sample_wi(sampler.get())};
                                 if(light_sample)
                                 {
                                     vector3 fL10{bsdf->evaluate(bxdf, w10, light_sample->wi, above_medium->get_ior(), below_medium->get_ior())};
@@ -69,13 +69,12 @@ namespace fc
                                     }
                                 }
 
-                                //sampler.skip_1d();
-
+                                sampler.advance_dimension();
                             }
                             else if(light->get_type() == light_type::standard)
                             {
                                 auto std_light{static_cast<standard_light const*>(light)};
-                                auto light_sample{std_light->sample_p(*p1, sampler.get_1d(), sampler.get_2d(), allocator)};
+                                auto light_sample{std_light->sample_p(*p1, sampler.get().x, sampler.get(), allocator)};
                                 if(light_sample)
                                 {
                                     vector3 d1L{light_sample->p->get_position() - p1->get_position()};
@@ -95,9 +94,7 @@ namespace fc
                             }
                             else
                             {
-                                // discard unused samples
-                                //sampler.skip_1d();
-                                //sampler.skip_2d();
+                                sampler.advance_dimension(2);
                             }
                         }
 
@@ -106,7 +103,7 @@ namespace fc
                         vector3 value{};
                         double pdf_w12{};
 
-                        if(bsdf->sample_wi(bxdf, w10, above_medium->get_ior(), below_medium->get_ior(), sampler,
+                        if(bsdf->sample_wi(bxdf, w10, above_medium->get_ior(), below_medium->get_ior(), sampler.get(), sampler.get(),
                             &w12, &value, &pdf_w12) != sample_result::success)
                         {
                             break;
@@ -155,16 +152,14 @@ namespace fc
                     }
                     else if(bsdf->get_type(bxdf) == bxdf_type::delta)
                     {
-                        // discard unused samples
-                        //sampler.skip_1d(2);
-                        //sampler.skip_2d();
+                        sampler.advance_dimension(3);
 
                         // bsdf strategy
                         vector3 w12{};
                         vector3 value{};
                         double pdf_w12{};
 
-                        if(bsdf->sample_wi(bxdf, w10, above_medium->get_ior(), below_medium->get_ior(), sampler,
+                        if(bsdf->sample_wi(bxdf, w10, above_medium->get_ior(), below_medium->get_ior(), sampler.get(), sampler.get(),
                             &w12, &value, &pdf_w12) != sample_result::success)
                         {
                             break;

@@ -58,12 +58,12 @@ namespace fc
             return reflectance_ * fresnel * (g * d / (4.0 * i.y * o.y));
         }
 
-        sample_result sample(vector3 const& i, double eta_a, double eta_b, sampler& sampler,
+        sample_result sample(vector3 const& i, double eta_a, double eta_b, vector2 const& u1, vector2 const& u2,
             vector3* o, vector3* value, double* pdf_o) const
         {
             if(i.y == 0.0) return sample_result::fail;
 
-            vector3 h{microfacet_model_->sample(i, sampler.get_2d())};
+            vector3 h{microfacet_model_->sample(i, u1)};
             double i_dot_h{dot(i, h)};
             if(i_dot_h <= 0.0) return sample_result::fail;
 

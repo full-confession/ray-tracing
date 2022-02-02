@@ -208,7 +208,7 @@ namespace fc
 
         for(std::uint64_t k{}; k < sample_count; ++k)
         {
-            vector3 o{sample_sphere_uniform(sampler.get_2d())};
+            vector3 o{sample_sphere_uniform(sampler.get())};
             vector3 f{bsdf.evaluate(i, o, eta_a, eta_b, nullptr, nullptr)};
 
             vector2 uv{w_to_uv(o)};

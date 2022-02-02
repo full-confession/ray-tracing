@@ -17,7 +17,7 @@ namespace fc
     public:
         virtual ~light_distribution() = default;
 
-        virtual light_distribution_sample_result sample(double const& sample_picking) const = 0;
+        virtual light_distribution_sample_result sample(double sample_picking) const = 0;
         virtual double pdf(light const* light) const = 0;
     };
 

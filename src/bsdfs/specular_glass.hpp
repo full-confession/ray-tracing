@@ -22,7 +22,7 @@ namespace fc
             return {};
         }
 
-        sample_result sample(vector3 const& i, double eta_a, double eta_b, sampler& sampler,
+        sample_result sample(vector3 const& i, double eta_a, double eta_b, vector2 const& u1, vector2 const& u2,
             vector3* o, vector3* value, double* pdf_o) const
         {
             double cos_theta_i{i.y};
@@ -43,7 +43,7 @@ namespace fc
                 fresnel = (r_parl * r_parl + r_perp * r_perp) / 2.0;
             }
 
-            if(sampler.get_1d() < fresnel)
+            if(u1.x < fresnel)
             {
                 // reflection
                 *o = {-i.x, i.y, -i.z};
