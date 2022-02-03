@@ -7,6 +7,8 @@ namespace fc
     class frame
     {
     public:
+        frame() = default;
+
         explicit frame(vector3 const& normal)
             : normal_{normal}
         {

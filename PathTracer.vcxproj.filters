@@ -246,6 +246,9 @@
     <ClInclude Include="src\bsdfs\specular_reflection.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\bsdfs\normal_mapping.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">

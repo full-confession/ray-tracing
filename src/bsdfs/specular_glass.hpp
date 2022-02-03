@@ -5,19 +5,19 @@
 
 namespace fc
 {
-    class specular_glass : public bxdf_adapter<specular_glass>
+    class specular_glass
     {
     public:
         specular_glass(vector3 const& reflectance, vector3 const& transmittance)
             : reflectance_{reflectance}, transmittance_{transmittance}
         { }
 
-        virtual bxdf_type get_type() const override
+        bxdf_type get_type() const
         {
             return bxdf_type::delta;
         }
 
-        vector3 eval(vector3 const& i, vector3 const& o, double eta_a, double eta_b) const
+        vector3 evaluate(vector3 const& i, vector3 const& o, double eta_a, double eta_b) const
         {
             return {};
         }

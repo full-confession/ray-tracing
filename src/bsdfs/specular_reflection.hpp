@@ -5,21 +5,23 @@
 
 namespace fc
 {
-    class specular_reflection : public bxdf_adapter<specular_reflection>
+    class specular_reflection
     {
     public:
         explicit specular_reflection(vector3 const& reflectance, fresnel const& fresnel, double ior)
             : reflectance_{reflectance}, fresnel_{&fresnel}, ior_{ior}
         { }
 
-        virtual bxdf_type get_type() const override
+        bxdf_type get_type() const
         {
             return bxdf_type::delta;
         }
 
-        vector3 eval(vector3 const& i, vector3 const& o, double eta_a, double eta_b) const
+        vector3 evaluate(vector3 const& i, vector3 const& o, double eta_a, double eta_b) const
         {
-            return {};
+            vector3 fresnel{fresnel_->evaluate(i.y, eta_a, ior_)};
+
+            return fresnel * reflectance_ / o.y;
         }
 
         sample_result sample(vector3 const& i, double eta_a, double eta_b, vector2 const& u1, vector2 const& u2,

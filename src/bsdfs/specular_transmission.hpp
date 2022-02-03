@@ -5,19 +5,19 @@
 #include "../core/microfacet.hpp"
 namespace fc
 {
-    class specular_transmission : public bxdf_adapter<specular_transmission>
+    class specular_transmission
     {
     public:
         explicit specular_transmission(vector3 const& transmittance)
             : transmittance_{transmittance}
         { }
 
-        virtual bxdf_type get_type() const override
+        bxdf_type get_type() const
         {
             return bxdf_type::delta;
         }
 
-        vector3 eval(vector3 const& i, vector3 const& o, double eta_a, double eta_b) const
+        vector3 evaluate(vector3 const& i, vector3 const& o, double eta_a, double eta_b) const
         {
             return {};
         }

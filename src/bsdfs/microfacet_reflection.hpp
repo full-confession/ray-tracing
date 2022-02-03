@@ -34,19 +34,19 @@ namespace fc
         }
     };
 
-    class microfacet_reflection : public bxdf_adapter<microfacet_reflection>
+    class microfacet_reflection
     {
     public:
         explicit microfacet_reflection(vector3 const& reflectance, microfacet_model const& microfacet_model, fresnel const& fresnel, double ior)
             : reflectance_{reflectance}, microfacet_model_{&microfacet_model}, fresnel_{&fresnel}, ior_{ior}
         { }
 
-        virtual bxdf_type get_type() const override
+        bxdf_type get_type() const
         {
             return bxdf_type::standard;
         }
 
-        vector3 eval(vector3 const& i, vector3 const& o, double eta_a, double eta_b) const
+        vector3 evaluate(vector3 const& i, vector3 const& o, double eta_a, double eta_b) const
         {
             if(o.y <= 0.0) return {};
             vector3 h{normalize(i + o)};

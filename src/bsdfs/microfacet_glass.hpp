@@ -7,19 +7,19 @@
 namespace fc
 {
 
-    class microfacet_glass : public bxdf_adapter<microfacet_glass>
+    class microfacet_glass
     {
     public:
         explicit microfacet_glass(vector3 const& reflectance, vector3 const& transmittance, microfacet_model const& microfacet_model)
             : reflectance_{reflectance}, transmittance_{transmittance}, microfacet_model_{&microfacet_model}
         { }
 
-        virtual bxdf_type get_type() const override
+        bxdf_type get_type() const
         {
             return bxdf_type::standard;
         }
 
-        vector3 eval(vector3 const& i, vector3 const& o, double eta_a, double eta_b) const
+        vector3 evaluate(vector3 const& i, vector3 const& o, double eta_a, double eta_b) const
         {
             if(i.y == 0.0 || o.y == 0.0) return {};
 

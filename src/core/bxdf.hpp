@@ -36,19 +36,33 @@ namespace fc
         virtual double pdf_wo(vector3 const& wo, vector3 const& wi, double eta_a, double eta_b) const = 0;
     };
 
-    template<typename Derived>
+
+    template<typename T>
     class bxdf_adapter : public bxdf
     {
     public:
+        explicit bxdf_adapter(T const& bxdf)
+            : bxdf_{bxdf}
+        { }
+
+        explicit bxdf_adapter(T&& bxdf)
+            : bxdf_{std::move(bxdf)}
+        { }
+
+        virtual bxdf_type get_type() const override
+        {
+            return bxdf_.get_type();
+        }
+
         virtual vector3 evaluate(vector3 const& wo, vector3 const& wi, double eta_a, double eta_b) const override
         {
             if(wi.y >= 0.0)
             {
-                return static_cast<Derived const*>(this)->eval(wi, wo, eta_a, eta_b);
+                return bxdf_.evaluate(wi, wo, eta_a, eta_b);
             }
             else
             {
-                return static_cast<Derived const*>(this)->eval(-wi, -wo, eta_b, eta_a);
+                return bxdf_.evaluate(-wi, -wo, eta_b, eta_a);
             }
         }
 
@@ -57,7 +71,7 @@ namespace fc
         {
             if(wo.y >= 0.0)
             {
-                auto result{static_cast<Derived const*>(this)->sample(wo, eta_a, eta_b, u1, u2, wi, value, pdf_wi)};
+                auto result{bxdf_.sample(wo, eta_a, eta_b, u1, u2, wi, value, pdf_wi)};
                 if(result == sample_result::success)
                 {
                     if(wi->y <= 0.0)
@@ -69,7 +83,7 @@ namespace fc
             }
             else
             {
-                auto result{static_cast<Derived const*>(this)->sample(-wo, eta_b, eta_a, u1, u2, wi, value, pdf_wi)};
+                auto result{bxdf_.sample(-wo, eta_b, eta_a, u1, u2, wi, value, pdf_wi)};
                 if(result == sample_result::success)
                 {
                     *wi = -*wi;
@@ -87,11 +101,11 @@ namespace fc
         {
             if(wi.y >= 0.0)
             {
-                return static_cast<Derived const*>(this)->sample(wi, eta_a, eta_b, u1, u2, wo, value, pdf_wo);
+                return bxdf_.sample(wi, eta_a, eta_b, u1, u2, wo, value, pdf_wo);
             }
             else
             {
-                auto result{static_cast<Derived const*>(this)->sample(-wi, eta_b, eta_a, u1, u2, wo, value, pdf_wo)};
+                auto result{bxdf_.sample(-wi, eta_b, eta_a, u1, u2, wo, value, pdf_wo)};
                 if(result == sample_result::success)
                 {
                     *wo = -*wo;
@@ -104,11 +118,11 @@ namespace fc
         {
             if(wo.y >= 0.0)
             {
-                return static_cast<Derived const*>(this)->pdf(wo, wi, eta_a, eta_b);
+                return bxdf_.pdf(wo, wi, eta_a, eta_b);
             }
             else
             {
-                return static_cast<Derived const*>(this)->pdf(-wo, -wi, eta_b, eta_a);
+                return bxdf_.pdf(-wo, -wi, eta_b, eta_a);
             }
         }
 
@@ -116,29 +130,15 @@ namespace fc
         {
             if(wi.y >= 0.0)
             {
-                return static_cast<Derived const*>(this)->pdf(wi, wo, eta_a, eta_b);
+                return bxdf_.pdf(wi, wo, eta_a, eta_b);
             }
             else
             {
-                return static_cast<Derived const*>(this)->pdf(-wi, -wo, eta_b, eta_a);
+                return bxdf_.pdf(-wi, -wo, eta_b, eta_a);
             }
         }
 
     private:
-        vector3 eval(vector3 const& i, vector3 const& o, double eta_a, double eta_b) const
-        {
-            return {};
-        }
-
-        sample_result sample(vector3 const& i, double eta_a, double eta_b, vector2 const& u1, vector2 const& u2,
-            vector3* o, vector3* weight, double* pdf_o) const
-        {
-            return {};
-        }
-
-        double pdf(vector3 const& i, vector3 const& o, double eta_a, double eta_b) const
-        {
-            return {};
-        }
+        T bxdf_;
     };
 }

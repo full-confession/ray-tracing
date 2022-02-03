@@ -28,12 +28,12 @@ namespace fc
 
             if(roughness.x == 0.0 && roughness.y == 0.0)
             {
-                bxdf = allocator.emplace<specular_glass>(reflectance, transmittance);
+                bxdf = allocator.emplace<bxdf_adapter<specular_glass>>(specular_glass{reflectance, transmittance});
             }
             else
             {
                 microfacet_model const* model{allocator.emplace<smith_ggx_microfacet_model>(roughness)};
-                bxdf = allocator.emplace<microfacet_glass>(reflectance, transmittance, *model);
+                bxdf = allocator.emplace<bxdf_adapter<microfacet_glass>>(microfacet_glass{reflectance, transmittance, *model});
             }
 
             return allocator.emplace<bsdf>(p.get_shading_tangent(), p.get_shading_normal(), p.get_shading_bitangent(), p.get_normal(),

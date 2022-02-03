@@ -33,18 +33,18 @@ namespace fc
             double ior{ior_->evaluate(p.get_uv())};
 
 
-            bxdfs[0] = allocator.emplace<lambertian_reflection>(diffuse);
+            bxdfs[0] = allocator.emplace<bxdf_adapter<lambertian_reflection>>(lambertian_reflection{diffuse});
 
             if(roughness.x == 0.0 && roughness.y == 0.0)
             {
                 auto fresnel{allocator.emplace<fresnel_dielectric>()};
-                bxdfs[1] = allocator.emplace<specular_reflection>(specular, *fresnel, ior);
+                bxdfs[1] = allocator.emplace<bxdf_adapter<specular_reflection>>(specular_reflection{specular, *fresnel, ior});
             }
             else
             {
                 auto microfacet_model{allocator.emplace<smith_ggx_microfacet_model>(roughness)};
                 auto fresnel{allocator.emplace<fresnel_dielectric>()};
-                bxdfs[1] = allocator.emplace<microfacet_reflection>(specular, *microfacet_model, *fresnel, ior);
+                bxdfs[1] = allocator.emplace< bxdf_adapter<microfacet_reflection>>(microfacet_reflection{specular, *microfacet_model, *fresnel, ior});
             }
 
             return allocator.emplace<bsdf>(p.get_shading_tangent(), p.get_shading_normal(), p.get_shading_bitangent(), p.get_normal(),

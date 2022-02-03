@@ -34,7 +34,7 @@ void test();
 void test_ball();
 void test_mask();
 void test_balls();
-
+void test_normals();
 
 int main()
 {
@@ -78,10 +78,11 @@ int main()
     //fout.write(reinterpret_cast<char const*>(numbers), sizeof(numbers));
 
 
-    test_mask();
+    //test_mask();
     //test_ball();
     //test_dragon();
     //test_balls();
+    test_normals();
     return 0;
 }
 
@@ -332,7 +333,8 @@ void test_mask()
     std::shared_ptr<fc::texture_2d_rgb> albedo{new fc::image_texture_2d_rgb{assets.get_image("mask-basecolor"), fc::reconstruction_filter::bilinear, 1}};
     std::shared_ptr<fc::texture_2d_r> metalness{new fc::image_texture_2d_r{assets.get_image("mask-metalness"), fc::reconstruction_filter::bilinear, 1}};
     std::shared_ptr<fc::texture_2d_r> roughness{new fc::image_texture_2d_r{assets.get_image("mask-roughness"), fc::reconstruction_filter::bilinear, 1}};
-    
+    std::shared_ptr<fc::texture_2d_rgb> normal{new fc::image_texture_2d_rgb{assets.get_image("mask-normal"), fc::reconstruction_filter::bilinear, 1}};
+
     std::shared_ptr<fc::texture_2d_rgb> const_texture2{new fc::const_texture_2d_rgb{{0.8, 0.4, 0.2}}};
     std::shared_ptr<fc::material> diffuse_material2{new fc::diffuse_material{const_texture2}};
     
@@ -350,6 +352,12 @@ void test_mask()
         std::make_shared<fc::const_texture_2d_r>(1.45)
     }};
 
+    std::shared_ptr<fc::material> mirror_material2{new fc::mirror_material2{
+        std::shared_ptr<fc::texture_2d_rgb>(new fc::const_texture_2d_rgb{{0.8, 0.4, 0.2}}),
+        std::shared_ptr<fc::texture_2d_rg>(new fc::const_texture_2d_rg{{0.2, 0.2}}),
+        std::shared_ptr<fc::texture_2d_rgb>(normal)
+    }};
+
     std::shared_ptr<fc::material> standard_material{new fc::standard_material{
         albedo,
         metalness,
@@ -358,7 +366,7 @@ void test_mask()
     }};
 
     std::vector<fc::entity> entities{};
-    entities.push_back({mask, standard_material, nullptr});
+    entities.push_back({mask, mirror_material2, nullptr});
 
     auto image{assets.get_image("env-loft-hall")};
     std::shared_ptr<fc::image_texture_2d_rgb> texture{new fc::image_texture_2d_rgb{image, fc::reconstruction_filter::bilinear, 4}};
@@ -377,16 +385,16 @@ void test_mask()
 
     //fc::pmj02_sampler5 sampler{0, 256};
     //fc::random_sampler sampler{32*32};
-    fc::stratified_sampler sampler{32 * 32};
+    fc::stratified_sampler sampler{16 * 16};
 
     //std::shared_ptr<fc::integrator> integrator{new fc::backward_integrator{10}};
-    //std::shared_ptr<fc::integrator> integrator{new fc::forward_mis_integrator{10, true}};
-    std::shared_ptr<fc::integrator> integrator{new fc::bidirectional_integrator{10, true}};
+    std::shared_ptr<fc::integrator> integrator{new fc::forward_mis_integrator{2, true}};
+    //std::shared_ptr<fc::integrator> integrator{new fc::bidirectional_integrator{10, true}};
     //std::shared_ptr<fc::integrator> integrator{new fc::forward_bsdf_integrator{2}};
 
     fc::renderer renderer{{600, 900}, camera_factory, integrator, scene, 15, sampler};
     renderer.run();
-    //renderer.run_pixel({432, 403});
+    //renderer.run_pixel({453, 134});
     renderer.export_image("mask");
 }
 
@@ -538,4 +546,56 @@ void test_balls()
     //fc::renderer renderer{{800, 450}, camera_factory, integrator, scene, 15, sampler_1d_factory, sampler_2d_factory, 0};
     //renderer.run(1000);
     //renderer.export_image("normals");
+}
+
+void test_normals()
+{
+    std::shared_ptr<fc::surface> a{new fc::plane_surface{{}, {10.0, 10.0}}};
+    std::shared_ptr<fc::surface> b{new fc::plane_surface{{{0.0, 1.0, 6.0}, {fc::math::deg_to_rad(-90), 0.0, 0.0}}, {10.0, 2.0}}};
+
+    fc::assets assets{};
+    auto image{assets.get_image("wallpaper-normal")};
+
+    std::shared_ptr<fc::material> diffuse_material{new fc::diffuse_material2{
+        std::shared_ptr<fc::texture_2d_rgb>(new fc::const_texture_2d_rgb{{0.8, 0.8, 0.8}}),
+        std::shared_ptr<fc::texture_2d_rgb>(new fc::image_texture_2d_rgb(image, fc::reconstruction_filter::bilinear, 1))
+    }};
+
+    std::shared_ptr<fc::material> mirror_material{new fc::mirror_material2{
+        std::shared_ptr<fc::texture_2d_rgb>(new fc::const_texture_2d_rgb{{0.8, 0.8, 0.8}}),
+        std::shared_ptr<fc::texture_2d_rg>(new fc::const_texture_2d_rg{{0.0, 0.0}}),
+        std::shared_ptr<fc::texture_2d_rgb>(new fc::image_texture_2d_rgb(image, fc::reconstruction_filter::bilinear, 1))
+    }};
+
+    std::shared_ptr<fc::area_light> area_light{new fc::const_diffuse_area_light{b.get(), {1.0, 1.0, 1.0}, 1.0}};
+
+    std::vector<fc::entity> entities{};
+    entities.push_back({a, diffuse_material});
+    entities.push_back({b, diffuse_material, area_light});
+
+
+    fc::bvh_acceleration_structure_factory acceleration_structure_factory{};
+    fc::uniform_light_distribution_factory uldf{};
+    fc::uniform_spatial_light_distribution_factory usldf{};
+
+    //auto aa{assets.get_image("env-loft-hall")};
+    //std::shared_ptr<fc::image_texture_2d_rgb> texture{new fc::image_texture_2d_rgb{aa, fc::reconstruction_filter::bilinear, 4}};
+    //std::shared_ptr<fc::infinity_area_light> infinity_area_light{new fc::texture_infinity_area_light{{{}, {0.0, 0.0, 0.0}}, texture, 1.0, image->get_resolution()}};
+
+    std::shared_ptr<fc::entity_scene> scene{new fc::entity_scene{std::move(entities), nullptr, acceleration_structure_factory, uldf, usldf}};
+    fc::stratified_sampler sampler{32 * 32};
+
+   
+    fc::perspective_camera_factory camera_factory{{{5.72, 2.36, 0.31}, {fc::math::deg_to_rad(27.33), fc::math::deg_to_rad(303.69), 0.0}}, fc::math::deg_to_rad(30.0)};
+
+
+    //std::shared_ptr<fc::integrator> integrator{new fc::backward_integrator{2}};
+    std::shared_ptr<fc::integrator> integrator{new fc::forward_mis_integrator{2, true}};
+    //std::shared_ptr<fc::integrator> integrator{new fc::bidirectional_integrator{2, true}};
+    //std::shared_ptr<fc::integrator> integrator{new fc::forward_bsdf_integrator{2}};
+
+    fc::renderer renderer{{512, 512}, camera_factory, integrator, scene, 15, sampler};
+    renderer.run();
+    //renderer.run_pixel({360, 487});
+    renderer.export_image("normals2");
 }

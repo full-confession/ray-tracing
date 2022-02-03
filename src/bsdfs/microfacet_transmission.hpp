@@ -6,19 +6,19 @@
 
 namespace fc
 {
-    class microfacet_transmission : public bxdf_adapter<microfacet_transmission>
+    class microfacet_transmission
     {
     public:
         explicit microfacet_transmission(vector3 const& transmittance, microfacet_model const& microfacet_model)
             : transmittance_{transmittance}, microfacet_model_{&microfacet_model}
         { }
 
-        virtual bxdf_type get_type() const override
+        bxdf_type get_type() const
         {
             return bxdf_type::standard;
         }
 
-        vector3 eval(vector3 const& i, vector3 const& o, double eta_a, double eta_b) const
+        vector3 evaluate(vector3 const& i, vector3 const& o, double eta_a, double eta_b) const
         {
             if(o.y >= 0.0) return {};
 

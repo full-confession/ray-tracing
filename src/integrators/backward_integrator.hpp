@@ -3,12 +3,8 @@
 
 namespace fc
 {
-
-
     class backward_integrator : public integrator
     {
-        static constexpr int stream_backward = 0;
-
     public:
         explicit backward_integrator(int max_path_length)
             : max_path_length_{max_path_length}

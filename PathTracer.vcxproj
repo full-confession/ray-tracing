@@ -30,6 +30,7 @@
     <ClInclude Include="src\bsdfs\microfacet_reflection.hpp" />
     <ClInclude Include="src\bsdfs\microfacet_transmission.hpp" />
     <ClInclude Include="src\bsdfs\lambertian_reflection.hpp" />
+    <ClInclude Include="src\bsdfs\normal_mapping.hpp" />
     <ClInclude Include="src\bsdfs\specular_glass.hpp" />
     <ClInclude Include="src\bsdfs\specular_reflection.hpp" />
     <ClInclude Include="src\bsdfs\specular_transmission.hpp" />

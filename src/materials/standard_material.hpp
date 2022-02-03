@@ -38,7 +38,7 @@ namespace fc
             {
                 double ior{ior_->evaluate(p.get_uv())};
 
-                bxdfs[size] = allocator.emplace<lambertian_reflection>(base_color);
+                bxdfs[size] = allocator.emplace<bxdf_adapter<lambertian_reflection>>(lambertian_reflection{base_color});
                 scales[size] = 1.0 - metalness;
                 weights[size] = (1.0 - metalness) / 2.0;
                 size += 1;
@@ -46,13 +46,13 @@ namespace fc
                 if(roughness == 0.0)
                 {
                     auto fresnel{allocator.emplace<fresnel_dielectric>()};
-                    bxdfs[size] = allocator.emplace<specular_reflection>(vector3{1.0, 1.0, 1.0}, *fresnel, ior);
+                    bxdfs[size] = allocator.emplace<bxdf_adapter<specular_reflection>>(specular_reflection{vector3{1.0, 1.0, 1.0}, *fresnel, ior});
                 }
                 else
                 {
                     auto microfacet_model{allocator.emplace<smith_ggx_microfacet_model>(vector2{roughness, roughness})};
                     auto fresnel{allocator.emplace<fresnel_dielectric>()};
-                    bxdfs[size] = allocator.emplace<microfacet_reflection>(vector3{1.0, 1.0, 1.0}, *microfacet_model, *fresnel, ior);
+                    bxdfs[size] = allocator.emplace<bxdf_adapter<microfacet_reflection>>(microfacet_reflection{vector3{1.0, 1.0, 1.0}, *microfacet_model, *fresnel, ior});
                 }
 
                 scales[size] = scales[size - 1];
@@ -65,13 +65,13 @@ namespace fc
                 if(roughness == 0.0)
                 {
                     auto fresnel{allocator.emplace<fresnel_one>()};
-                    bxdfs[size] = allocator.emplace<specular_reflection>(base_color, *fresnel, 0.0);
+                    bxdfs[size] = allocator.emplace< bxdf_adapter<specular_reflection>>(specular_reflection{base_color, *fresnel, 0.0});
                 }
                 else
                 {
                     auto microfacet_model{allocator.emplace<smith_ggx_microfacet_model>(vector2{roughness, roughness})};
                     auto fresnel{allocator.emplace<fresnel_one>()};
-                    bxdfs[size] = allocator.emplace<microfacet_reflection>(base_color, *microfacet_model, *fresnel, 0.0);
+                    bxdfs[size] = allocator.emplace< bxdf_adapter<microfacet_reflection>>(microfacet_reflection{base_color, *microfacet_model, *fresnel, 0.0});
                 }
 
                 scales[size] = metalness;
