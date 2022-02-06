@@ -46,7 +46,7 @@ namespace fc
         }
 
         sample_result sample(vector3 const& i, double eta_a, double eta_b, vector2 const& u1, vector2 const& u2,
-            vector3* o, vector3* value, double* pdf_o) const
+            vector3* o, vector3* value, double* pdf_o, double* pdf_i) const
         {
             if(i.y == 0.0) return sample_result::fail;
 
@@ -75,6 +75,9 @@ namespace fc
             *value = transmittance_ * (i_dot_h * g2 * d * jacobian / (i.y * -o->y));
 
             *pdf_o = microfacet_model_->pdf(i, h) * jacobian;
+
+            if(pdf_i != nullptr)
+                *pdf_i = pdf(-*o, -i, eta_b, eta_a);
 
             return sample_result::success;
         }

@@ -23,7 +23,7 @@ namespace fc
         }
 
         sample_result sample(vector3 const& i, double eta_a, double eta_b, vector2 const& u1, vector2 const& u2,
-            vector3* o, vector3* value, double* pdf_o) const
+            vector3* o, vector3* value, double* pdf_o, double* pdf_i) const
         {
             double cos_theta_i{i.y};
             double cos2_theta_i{cos_theta_i * cos_theta_i};
@@ -49,6 +49,10 @@ namespace fc
                 *o = {-i.x, i.y, -i.z};
                 *value = reflectance_ * (fresnel / o->y);
                 *pdf_o = fresnel;
+
+                if(pdf_i != nullptr)
+                    *pdf_i = fresnel;
+
                 //*pdf_o = 1.0;
 
                 return sample_result::success;
@@ -62,18 +66,16 @@ namespace fc
                 *value = transmittance_ * ((1.0 - fresnel) * (eta_b * eta_b) / (eta_a * eta_a * -o->y));
                 *pdf_o = 1.0 - fresnel;
 
+                if(pdf_i != nullptr)
+                    *pdf_i = 1.0 - fresnel;
+
                 return sample_result::success;
             }
         }
 
         double pdf(vector3 const& i, vector3 const& o, double eta_a, double eta_b) const
         {
-            double fresnel{fr_dielectric(i.y, eta_a, eta_b)};
-            
-            if(o.y >= 0.0)
-                return fresnel;
-            else
-                return 1.0 - fresnel;
+            return {};
         }
 
     private:

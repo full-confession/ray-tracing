@@ -167,9 +167,9 @@ namespace fc
             {
                 double pdf_wi{};
                 vector3 value{};
-
+                double pdf_wo{};
                 if(vertices[v1].bsdf->sample_wi(vertices[v1].bxdf, vertices[v1].wo, vertices[v1].above_medium->get_ior(), vertices[v1].below_medium->get_ior(), sampler.get(), sampler.get(),
-                    &vertices[v1].wi, &value, &pdf_wi) != sample_result::success)
+                    &vertices[v1].wi, &value, &pdf_wi, &pdf_wo) != sample_result::success)
                 {
                     return vertex_count;
                 }
@@ -186,8 +186,6 @@ namespace fc
                         vertices[v2].beta = vertices[v1].beta * value * (std::abs(dot(vertices[v1].p->get_normal(), vertices[v1].wi)) / pdf_wi);
                         vertices[v2].connectable = true;
 
-
-                        double pdf_wo{vertices[v1].bsdf->pdf_wo(vertices[v1].bxdf, vertices[v1].wo, vertices[v1].wi, vertices[v1].above_medium->get_ior(), vertices[v1].below_medium->get_ior())};
                         vertices[v0].pdf_backward = pdf_wo * std::abs(dot(vertices[v0].p->get_normal(), vertices[v1].wo))
                             / sqr_length(vertices[v0].p->get_position() - vertices[v1].p->get_position());
 
@@ -219,7 +217,6 @@ namespace fc
 
                 vertex_count += 1;
 
-                double pdf_wo{vertices[v1].bsdf->pdf_wo(vertices[v1].bxdf, vertices[v1].wo, vertices[v1].wi, vertices[v1].above_medium->get_ior(), vertices[v1].below_medium->get_ior())};
                 vertices[v0].pdf_backward = pdf_wo * std::abs(dot(vertices[v0].p->get_normal(), vertices[v1].wo)) / sqr_length(vertices[v0].p->get_position() - vertices[v1].p->get_position());
 
                 v0 += 1;
@@ -303,8 +300,10 @@ namespace fc
             {
                 double pdf_wo{};
                 vector3 value{};
+                double pdf_wi{};
+
                 if(vertices[v1].bsdf->sample_wo(vertices[v1].bxdf, vertices[v1].wi, vertices[v1].above_medium->get_ior(), vertices[v1].below_medium->get_ior(), sampler.get(), sampler.get(),
-                    &vertices[v1].wo, &value, &pdf_wo) != sample_result::success)
+                    &vertices[v1].wo, &value, &pdf_wo, &pdf_wi) != sample_result::success)
                 {
                     return vertex_count;
                 }
@@ -332,9 +331,6 @@ namespace fc
 
                 vertex_count += 1;
 
-
-
-                double pdf_wi{vertices[v1].bsdf->pdf_wi(vertices[v1].bxdf, vertices[v1].wo, vertices[v1].wi, vertices[v1].above_medium->get_ior(), vertices[v1].below_medium->get_ior())};
                 if(!vertices[v0].infity_area_light)
                 {
                     vertices[v0].pdf_forward = pdf_wi * std::abs(dot(vertices[v0].p->get_normal(), vertices[v1].wi)) / sqr_length(vertices[v0].p->get_position() - vertices[v1].p->get_position());
@@ -343,7 +339,6 @@ namespace fc
                 {
                     vertices[v0].pdf_forward = pdf_wi;
                 }
-
 
                 v0 += 1;
                 v1 += 1;

@@ -26,10 +26,10 @@ namespace fc
         virtual vector3 evaluate(vector3 const& wo, vector3 const& wi, double eta_a, double eta_b) const = 0;
 
         virtual sample_result sample_wi(vector3 const& wo, double eta_a, double eta_b, vector2 const& u1, vector2 const& u2,
-            vector3* wi, vector3* weight, double* pdf_wi = nullptr, double* pdf_wo = nullptr) const = 0;
+            vector3* wi, vector3* weight, double* pdf_wi, double* pdf_wo = nullptr) const = 0;
 
         virtual sample_result sample_wo(vector3 const& wi, double eta_a, double eta_b, vector2 const& u1, vector2 const& u2,
-            vector3* wo, vector3* weight, double* pdf_wo = nullptr, double* pdf_wi = nullptr) const = 0;
+            vector3* wo, vector3* weight, double* pdf_wo, double* pdf_wi = nullptr) const = 0;
 
         virtual double pdf_wi(vector3 const& wo, vector3 const& wi, double eta_a, double eta_b) const = 0;
 
@@ -67,11 +67,11 @@ namespace fc
         }
 
         virtual sample_result sample_wi(vector3 const& wo, double eta_a, double eta_b, vector2 const& u1, vector2 const& u2,
-            vector3* wi, vector3* value, double* pdf_wi, double* pdf_wo) const override
+            vector3* wi, vector3* value, double* pdf_wi, double* pdf_wo = nullptr) const override
         {
             if(wo.y >= 0.0)
             {
-                auto result{bxdf_.sample(wo, eta_a, eta_b, u1, u2, wi, value, pdf_wi)};
+                auto result{bxdf_.sample(wo, eta_a, eta_b, u1, u2, wi, value, pdf_wi, pdf_wo)};
                 if(result == sample_result::success)
                 {
                     if(wi->y <= 0.0)
@@ -83,7 +83,7 @@ namespace fc
             }
             else
             {
-                auto result{bxdf_.sample(-wo, eta_b, eta_a, u1, u2, wi, value, pdf_wi)};
+                auto result{bxdf_.sample(-wo, eta_b, eta_a, u1, u2, wi, value, pdf_wi, pdf_wo)};
                 if(result == sample_result::success)
                 {
                     *wi = -*wi;
@@ -97,15 +97,15 @@ namespace fc
         }
 
         virtual sample_result sample_wo(vector3 const& wi, double eta_a, double eta_b, vector2 const& u1, vector2 const& u2,
-            vector3* wo, vector3* value, double* pdf_wo = nullptr, double* pdf_wi = nullptr) const override
+            vector3* wo, vector3* value, double* pdf_wo, double* pdf_wi = nullptr) const override
         {
             if(wi.y >= 0.0)
             {
-                return bxdf_.sample(wi, eta_a, eta_b, u1, u2, wo, value, pdf_wo);
+                return bxdf_.sample(wi, eta_a, eta_b, u1, u2, wo, value, pdf_wo, pdf_wi);
             }
             else
             {
-                auto result{bxdf_.sample(-wi, eta_b, eta_a, u1, u2, wo, value, pdf_wo)};
+                auto result{bxdf_.sample(-wi, eta_b, eta_a, u1, u2, wo, value, pdf_wo, pdf_wi)};
                 if(result == sample_result::success)
                 {
                     *wo = -*wo;

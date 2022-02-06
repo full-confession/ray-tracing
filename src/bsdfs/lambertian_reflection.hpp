@@ -24,7 +24,7 @@ namespace fc
         }
 
         sample_result sample(vector3 const& i, double eta_a, double eta_b, vector2 const& u1, vector2 const& u2,
-            vector3* o, vector3* value, double* pdf_o) const
+            vector3* o, vector3* value, double* pdf_o, double* pdf_i) const
         {
             if(i.y <= 0.0) return sample_result::fail;
             *o = sample_hemisphere_cosine_weighted(u1);
@@ -32,6 +32,9 @@ namespace fc
 
             *value = reflectance_ * math::inv_pi;
             *pdf_o = o->y * math::inv_pi;
+
+            if(pdf_i != nullptr)
+                *pdf_i = i.y * math::inv_pi;
 
             return sample_result::success;
         }

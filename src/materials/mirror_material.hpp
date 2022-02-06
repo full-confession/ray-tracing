@@ -67,6 +67,8 @@ namespace fc
             vector3 n{normal_->evaluate(p.get_uv()) * 2.0 - 1.0};
             std::swap(n.y, n.z);
             n.z = -n.z;
+            //n.x *= 0.2;
+            //n.z *= 0.2;
             n = normalize(n);
             if(n.y < 0.0) n = -n;
 
