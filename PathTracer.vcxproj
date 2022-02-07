@@ -91,6 +91,7 @@
     <ClInclude Include="src\renderer\render_target.hpp" />
     <ClInclude Include="src\samplers\random_sampler.hpp" />
     <ClInclude Include="src\samplers\stratified_sampler.hpp" />
+    <ClInclude Include="src\scene_material_ball.hpp" />
     <ClInclude Include="src\surfaces\mesh_surface.hpp" />
     <ClInclude Include="src\surfaces\plane_surface.hpp" />
     <ClInclude Include="src\surfaces\sphere_surface.hpp" />
@@ -105,6 +106,16 @@
   <ItemGroup>
     <None Include=".gitattributes" />
     <None Include=".gitignore" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="img\diffuse.png" />
+    <Image Include="img\microfacet_glass.png" />
+    <Image Include="img\microfacet_medium_glass.png" />
+    <Image Include="img\microfacet_mirror.png" />
+    <Image Include="img\plastic.png" />
+    <Image Include="img\specular-glass.png" />
+    <Image Include="img\specular_medium_glass.png" />
+    <Image Include="img\specular_mirror.png" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>

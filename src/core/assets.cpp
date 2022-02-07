@@ -88,55 +88,75 @@ static void from_json(nlohmann::json const& json, std::variant<mesh_description,
     }
 }
 
+enum class mesh_flags : std::uint32_t
+{
+    has_normals = 1 << 0,
+    has_uvs = 1 << 1
+};
+
+struct mesh_header
+{
+    mesh_flags flags{};
+    std::uint32_t vertex_count{};
+    std::uint32_t index_count{};
+};
+
 std::shared_ptr<mesh> assets::load_mesh(std::string const& name)
 {
     // read metadata
-    std::filesystem::path metadata_path{std::filesystem::current_path() / "assets" / "meshes" / (name + ".metadata")};
-    if(!std::filesystem::exists(metadata_path)) throw;
-    std::ifstream metadata_file{metadata_path, std::ios::in};
-    if(!metadata_file) throw;
-    nlohmann::json metadata_json{nlohmann::json::parse(metadata_file)};
-    std::variant<mesh_description, image_description> metadata{};
-    metadata_json.get_to(metadata);
-    if(!std::holds_alternative<mesh_description>(metadata)) throw;
-    mesh_description const& description{std::get<mesh_description>(metadata)};
+    std::filesystem::path path{std::filesystem::current_path() / "assets" / (name + ".mesh")};
+    if(!std::filesystem::exists(path)) throw;
+    std::ifstream fin{path, std::ios::in | std::ios::binary};
+    if(!fin) throw;
 
-    // read mesh
-    std::filesystem::path mesh_path{std::filesystem::current_path() / "assets" / "meshes" / (name + ".asset")};
-    if(!std::filesystem::exists(mesh_path)) throw;
+    mesh_header header{};
+    if(!fin.read(reinterpret_cast<char*>(&header), sizeof(header)))
+        throw;
 
-    std::size_t expected_size{description.vertex_count * sizeof(vector3f) + description.index_count * sizeof(std::uint32_t)};
-    if(description.normals) expected_size += description.vertex_count * sizeof(vector3f);
-    if(description.uvs) expected_size += description.vertex_count * sizeof(vector2f);
-    if(std::filesystem::file_size(mesh_path) != expected_size) throw;
+    auto test_flags{
+        [header_flags{header.flags}] (mesh_flags flags) -> bool
+        {
+            return static_cast<std::uint32_t>(header_flags) & static_cast<std::uint32_t>(flags);
+        }
+    };
 
-    std::ifstream mesh_file{mesh_path, std::ios::in | std::ios::binary};
-    if(!mesh_file) throw;
+    std::size_t expected_size{sizeof(mesh_header) + sizeof(vector3f) * header.vertex_count + sizeof(std::uint32_t) * header.index_count};
+    if(test_flags(mesh_flags::has_normals))
+        expected_size += sizeof(vector3f) * header.vertex_count;
+    if(test_flags(mesh_flags::has_uvs))
+        expected_size += sizeof(vector2f) * header.vertex_count;
 
-    std::vector<vector3f> positions{};
-    std::vector<vector3f> normals{};
-    std::vector<vector2f> uvs{};
-    std::vector<std::uint32_t> indices{};
+    if(std::filesystem::file_size(path) != expected_size)
+        throw;
 
-    positions.resize(description.vertex_count);
-    mesh_file.read(reinterpret_cast<char*>(positions.data()), positions.size() * sizeof(vector3f));
+    auto read_array{
+        [&fin] <typename T>(std::uint32_t size) -> T*
+        {
+            T* data{new T[size]};
+            if(!fin.read(reinterpret_cast<char*>(data), sizeof(T) * size))
+                throw;
 
-    if(description.normals)
+            return data;
+        }
+    };
+
+    std::unique_ptr<vector3f[]> positions{read_array.template operator()<vector3f>(header.vertex_count)};
+
+    std::unique_ptr<vector3f[]> normals{};
+    if(test_flags(mesh_flags::has_normals))
     {
-        normals.resize(description.vertex_count);
-        mesh_file.read(reinterpret_cast<char*>(normals.data()), normals.size() * sizeof(vector3f));
+        normals.reset(read_array.template operator()<vector3f>(header.vertex_count));
     }
 
-    if(description.uvs)
+    std::unique_ptr<vector2f[]> uvs{};
+    if(test_flags(mesh_flags::has_uvs))
     {
-        uvs.resize(description.vertex_count);
-        mesh_file.read(reinterpret_cast<char*>(uvs.data()), uvs.size() * sizeof(vector2f));
+        uvs.reset(read_array.template operator()<vector2f>(header.vertex_count));
     }
 
-    indices.resize(description.index_count);
-    mesh_file.read(reinterpret_cast<char*>(indices.data()), indices.size() * sizeof(std::uint32_t));
+    std::unique_ptr<std::uint32_t[]> indices{read_array.template operator()<std::uint32_t>(header.index_count)};
 
-    return std::shared_ptr<mesh>{new default_mesh{std::move(positions), std::move(normals), std::move(uvs), std::move(indices)}};
+    return std::shared_ptr<mesh>{new default_mesh{header.vertex_count, std::move(positions), std::move(normals), std::move(uvs), header.index_count, std::move(indices)}};
 }
 
 std::shared_ptr<image> assets::load_image(std::string const& name)

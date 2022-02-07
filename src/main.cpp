@@ -28,6 +28,8 @@
 #include "allocators/fixed_size_allocator.hpp"
 #include "bxdfx_tester.hpp"
 
+#include "scene_material_ball.hpp"
+
 void test_mis();
 void test_dragon();
 void test();
@@ -39,50 +41,14 @@ void test_normals();
 int main()
 {
 
-    /*fc::smith_ggx_microfacet_model a{{0.5, 0.5}};
-    fc::microfacet_btdf2 b{{1.0, 1.0, 1.0}, a};
-
-    fc::lambertian_brdf2 c{{1.0, 1.0, 1.0}};
-
-    double eta_a{1.0};
-    double eta_b{1.45};
-
-    fc::testing::run(b, {512, 256}, 100'000'000, "run.pgm", fc::testing::from_theta(45.0), 1.0, 1.45);*/
-
-    //auto test{fc::test_bsdf(b, 50.0, eta_a, eta_b, 100'000'000, 512, 256)};
-    //fc::export_test(test, 512, 256);
-
-    ////XXH64()
-    //std::uniform_real_distribution<float> dist{};
-
-    ////pcg32 generator{0, 0};
-    //for(int i{}; i < 512; ++i)
-    //{
-    //    for(int j{}; j < 512; ++j)
-    //    {
-    //        fc::vector2i pixel{j, i};
-    //        std::uint64_t seed{XXH64(&pixel, sizeof(pixel), 0)};
-
-    //        //std::uint64_t seed{};
-    //        //seed |= static_cast<std::uint64_t>(i) << 32;
-    //        //seed |= static_cast<std::uint64_t>(j);
-
-    //        //pcg32 generator{seed, 0};
-    //        //float num{dist(generator)};
-
-    //        numbers[i][j] = seed / static_cast<double>(std::numeric_limits<std::uint64_t>::max());
-    //    }
-    //}
-
-    //std::fstream fout{"seed.raw", std::ios::trunc | std::ios::binary | std::ios::out};
-    //fout.write(reinterpret_cast<char const*>(numbers), sizeof(numbers));
-
-
-    test_mask();
+    //test_mask();
     //test_ball();
     //test_dragon();
     //test_balls();
     //test_normals();
+    //fc::scene_material_ball();
+    //fc::scene_glass();
+    fc::scene_room();
     return 0;
 }
 

@@ -249,6 +249,9 @@
     <ClInclude Include="src\bsdfs\normal_mapping.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\scene_material_ball.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">
@@ -261,5 +264,31 @@
   <ItemGroup>
     <None Include=".gitattributes" />
     <None Include=".gitignore" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="img\diffuse.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="img\microfacet_glass.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="img\microfacet_medium_glass.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="img\microfacet_mirror.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="img\plastic.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="img\specular_medium_glass.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="img\specular_mirror.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="img\specular-glass.png">
+      <Filter>Resource Files</Filter>
+    </Image>
   </ItemGroup>
 </Project>
