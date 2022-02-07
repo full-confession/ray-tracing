@@ -534,8 +534,14 @@ namespace fc
             vector3 fs{s0.bsdf->evaluate(s0.bxdf, wo, s0.wi, s_eta_a, s_eta_b)};
             if(!fs || !scene.visibility(*t0.p, *s0.p)) return {};
 
-            double G{std::abs(dot(t0.p->get_normal(), wi) * dot(s0.p->get_normal(), wi)) / sqr_len};
+            double t0_dot_wi{dot(t0.p->get_normal(), wi)};
+
+            double G{std::abs(t0_dot_wi * dot(s0.p->get_normal(), wi)) / sqr_len};
             vector3 Li{t0.beta * ft * G * fs * s0.beta};
+            if(t0_dot_wi >= 0.0)
+                Li *= t0.above_medium->transmittance(t0.p->get_position(), s0.p->get_position());
+            else
+                Li *= t0.below_medium->transmittance(t0.p->get_position(), s0.p->get_position());
 
             if(Li)
             {

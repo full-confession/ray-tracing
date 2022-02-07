@@ -48,7 +48,9 @@ int main()
     //test_normals();
     //fc::scene_material_ball();
     //fc::scene_glass();
-    fc::scene_room();
+    //fc::scene_room();
+    //fc::scene_normals();
+    fc::scene_mask();
     return 0;
 }
 
@@ -107,127 +109,127 @@ void test_mis()
 
 void test_dragon()
 {
-    fc::assets assets{};
+    //fc::assets assets{};
 
-    //std::shared_ptr<fc::surface> dragon{new fc::mesh_surface{{{}, {}, {0.03, 0.03, 0.03}}, assets.get_mesh("xyz_dragon")}};
-    
-    std::shared_ptr<fc::surface> spoon{new fc::mesh_surface{{}, assets.get_mesh("spoon")}};
-    std::shared_ptr<fc::surface> plate{new fc::mesh_surface{{}, assets.get_mesh("plate")}};
-    std::shared_ptr<fc::surface> cup{new fc::mesh_surface{{}, assets.get_mesh("cup")}};
-    std::shared_ptr<fc::surface> tea{new fc::mesh_surface{{}, assets.get_mesh("tea")}};
-    //std::shared_ptr<fc::surface> table{new fc::mesh_surface{{}, assets.get_mesh("table")}};
+    ////std::shared_ptr<fc::surface> dragon{new fc::mesh_surface{{{}, {}, {0.03, 0.03, 0.03}}, assets.get_mesh("xyz_dragon")}};
+    //
+    //std::shared_ptr<fc::surface> spoon{new fc::mesh_surface{{}, assets.get_mesh("spoon")}};
+    //std::shared_ptr<fc::surface> plate{new fc::mesh_surface{{}, assets.get_mesh("plate")}};
+    //std::shared_ptr<fc::surface> cup{new fc::mesh_surface{{}, assets.get_mesh("cup")}};
+    //std::shared_ptr<fc::surface> tea{new fc::mesh_surface{{}, assets.get_mesh("tea")}};
+    ////std::shared_ptr<fc::surface> table{new fc::mesh_surface{{}, assets.get_mesh("table")}};
 
-    std::shared_ptr<fc::surface> plane{new fc::plane_surface{{}, {5.0, 5.0}}};
-    std::shared_ptr<fc::surface> sphere{new fc::sphere_surface{{{0.0, 1.0, 0.0}}, 1.0}};
-    //std::shared_ptr<fc::surface> sphere1{new fc::sphere_surface{{{1.0, 1.0, 0.0}}, 1.0}};
-    //std::shared_ptr<fc::surface> sphere2{new fc::sphere_surface{{{ 3.0, 1.0, 6.0}}, 1.0}};
-    //std::shared_ptr<fc::surface> sphere3{new fc::sphere_surface{{{-11.0, 1.0, 25.0}}, 1.0}};
-    //std::shared_ptr<fc::surface> sphere4{new fc::sphere_surface{{{ 11.0, 1.0, 25.0}}, 1.0}};
-    //std::shared_ptr<fc::surface> sphere2{new fc::sphere_surface{{{0.0, 1.0, 2.0}}, 0.05}};
+    //std::shared_ptr<fc::surface> plane{new fc::plane_surface{{}, {5.0, 5.0}}};
+    //std::shared_ptr<fc::surface> sphere{new fc::sphere_surface{{{0.0, 1.0, 0.0}}, 1.0}};
+    ////std::shared_ptr<fc::surface> sphere1{new fc::sphere_surface{{{1.0, 1.0, 0.0}}, 1.0}};
+    ////std::shared_ptr<fc::surface> sphere2{new fc::sphere_surface{{{ 3.0, 1.0, 6.0}}, 1.0}};
+    ////std::shared_ptr<fc::surface> sphere3{new fc::sphere_surface{{{-11.0, 1.0, 25.0}}, 1.0}};
+    ////std::shared_ptr<fc::surface> sphere4{new fc::sphere_surface{{{ 11.0, 1.0, 25.0}}, 1.0}};
+    ////std::shared_ptr<fc::surface> sphere2{new fc::sphere_surface{{{0.0, 1.0, 2.0}}, 0.05}};
 
-    //auto image1{assets.get_image("old_planks_diff")};
-    //std::shared_ptr<fc::image_texture_2d_rgb> texture1{new fc::image_texture_2d_rgb{image1, fc::reconstruction_filter::bilinear, 4}};
-    //auto image2{assets.get_image("old_planks_rough")};
-    //std::shared_ptr<fc::image_texture_2d_r> texture2{new fc::image_texture_2d_r{image2, fc::reconstruction_filter::bilinear, 4}};
+    ////auto image1{assets.get_image("old_planks_diff")};
+    ////std::shared_ptr<fc::image_texture_2d_rgb> texture1{new fc::image_texture_2d_rgb{image1, fc::reconstruction_filter::bilinear, 4}};
+    ////auto image2{assets.get_image("old_planks_rough")};
+    ////std::shared_ptr<fc::image_texture_2d_r> texture2{new fc::image_texture_2d_r{image2, fc::reconstruction_filter::bilinear, 4}};
 
-    std::shared_ptr<fc::texture_2d_rgb> checker_texture{new fc::checker_texture_2d_rgb{{0.1, 0.1, 0.1}, {0.05, 0.05, 0.05}, 100.0}};
-    std::shared_ptr<fc::texture_2d_rgb> const_texture{new fc::const_texture_2d_rgb{{0.8, 0.8, 0.8}}};
-    std::shared_ptr<fc::texture_2d_rgb> const1_texture{new fc::const_texture_2d_rgb{{1.0, 1.0, 1.0}}};
+    //std::shared_ptr<fc::texture_2d_rgb> checker_texture{new fc::checker_texture_2d_rgb{{0.1, 0.1, 0.1}, {0.05, 0.05, 0.05}, 100.0}};
+    //std::shared_ptr<fc::texture_2d_rgb> const_texture{new fc::const_texture_2d_rgb{{0.8, 0.8, 0.8}}};
+    //std::shared_ptr<fc::texture_2d_rgb> const1_texture{new fc::const_texture_2d_rgb{{1.0, 1.0, 1.0}}};
 
-    std::shared_ptr<fc::texture_2d_rgb> const_texture2{new fc::const_texture_2d_rgb{{0.8, 0.4, 0.2}}};
-    std::shared_ptr<fc::material> diffuse_material2{new fc::diffuse_material{const_texture2}};
+    //std::shared_ptr<fc::texture_2d_rgb> const_texture2{new fc::const_texture_2d_rgb{{0.8, 0.4, 0.2}}};
+    //std::shared_ptr<fc::material> diffuse_material2{new fc::diffuse_material{const_texture2}};
 
-    std::shared_ptr<fc::texture_2d_rgb> const_texture3{new fc::const_texture_2d_rgb{{0.6, 0.7, 0.8}}};
-    std::shared_ptr<fc::material> diffuse_material3{new fc::diffuse_material{const_texture3}};
+    //std::shared_ptr<fc::texture_2d_rgb> const_texture3{new fc::const_texture_2d_rgb{{0.6, 0.7, 0.8}}};
+    //std::shared_ptr<fc::material> diffuse_material3{new fc::diffuse_material{const_texture3}};
 
-    std::shared_ptr<fc::texture_2d_rgb> gold_ior{new fc::const_texture_2d_rgb{{0.183, 0.422, 1.373}}};
-    std::shared_ptr<fc::texture_2d_rgb> gold_k{new fc::const_texture_2d_rgb{{4.0, 1.6, 1.15}}};
-    std::shared_ptr<fc::texture_2d_r> gold_roughness{new fc::const_texture_2d_r{0.5}};
-    std::shared_ptr<fc::texture_2d_r> glass_roughness{new fc::const_texture_2d_r{0.2}};
+    //std::shared_ptr<fc::texture_2d_rgb> gold_ior{new fc::const_texture_2d_rgb{{0.183, 0.422, 1.373}}};
+    //std::shared_ptr<fc::texture_2d_rgb> gold_k{new fc::const_texture_2d_rgb{{4.0, 1.6, 1.15}}};
+    //std::shared_ptr<fc::texture_2d_r> gold_roughness{new fc::const_texture_2d_r{0.5}};
+    //std::shared_ptr<fc::texture_2d_r> glass_roughness{new fc::const_texture_2d_r{0.2}};
 
-    std::shared_ptr<fc::texture_2d_rg> roughness_a{new fc::const_texture_2d_rg{{0.3, 0.3}}};
-    std::shared_ptr<fc::texture_2d_rg> roughness0{new fc::const_texture_2d_rg{{0.0, 0.0}}};
+    //std::shared_ptr<fc::texture_2d_rg> roughness_a{new fc::const_texture_2d_rg{{0.3, 0.3}}};
+    //std::shared_ptr<fc::texture_2d_rg> roughness0{new fc::const_texture_2d_rg{{0.0, 0.0}}};
 
-    std::shared_ptr<fc::texture_2d_rg> mirror_roughness{new fc::const_texture_2d_rg{{0.2, 0.2}}};
+    //std::shared_ptr<fc::texture_2d_rg> mirror_roughness{new fc::const_texture_2d_rg{{0.2, 0.2}}};
 
-    std::shared_ptr<fc::material> diffuse_material{new fc::diffuse_material{checker_texture}};
-    std::shared_ptr<fc::material> diffuse_material_dragon{new fc::diffuse_material{const_texture}};
-    //std::shared_ptr<fc::material> gold_material{new fc::conductor_material{gold_ior, gold_k, gold_roughness}};
-    //std::shared_ptr<fc::material> plastic_material{new fc::plastic_material{const_texture, const1_texture, glass_roughness, 1.45}};
-    
-    
-    std::shared_ptr<fc::material> cup_material{new fc::glass_material{const1_texture, const1_texture, roughness0}};
-    std::shared_ptr<fc::material> tea_material{new fc::glass_material{const1_texture, const1_texture, roughness0}};
+    //std::shared_ptr<fc::material> diffuse_material{new fc::diffuse_material{checker_texture}};
+    //std::shared_ptr<fc::material> diffuse_material_dragon{new fc::diffuse_material{const_texture}};
+    ////std::shared_ptr<fc::material> gold_material{new fc::conductor_material{gold_ior, gold_k, gold_roughness}};
+    ////std::shared_ptr<fc::material> plastic_material{new fc::plastic_material{const_texture, const1_texture, glass_roughness, 1.45}};
+    //
+    //
+    //std::shared_ptr<fc::material> cup_material{new fc::glass_material{const1_texture, const1_texture, roughness0}};
+    //std::shared_ptr<fc::material> tea_material{new fc::glass_material{const1_texture, const1_texture, roughness0}};
 
-    std::shared_ptr<fc::material> mirror_material{new fc::mirror_material{const_texture, roughness0}};
-    std::shared_ptr<fc::material> transmission_material{new fc::transmission_material{const1_texture, roughness_a}};
-
-
-    std::shared_ptr<fc::texture_2d_r> ior{new fc::const_texture_2d_r{1.5}};
-    std::shared_ptr<fc::material> plastic_material{new fc::plastic_material{
-        const_texture3,
-        const1_texture,
-        roughness_a,
-        ior
-    }};
-
-    /*std::shared_ptr<fc::material> mirror_material{new fc::mirror_material{{0.2, 0.4, 0.8}, {0.4, 0.4}}};
-    std::shared_ptr<fc::material> glass_material{new fc::glass_material{{1.0, 1.0, 1.0}, {1.0, 1.0, 1.0}, 1.45}};
-    std::shared_ptr<fc::material> conductor_material{new fc::conductor_material{{0.183, 0.422, 1.373}, {4.0, 1.6, 1.150}, {0.5, 0.5}}};
-    std::shared_ptr<fc::material> plastic_material{new fc::plastic_material{{0.2, 0.4, 0.8}, {1.0, 1.0, 1.0}, 1.45, {0.15, 0.15}}};
-    std::shared_ptr<fc::area_light> al0{new fc::const_diffuse_area_light{plane2.get(), {1.0, 1.0, 1.0}, 15.0}};
-    std::shared_ptr<fc::area_light> al1{new fc::const_diffuse_area_light{plane3.get(), {1.0, 1.0, 1.0}, 15.0}};*/
+    //std::shared_ptr<fc::material> mirror_material{new fc::mirror_material{const_texture, roughness0}};
+    //std::shared_ptr<fc::material> transmission_material{new fc::transmission_material{const1_texture, roughness_a}};
 
 
-    std::shared_ptr<fc::medium> glass_medium{new fc::uniform_medium{2, 1.5, {1.0, 1.0, 1.0}, 25.0}};
-    std::shared_ptr<fc::medium> tea_medium{new fc::uniform_medium{1, 1.333, {0.2, 0.8, 0.8}, 150.0}};
-    //std::shared_ptr<fc::medium> glass_medium{new fc::uniform_medium{2, 1.5, {1.0, 1.0, 1.0}, 0.0}};
+    //std::shared_ptr<fc::texture_2d_r> ior{new fc::const_texture_2d_r{1.5}};
+    //std::shared_ptr<fc::material> plastic_material{new fc::plastic_material{
+    //    const_texture3,
+    //    const1_texture,
+    //    roughness_a,
+    //    ior
+    //}};
 
-    //std::shared_ptr<fc::area_light> al1{new fc::const_diffuse_area_light{sphere2.get(), {1.0, 1.0, 1.0}, 100.0}};
+    ///*std::shared_ptr<fc::material> mirror_material{new fc::mirror_material{{0.2, 0.4, 0.8}, {0.4, 0.4}}};
+    //std::shared_ptr<fc::material> glass_material{new fc::glass_material{{1.0, 1.0, 1.0}, {1.0, 1.0, 1.0}, 1.45}};
+    //std::shared_ptr<fc::material> conductor_material{new fc::conductor_material{{0.183, 0.422, 1.373}, {4.0, 1.6, 1.150}, {0.5, 0.5}}};
+    //std::shared_ptr<fc::material> plastic_material{new fc::plastic_material{{0.2, 0.4, 0.8}, {1.0, 1.0, 1.0}, 1.45, {0.15, 0.15}}};
+    //std::shared_ptr<fc::area_light> al0{new fc::const_diffuse_area_light{plane2.get(), {1.0, 1.0, 1.0}, 15.0}};
+    //std::shared_ptr<fc::area_light> al1{new fc::const_diffuse_area_light{plane3.get(), {1.0, 1.0, 1.0}, 15.0}};*/
 
-    std::vector<fc::entity> entities{};
-    //entities.push_back({dragon, plastic_material, nullptr});
-    //entities.push_back({spoon, mirror_material, nullptr});
+
+    //std::shared_ptr<fc::medium> glass_medium{new fc::uniform_medium{2, 1.5, {1.0, 1.0, 1.0}, 25.0}};
+    //std::shared_ptr<fc::medium> tea_medium{new fc::uniform_medium{1, 1.333, {0.2, 0.8, 0.8}, 150.0}};
+    ////std::shared_ptr<fc::medium> glass_medium{new fc::uniform_medium{2, 1.5, {1.0, 1.0, 1.0}, 0.0}};
+
+    ////std::shared_ptr<fc::area_light> al1{new fc::const_diffuse_area_light{sphere2.get(), {1.0, 1.0, 1.0}, 100.0}};
+
+    //std::vector<fc::entity> entities{};
+    ////entities.push_back({dragon, plastic_material, nullptr});
+    ////entities.push_back({spoon, mirror_material, nullptr});
+    ////entities.push_back({cup, cup_material, nullptr, glass_medium});
+    ////entities.push_back({tea, tea_material, nullptr, tea_medium});
+
+
     //entities.push_back({cup, cup_material, nullptr, glass_medium});
-    //entities.push_back({tea, tea_material, nullptr, tea_medium});
+    //entities.push_back({plane, diffuse_material, nullptr});
+    //entities.push_back({plate, diffuse_material_dragon, nullptr});
+    ////entities.push_back({sphere, tea_material, nullptr, glass_medium});
+    ////entities.push_back({sphere1, glass_material, nullptr, nullptr, 1, 1.2});
+    ////entities.push_back({sphere2, diffuse_material2, nullptr});
+    ////entities.push_back({sphere3, diffuse_material3, nullptr});
+    ////entities.push_back({sphere4, diffuse_material3, nullptr});
+    ////entities.push_back({sphere2, diffuse_material, al1});
+
+    //auto image{assets.get_image("env-loft-hall")};
+    //std::shared_ptr<fc::image_texture_2d_rgb> texture{new fc::image_texture_2d_rgb{image, fc::reconstruction_filter::bilinear, 4}};
+    //std::shared_ptr<fc::infinity_area_light> infinity_area_light{new fc::texture_infinity_area_light{{{}, {0.0, fc::math::deg_to_rad(45.0), 0.0}}, texture, 1.0, image->get_resolution()}};
+    ////std::shared_ptr<fc::infinity_area_light> infinity_area_light{new fc::const_infinity_area_light{{1.0, 1.0, 1.0}, 1.0}};
+
+    //fc::bvh_acceleration_structure_factory acceleration_structure_factory{};
+    //fc::uniform_light_distribution_factory uldf{};
+    //fc::uniform_spatial_light_distribution_factory usldf{};
+
+    //std::shared_ptr<fc::entity_scene> scene{new fc::entity_scene{std::move(entities), infinity_area_light, acceleration_structure_factory, uldf, usldf}};
+    ////fc::random_sampler sampler{4*4};
+    //fc::stratified_sampler sampler{32*32};
+
+    ////fc::perspective_camera_factory camera_factory{{{-4.421, 5.753, -5.448}, {fc::math::deg_to_rad(34.309), fc::math::deg_to_rad(35.237), 0.0}}, fc::math::deg_to_rad(27.0)/*, 0.1, 7.5*/};
+    //fc::perspective_camera_factory camera_factory{{{-0.202, 0.202, -0.158}, {fc::math::deg_to_rad(34.549), fc::math::deg_to_rad(51.566), 0.0}}, fc::math::deg_to_rad(30.0)};
 
 
-    entities.push_back({cup, cup_material, nullptr, glass_medium});
-    entities.push_back({plane, diffuse_material, nullptr});
-    entities.push_back({plate, diffuse_material_dragon, nullptr});
-    //entities.push_back({sphere, tea_material, nullptr, glass_medium});
-    //entities.push_back({sphere1, glass_material, nullptr, nullptr, 1, 1.2});
-    //entities.push_back({sphere2, diffuse_material2, nullptr});
-    //entities.push_back({sphere3, diffuse_material3, nullptr});
-    //entities.push_back({sphere4, diffuse_material3, nullptr});
-    //entities.push_back({sphere2, diffuse_material, al1});
+    ////std::shared_ptr<fc::integrator> integrator{new fc::backward_integrator{10}};
+    ////std::shared_ptr<fc::integrator> integrator{new fc::forward_mis_integrator{10, true}};
+    //std::shared_ptr<fc::integrator> integrator{new fc::bidirectional_integrator{10, true}};
+    ////std::shared_ptr<fc::integrator> integrator{new fc::forward_bsdf_integrator{10}};
 
-    auto image{assets.get_image("env-loft-hall")};
-    std::shared_ptr<fc::image_texture_2d_rgb> texture{new fc::image_texture_2d_rgb{image, fc::reconstruction_filter::bilinear, 4}};
-    std::shared_ptr<fc::infinity_area_light> infinity_area_light{new fc::texture_infinity_area_light{{{}, {0.0, fc::math::deg_to_rad(45.0), 0.0}}, texture, 1.0, image->get_resolution()}};
-    //std::shared_ptr<fc::infinity_area_light> infinity_area_light{new fc::const_infinity_area_light{{1.0, 1.0, 1.0}, 1.0}};
-
-    fc::bvh_acceleration_structure_factory acceleration_structure_factory{};
-    fc::uniform_light_distribution_factory uldf{};
-    fc::uniform_spatial_light_distribution_factory usldf{};
-
-    std::shared_ptr<fc::entity_scene> scene{new fc::entity_scene{std::move(entities), infinity_area_light, acceleration_structure_factory, uldf, usldf}};
-    //fc::random_sampler sampler{4*4};
-    fc::stratified_sampler sampler{32*32};
-
-    //fc::perspective_camera_factory camera_factory{{{-4.421, 5.753, -5.448}, {fc::math::deg_to_rad(34.309), fc::math::deg_to_rad(35.237), 0.0}}, fc::math::deg_to_rad(27.0)/*, 0.1, 7.5*/};
-    fc::perspective_camera_factory camera_factory{{{-0.202, 0.202, -0.158}, {fc::math::deg_to_rad(34.549), fc::math::deg_to_rad(51.566), 0.0}}, fc::math::deg_to_rad(30.0)};
-
-
-    //std::shared_ptr<fc::integrator> integrator{new fc::backward_integrator{10}};
-    //std::shared_ptr<fc::integrator> integrator{new fc::forward_mis_integrator{10, true}};
-    std::shared_ptr<fc::integrator> integrator{new fc::bidirectional_integrator{10, true}};
-    //std::shared_ptr<fc::integrator> integrator{new fc::forward_bsdf_integrator{10}};
-
-    fc::renderer renderer{{512, 512}, camera_factory, integrator, scene, 15, sampler};
-    renderer.run();
-    //renderer.run_pixel({213, 315});
-    renderer.export_image("normals");
+    //fc::renderer renderer{{512, 512}, camera_factory, integrator, scene, 15, sampler};
+    //renderer.run();
+    ////renderer.run_pixel({213, 315});
+    //renderer.export_image("normals");
 }
 
 void test_ball()
@@ -290,79 +292,79 @@ void test_ball()
 
 void test_mask()
 {
-    fc::assets assets{};
-    std::shared_ptr<fc::surface> mask{new fc::mesh_surface{{}, assets.get_mesh("mask")}};
+    //fc::assets assets{};
+    //std::shared_ptr<fc::surface> mask{new fc::mesh_surface{{}, assets.get_mesh("mask")}};
 
-    //std::shared_ptr<fc::texture_2d_rgb> gold_ior{new fc::const_texture_2d_rgb{{0.183, 0.422, 1.373}}};
-    //std::shared_ptr<fc::texture_2d_rgb> gold_k{new fc::const_texture_2d_rgb{{4.0, 1.6, 1.15}}};
+    ////std::shared_ptr<fc::texture_2d_rgb> gold_ior{new fc::const_texture_2d_rgb{{0.183, 0.422, 1.373}}};
+    ////std::shared_ptr<fc::texture_2d_rgb> gold_k{new fc::const_texture_2d_rgb{{4.0, 1.6, 1.15}}};
 
-    std::shared_ptr<fc::texture_2d_rgb> albedo{new fc::image_texture_2d_rgb{assets.get_image("mask-basecolor"), fc::reconstruction_filter::bilinear, 1}};
-    std::shared_ptr<fc::texture_2d_r> metalness{new fc::image_texture_2d_r{assets.get_image("mask-metalness"), fc::reconstruction_filter::bilinear, 1}};
-    std::shared_ptr<fc::texture_2d_r> roughness{new fc::image_texture_2d_r{assets.get_image("mask-roughness"), fc::reconstruction_filter::bilinear, 1}};
-    std::shared_ptr<fc::texture_2d_rgb> normal{new fc::image_texture_2d_rgb{assets.get_image("mask-normal"), fc::reconstruction_filter::bilinear, 1}};
+    //std::shared_ptr<fc::texture_2d_rgb> albedo{new fc::image_texture_2d_rgb{assets.get_image("mask-basecolor"), fc::reconstruction_filter::bilinear, 1}};
+    //std::shared_ptr<fc::texture_2d_r> metalness{new fc::image_texture_2d_r{assets.get_image("mask-metalness"), fc::reconstruction_filter::bilinear, 1}};
+    //std::shared_ptr<fc::texture_2d_r> roughness{new fc::image_texture_2d_r{assets.get_image("mask-roughness"), fc::reconstruction_filter::bilinear, 1}};
+    //std::shared_ptr<fc::texture_2d_rgb> normal{new fc::image_texture_2d_rgb{assets.get_image("mask-normal"), fc::reconstruction_filter::bilinear, 1}};
 
-    std::shared_ptr<fc::texture_2d_rgb> const_texture2{new fc::const_texture_2d_rgb{{0.8, 0.4, 0.2}}};
-    std::shared_ptr<fc::material> diffuse_material2{new fc::diffuse_material2{const_texture2, normal}};
-    
-    //std::shared_ptr<fc::material> material{new fc::standard_material{albedo, metalness, roughness, 1.45}};
+    //std::shared_ptr<fc::texture_2d_rgb> const_texture2{new fc::const_texture_2d_rgb{{0.8, 0.4, 0.2}}};
+    //std::shared_ptr<fc::material> diffuse_material2{new fc::diffuse_material2{const_texture2, normal}};
+    //
+    ////std::shared_ptr<fc::material> material{new fc::standard_material{albedo, metalness, roughness, 1.45}};
 
-    std::shared_ptr<fc::material> mirror_material{new fc::mirror_material{
-        const_texture2,
-        std::make_shared<fc::const_texture_2d_rg>(fc::vector2{0.4, 0.4})
-    }};
+    //std::shared_ptr<fc::material> mirror_material{new fc::mirror_material{
+    //    const_texture2,
+    //    std::make_shared<fc::const_texture_2d_rg>(fc::vector2{0.4, 0.4})
+    //}};
 
-    std::shared_ptr<fc::material> plastic_material{new fc::plastic_material{
-        std::make_shared<fc::const_texture_2d_rgb>(fc::vector3{0.8, 0.4, 0.2}),
-        std::make_shared<fc::const_texture_2d_rgb>(fc::vector3{1.0, 1.0, 1.0}),
-        std::make_shared<fc::const_texture_2d_rg>(fc::vector2{0.3, 0.3}),
-        std::make_shared<fc::const_texture_2d_r>(1.45)
-    }};
+    //std::shared_ptr<fc::material> plastic_material{new fc::plastic_material{
+    //    std::make_shared<fc::const_texture_2d_rgb>(fc::vector3{0.8, 0.4, 0.2}),
+    //    std::make_shared<fc::const_texture_2d_rgb>(fc::vector3{1.0, 1.0, 1.0}),
+    //    std::make_shared<fc::const_texture_2d_rg>(fc::vector2{0.3, 0.3}),
+    //    std::make_shared<fc::const_texture_2d_r>(1.45)
+    //}};
 
-    std::shared_ptr<fc::material> mirror_material2{new fc::mirror_material2{
-        std::shared_ptr<fc::texture_2d_rgb>(new fc::const_texture_2d_rgb{{0.8, 0.4, 0.2}}),
-        std::shared_ptr<fc::texture_2d_rg>(new fc::const_texture_2d_rg{{0.2, 0.2}}),
-        std::shared_ptr<fc::texture_2d_rgb>(normal)
-    }};
+    //std::shared_ptr<fc::material> mirror_material2{new fc::mirror_material2{
+    //    std::shared_ptr<fc::texture_2d_rgb>(new fc::const_texture_2d_rgb{{0.8, 0.4, 0.2}}),
+    //    std::shared_ptr<fc::texture_2d_rg>(new fc::const_texture_2d_rg{{0.2, 0.2}}),
+    //    std::shared_ptr<fc::texture_2d_rgb>(normal)
+    //}};
 
-    std::shared_ptr<fc::material> standard_material{new fc::standard_material{
-        albedo,
-        metalness,
-        roughness,
-        std::make_shared<fc::const_texture_2d_r>(1.45),
-        normal
-    }};
+    //std::shared_ptr<fc::material> standard_material{new fc::standard_material{
+    //    albedo,
+    //    metalness,
+    //    roughness,
+    //    std::make_shared<fc::const_texture_2d_r>(1.45),
+    //    normal
+    //}};
 
-    std::vector<fc::entity> entities{};
-    entities.push_back({mask, standard_material, nullptr});
+    //std::vector<fc::entity> entities{};
+    //entities.push_back({mask, standard_material, nullptr});
 
-    auto image{assets.get_image("env-loft-hall")};
-    std::shared_ptr<fc::image_texture_2d_rgb> texture{new fc::image_texture_2d_rgb{image, fc::reconstruction_filter::bilinear, 4}};
-    std::shared_ptr<fc::infinity_area_light> infinity_area_light{new fc::texture_infinity_area_light{{{}, {0.0, 0.0, 0.0}}, texture, 1.0, image->get_resolution()}};
-    //std::shared_ptr<fc::infinity_area_light> infinity_area_light{new fc::const_infinity_area_light{{1.0, 1.0, 1.0}, 1.0}};
+    //auto image{assets.get_image("env-loft-hall")};
+    //std::shared_ptr<fc::image_texture_2d_rgb> texture{new fc::image_texture_2d_rgb{image, fc::reconstruction_filter::bilinear, 4}};
+    //std::shared_ptr<fc::infinity_area_light> infinity_area_light{new fc::texture_infinity_area_light{{{}, {0.0, 0.0, 0.0}}, texture, 1.0, image->get_resolution()}};
+    ////std::shared_ptr<fc::infinity_area_light> infinity_area_light{new fc::const_infinity_area_light{{1.0, 1.0, 1.0}, 1.0}};
 
-    fc::bvh_acceleration_structure_factory acceleration_structure_factory{};
-    fc::uniform_light_distribution_factory uldf{};
-    fc::uniform_spatial_light_distribution_factory usldf{};
+    //fc::bvh_acceleration_structure_factory acceleration_structure_factory{};
+    //fc::uniform_light_distribution_factory uldf{};
+    //fc::uniform_spatial_light_distribution_factory usldf{};
 
-    std::shared_ptr<fc::entity_scene> scene{new fc::entity_scene{std::move(entities), infinity_area_light, acceleration_structure_factory, uldf, usldf}};
+    //std::shared_ptr<fc::entity_scene> scene{new fc::entity_scene{std::move(entities), infinity_area_light, acceleration_structure_factory, uldf, usldf}};
 
-    //fc::perspective_camera_factory camera_factory{{{-4.421, 5.753, -5.448}, {fc::math::deg_to_rad(34.309), fc::math::deg_to_rad(35.237), 0.0}}, fc::math::deg_to_rad(27.0), 0.1, 7.5};
-    fc::perspective_camera_factory camera_factory{{{2.367, 3.216, 6.485}, {0.0, fc::math::deg_to_rad(196.42), 0.0}}, fc::math::deg_to_rad(45.0), 0.05, 6.0};
-    //fc::perspective_camera_factory camera_factory{{{-0.114, 3.216, 1.439}, {0.0, fc::math::deg_to_rad(203.5), 0.0}}, fc::math::deg_to_rad(30.0)};
+    ////fc::perspective_camera_factory camera_factory{{{-4.421, 5.753, -5.448}, {fc::math::deg_to_rad(34.309), fc::math::deg_to_rad(35.237), 0.0}}, fc::math::deg_to_rad(27.0), 0.1, 7.5};
+    //fc::perspective_camera_factory camera_factory{{{2.367, 3.216, 6.485}, {0.0, fc::math::deg_to_rad(196.42), 0.0}}, fc::math::deg_to_rad(45.0), 0.05, 6.0};
+    ////fc::perspective_camera_factory camera_factory{{{-0.114, 3.216, 1.439}, {0.0, fc::math::deg_to_rad(203.5), 0.0}}, fc::math::deg_to_rad(30.0)};
 
-    //fc::pmj02_sampler5 sampler{0, 256};
-    //fc::random_sampler sampler{32*32};
-    fc::stratified_sampler sampler{64 * 64};
+    ////fc::pmj02_sampler5 sampler{0, 256};
+    ////fc::random_sampler sampler{32*32};
+    //fc::stratified_sampler sampler{64 * 64};
 
-    //std::shared_ptr<fc::integrator> integrator{new fc::backward_integrator{10}};
-    std::shared_ptr<fc::integrator> integrator{new fc::forward_mis_integrator{10, true}};
-    //std::shared_ptr<fc::integrator> integrator{new fc::bidirectional_integrator{10, true}};
-    //std::shared_ptr<fc::integrator> integrator{new fc::forward_bsdf_integrator{2}};
+    ////std::shared_ptr<fc::integrator> integrator{new fc::backward_integrator{10}};
+    //std::shared_ptr<fc::integrator> integrator{new fc::forward_mis_integrator{10, true}};
+    ////std::shared_ptr<fc::integrator> integrator{new fc::bidirectional_integrator{10, true}};
+    ////std::shared_ptr<fc::integrator> integrator{new fc::forward_bsdf_integrator{2}};
 
-    fc::renderer renderer{{600, 900}, camera_factory, integrator, scene, 15, sampler};
-    renderer.run();
-    //renderer.run_pixel({341, 352});
-    renderer.export_image("mask");
+    //fc::renderer renderer{{600, 900}, camera_factory, integrator, scene, 15, sampler};
+    //renderer.run();
+    ////renderer.run_pixel({341, 352});
+    //renderer.export_image("mask");
 }
 
 void test()
@@ -517,52 +519,52 @@ void test_balls()
 
 void test_normals()
 {
-    std::shared_ptr<fc::surface> a{new fc::plane_surface{{}, {10.0, 10.0}}};
-    std::shared_ptr<fc::surface> b{new fc::plane_surface{{{0.0, 1.0, 6.0}, {fc::math::deg_to_rad(-90), 0.0, 0.0}}, {10.0, 2.0}}};
+    //std::shared_ptr<fc::surface> a{new fc::plane_surface{{}, {10.0, 10.0}}};
+    //std::shared_ptr<fc::surface> b{new fc::plane_surface{{{0.0, 1.0, 6.0}, {fc::math::deg_to_rad(-90), 0.0, 0.0}}, {10.0, 2.0}}};
 
-    fc::assets assets{};
-    auto image{assets.get_image("wallpaper-normal")};
+    //fc::assets assets{};
+    //auto image{assets.get_image("wallpaper-normal")};
 
-    std::shared_ptr<fc::material> diffuse_material{new fc::diffuse_material2{
-        std::shared_ptr<fc::texture_2d_rgb>(new fc::const_texture_2d_rgb{{0.8, 0.8, 0.8}}),
-        std::shared_ptr<fc::texture_2d_rgb>(new fc::image_texture_2d_rgb(image, fc::reconstruction_filter::bilinear, 1))
-    }};
+    //std::shared_ptr<fc::material> diffuse_material{new fc::diffuse_material2{
+    //    std::shared_ptr<fc::texture_2d_rgb>(new fc::const_texture_2d_rgb{{0.8, 0.8, 0.8}}),
+    //    std::shared_ptr<fc::texture_2d_rgb>(new fc::image_texture_2d_rgb(image, fc::reconstruction_filter::bilinear, 1))
+    //}};
 
-    std::shared_ptr<fc::material> mirror_material{new fc::mirror_material2{
-        std::shared_ptr<fc::texture_2d_rgb>(new fc::const_texture_2d_rgb{{0.8, 0.8, 0.8}}),
-        std::shared_ptr<fc::texture_2d_rg>(new fc::const_texture_2d_rg{{0.4, 0.4}}),
-        std::shared_ptr<fc::texture_2d_rgb>(new fc::image_texture_2d_rgb(image, fc::reconstruction_filter::bilinear, 1))
-    }};
+    //std::shared_ptr<fc::material> mirror_material{new fc::mirror_material2{
+    //    std::shared_ptr<fc::texture_2d_rgb>(new fc::const_texture_2d_rgb{{0.8, 0.8, 0.8}}),
+    //    std::shared_ptr<fc::texture_2d_rg>(new fc::const_texture_2d_rg{{0.4, 0.4}}),
+    //    std::shared_ptr<fc::texture_2d_rgb>(new fc::image_texture_2d_rgb(image, fc::reconstruction_filter::bilinear, 1))
+    //}};
 
-    std::shared_ptr<fc::area_light> area_light{new fc::const_diffuse_area_light{b.get(), {1.0, 1.0, 1.0}, 1.0}};
+    //std::shared_ptr<fc::area_light> area_light{new fc::const_diffuse_area_light{b.get(), {1.0, 1.0, 1.0}, 1.0}};
 
-    std::vector<fc::entity> entities{};
-    entities.push_back({a, mirror_material});
-    entities.push_back({b, diffuse_material, area_light});
+    //std::vector<fc::entity> entities{};
+    //entities.push_back({a, mirror_material});
+    //entities.push_back({b, diffuse_material, area_light});
 
 
-    fc::bvh_acceleration_structure_factory acceleration_structure_factory{};
-    fc::uniform_light_distribution_factory uldf{};
-    fc::uniform_spatial_light_distribution_factory usldf{};
+    //fc::bvh_acceleration_structure_factory acceleration_structure_factory{};
+    //fc::uniform_light_distribution_factory uldf{};
+    //fc::uniform_spatial_light_distribution_factory usldf{};
 
-    //auto aa{assets.get_image("env-loft-hall")};
-    //std::shared_ptr<fc::image_texture_2d_rgb> texture{new fc::image_texture_2d_rgb{aa, fc::reconstruction_filter::bilinear, 4}};
-    //std::shared_ptr<fc::infinity_area_light> infinity_area_light{new fc::texture_infinity_area_light{{{}, {0.0, 0.0, 0.0}}, texture, 1.0, image->get_resolution()}};
+    ////auto aa{assets.get_image("env-loft-hall")};
+    ////std::shared_ptr<fc::image_texture_2d_rgb> texture{new fc::image_texture_2d_rgb{aa, fc::reconstruction_filter::bilinear, 4}};
+    ////std::shared_ptr<fc::infinity_area_light> infinity_area_light{new fc::texture_infinity_area_light{{{}, {0.0, 0.0, 0.0}}, texture, 1.0, image->get_resolution()}};
 
-    std::shared_ptr<fc::entity_scene> scene{new fc::entity_scene{std::move(entities), nullptr, acceleration_structure_factory, uldf, usldf}};
-    fc::stratified_sampler sampler{32 * 32};
+    //std::shared_ptr<fc::entity_scene> scene{new fc::entity_scene{std::move(entities), nullptr, acceleration_structure_factory, uldf, usldf}};
+    //fc::stratified_sampler sampler{32 * 32};
 
    
-    fc::perspective_camera_factory camera_factory{{{5.72, 2.36, 0.31}, {fc::math::deg_to_rad(27.33), fc::math::deg_to_rad(303.69), 0.0}}, fc::math::deg_to_rad(30.0)};
+    //fc::perspective_camera_factory camera_factory{{{5.72, 2.36, 0.31}, {fc::math::deg_to_rad(27.33), fc::math::deg_to_rad(303.69), 0.0}}, fc::math::deg_to_rad(30.0)};
 
 
-    //std::shared_ptr<fc::integrator> integrator{new fc::backward_integrator{2}};
-    //std::shared_ptr<fc::integrator> integrator{new fc::forward_mis_integrator{2, true}};
-    std::shared_ptr<fc::integrator> integrator{new fc::bidirectional_integrator{2, true}};
-    //std::shared_ptr<fc::integrator> integrator{new fc::forward_bsdf_integrator{2}};
+    ////std::shared_ptr<fc::integrator> integrator{new fc::backward_integrator{2}};
+    ////std::shared_ptr<fc::integrator> integrator{new fc::forward_mis_integrator{2, true}};
+    //std::shared_ptr<fc::integrator> integrator{new fc::bidirectional_integrator{2, true}};
+    ////std::shared_ptr<fc::integrator> integrator{new fc::forward_bsdf_integrator{2}};
 
-    fc::renderer renderer{{512, 512}, camera_factory, integrator, scene, 15, sampler};
-    renderer.run();
-    //renderer.run_pixel({181, 278});
-    renderer.export_image("normals2");
+    //fc::renderer renderer{{512, 512}, camera_factory, integrator, scene, 15, sampler};
+    //renderer.run();
+    ////renderer.run_pixel({181, 278});
+    //renderer.export_image("normals2");
 }

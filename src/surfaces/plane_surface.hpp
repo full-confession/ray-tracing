@@ -90,7 +90,7 @@ namespace fc
 
             vector2 uv{
                 (position.x + half_size.x) / size_.x,
-                (position.z + half_size.y) / size_.y
+                1.0 - (position.z + half_size.y) / size_.y
             };
             p->set_uv(uv);
 

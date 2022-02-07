@@ -36,7 +36,7 @@ namespace fc
             result->p = surface_sample->p;
             result->p->set_light(this);
             result->pdf_p = surface_sample->pdf_p;
-            result->Le = color_ * strength_;
+            result->Le = get_Le(*surface_sample->p, view_point.get_position() - surface_sample->p->get_position());
 
             return result;
         }

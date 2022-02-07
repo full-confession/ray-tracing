@@ -42,7 +42,6 @@ namespace fc
             {
                 n = normal_->evaluate(p.get_uv()) * 2.0 - 1.0;
                 std::swap(n.y, n.z);
-                n.z = -n.z;
                 n = normalize(n);
                 if(n.y < 0.0) n = -n;
             }
