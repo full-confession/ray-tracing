@@ -239,7 +239,7 @@ namespace fc
 
         perspective_camera_factory camera_factory{{{-7.23, 2.79, 16.37}, {math::deg_to_rad(-4.641), math::deg_to_rad(157.552), 0.0}}, math::deg_to_rad(35.0)};
 
-        stratified_sampler sampler{128 * 128};
+        stratified_sampler sampler{64 * 64};
 
         //auto integrator{std::make_shared<forward_bsdf_integrator>(10)};
         //auto integrator{std::make_shared<forward_mis_integrator>(10, true)};

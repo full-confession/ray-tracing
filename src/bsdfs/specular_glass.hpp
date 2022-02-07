@@ -53,8 +53,6 @@ namespace fc
                 if(pdf_i != nullptr)
                     *pdf_i = fresnel;
 
-                //*pdf_o = 1.0;
-
                 return sample_result::success;
             }
             else
@@ -67,7 +65,9 @@ namespace fc
                 *pdf_o = 1.0 - fresnel;
 
                 if(pdf_i != nullptr)
-                    *pdf_i = 1.0 - fresnel;
+                {
+                    *pdf_i = 1.0 - fr_dielectric(-o->y, eta_b, eta_a);
+                }
 
                 return sample_result::success;
             }
