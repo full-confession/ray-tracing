@@ -91,7 +91,7 @@
     <ClInclude Include="src\renderer\render_target.hpp" />
     <ClInclude Include="src\samplers\random_sampler.hpp" />
     <ClInclude Include="src\samplers\stratified_sampler.hpp" />
-    <ClInclude Include="src\scene_material_ball.hpp" />
+    <ClInclude Include="src\example_scenes.hpp" />
     <ClInclude Include="src\surfaces\mesh_surface.hpp" />
     <ClInclude Include="src\surfaces\plane_surface.hpp" />
     <ClInclude Include="src\surfaces\sphere_surface.hpp" />

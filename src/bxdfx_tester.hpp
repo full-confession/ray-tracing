@@ -143,17 +143,6 @@ namespace fc
         }
     };
 
-    //class tester
-    //{
-    //public:
-    //    tester(microfacet_btdf2 const& bsdf, )
-    //        : bsdf_{&bsdf}
-    //    { }
-
-    //private:
-    //    microfacet_btdf2 const* bsdf_{}
-    //};
-
     inline vector2 w_to_uv(vector3 const& w)
     {
         double theta{std::acos(std::clamp(w.y, -1.0, 1.0))};
@@ -243,76 +232,4 @@ namespace fc
             fout.write(reinterpret_cast<char const*>(&result), sizeof(float));
         }
     }
-
-
-
-    class tmp
-    {
-    public:
-        explicit tmp(vector2i const& resolution)
-            : resolution_{resolution}
-        {
-            values_.resize(resolution.y);
-            counts_.resize(resolution.y);
-            for(int i{}; i < resolution.y; ++i)
-            {
-                values_[i].resize(resolution.x);
-                counts_[i].resize(resolution.x);
-            }
-        }
-
-        void add(vector2i const& pixel, double value)
-        {
-            values_[pixel.y][pixel.x] += value;
-            counts_[pixel.y][pixel.x] += 1;
-        }
-
-        void finalize()
-        {
-            for(int i{}; i < resolution_.y; ++i)
-            {
-                for(int j{}; j < resolution_.x; ++j)
-                {
-                    if(counts_[i][j] > 0) values_[i][j] /= counts_[i][j];
-                }
-            }
-        }
-
-        double max() const
-        {
-            double max{};
-            for(int i{}; i < resolution_.y; ++i)
-            {
-                for(int j{}; j < resolution_.x; ++j)
-                {
-                    max = std::max(max, values_[i][j]);
-                }
-            }
-            return max;
-        }
-
-        void normalize(double v)
-        {
-            for(int i{}; i < resolution_.y; ++i)
-            {
-                for(int j{}; j < resolution_.x; ++j)
-                {
-                    values_[i][j] /= v;
-                }
-            }
-        }
-
-        void get_row(int y, std::vector<float>& output) const
-        {
-            for(int i{}; i < resolution_.x; ++i)
-            {
-                output[i] = static_cast<float>(values_[y][i]);
-            }
-        }
-
-    private:
-        vector2i resolution_{};
-        std::vector<std::vector<double>> values_{};
-        std::vector<std::vector<std::uint64_t>> counts_{};
-    };
 }

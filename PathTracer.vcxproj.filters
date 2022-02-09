@@ -249,7 +249,7 @@
     <ClInclude Include="src\bsdfs\normal_mapping.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\scene_material_ball.hpp">
+    <ClInclude Include="src\example_scenes.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

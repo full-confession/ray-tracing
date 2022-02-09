@@ -3,6 +3,7 @@
 #include "../core/mesh.hpp"
 #include "../core/transform.hpp"
 #include "../core/distribution.hpp"
+#include "../core/sampling.hpp"
 
 #include <memory>
 
