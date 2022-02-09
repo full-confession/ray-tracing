@@ -1,4 +1,6 @@
 # ray-tracing
+<img src="/img/render.png"/>
+My path tracer, made using mainly the book <a href="https://www.pbr-book.org/">Physically Based Rendering: From Theory To Implementation</a> and other online resources.
 
 # BSDFs and Materials
 Implemented BSDFs are shown in the table. Microfacet BSDFs use Smith+GGX model together with the implementation of the sampling of the distribution of visible normals (<a href="https://jcgt.org/published/0007/04/01/">Link</a>).
